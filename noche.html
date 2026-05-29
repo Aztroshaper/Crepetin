@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turno nocturno</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+background:black;
+overflow:hidden;
+color:white;
+}
+
+/* VHS SUPER MARCADO */
+
+body::before{
+content:"";
+position:fixed;
+width:100%;
+height:100%;
+background:
+repeating-linear-gradient(
+to bottom,
+rgba(255,255,255,.08) 0px,
+rgba(255,255,255,.08) 2px,
+transparent 2px,
+transparent 5px
+);
+mix-blend-mode:overlay;
+pointer-events:none;
+z-index:9999;
+animation:vhsLines .12s infinite;
+}
+
+body::after{
+content:"";
+position:fixed;
+width:100%;
+height:100%;
+background:rgba(0,255,120,.03);
+pointer-events:none;
+z-index:9998;
+animation:vhsFlicker .2s infinite;
+}
+
+#vhsNoise{
+position:fixed;
+width:100%;
+height:100%;
+background:url('static.gif');
+opacity:.12;
+mix-blend-mode:screen;
+pointer-events:none;
+z-index:9997;
+}
+
+#menu{
+position:absolute;
+width:100%;
+height:100%;
+background:url('cana.gif') center/cover;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+gap:20px;
+z-index:100;
+filter:contrast(1.2) saturate(.7);
+}
+
+.title{
+font-size:75px;
+letter-spacing:12px;
+text-shadow:
+4px 0 red,
+-4px 0 blue,
+0 0 20px orange;
+animation:flicker 2s infinite;
+}
+
+.subtitle{
+opacity:.7;
+font-size:18px;
+letter-spacing:3px;
+}
+
+button{
+padding:15px 35px;
+background:black;
+border:2px solid white;
+color:white;
+cursor:pointer;
+font-size:18px;
+transition:.2s;
+}
+
+button:hover{
+background:white;
+color:black;
+}
+
+#introImageScreen{
+position:absolute;
+width:100%;
+height:100%;
+background:black;
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:150;
+gap:20px;
+overflow:hidden;
+}
+
+#signalText{
+position:absolute;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+font-size:18px;
+letter-spacing:4px;
+opacity:.7;
+z-index:160;
+animation:signalGlitch .4s infinite;
+}
+
+#zoomContainer{
+width:100%;
+height:100%;
+overflow:hidden;
+position:relative;
+cursor:grab;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+#zoomImage{
+max-width:none;
+width:100%;
+height:100%;
+object-fit:contain;
+transform:translate(0px,0px) scale(1);
+transition:transform .05s linear;
+filter:contrast(1.1) brightness(.9);
+}
+
+#continueBtn{
+position:absolute;
+bottom:40px;
+z-index:170;
+}
+
+#game{
+display:none;
+width:100vw;
+height:100vh;
+position:relative;
+overflow:hidden;
+background:black;
+filter:contrast(1.1) saturate(.7);
+}
+
+#office{
+position:absolute;
+width:100%;
+height:100%;
+background:url('of.gif') center/cover;
+filter:brightness(.2);
+}
+
+.darkness{
+position:absolute;
+width:100%;
+height:100%;
+background:rgba(0,7,0,.0);
+pointer-events:none;
+}
+
+#topbar{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+padding:20px;
+display:flex;
+justify-content:space-between;
+font-size:32px;
+z-index:10;
+text-shadow:0 0 10px black;
+}
+
+#cameraBtn{
+position:absolute;
+bottom:20px;
+right:20px;
+z-index:15;
+}
+
+#closeCamBtn{
+position:absolute;
+top:20px;
+right:20px;
+z-index:30;
+display:none;
+}
+
+#cameraSystem{
+position:absolute;
+width:100%;
+height:100%;
+background:black;
+display:none;
+z-index:20;
+}
+
+#cameraFeed{
+position:absolute;
+width:100%;
+height:100%;
+object-fit:cover;
+filter:grayscale(1) contrast(1.1);
+}
+
+#static{
+position:absolute;
+width:100%;
+height:100%;
+background:url('static.gif');
+opacity:.15;
+pointer-events:none;
+mix-blend-mode:screen;
+}
+
+#map{
+position:absolute;
+right:20px;
+bottom:20px;
+width:320px;
+background:rgba(0,0,0,.85);
+padding:10px;
+border:2px solid white;
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:6px;
+z-index:25;
+}
+
+.camButton{
+padding:10px;
+background:#111;
+border:1px solid white;
+cursor:pointer;
+font-size:12px;
+text-align:center;
+}
+
+.camButton:hover{
+background:white;
+color:black;
+}
+
+.controlPanel{
+position:absolute;
+bottom:120px;
+width:100px;
+height:150px;
+background:rgba(0,0,0,.7);
+border:2px solid gray;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:12;
+}
+
+#leftPanel{
+left:20px;
+}
+
+#rightPanel{
+right:20px;
+}
+
+#doorLeft,
+#doorRight{
+position:absolute;
+top:0;
+width:130px;
+height:100%;
+background:black;
+transition:.25s;
+z-index:11;
+}
+
+#doorLeft{
+left:-130px;
+}
+
+#doorRight{
+right:-130px;
+}
+
+.closedLeft{
+transform:translateX(130px);
+}
+
+.closedRight{
+transform:translateX(-130px);
+}
+
+#callOverlay{
+position:absolute;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0);
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:50;
+gap:30px;
+padding:40px;
+text-align:center;
+}
+
+#callText{
+max-width:900px;
+font-size:23px;
+line-height:1.8;
+min-height:220px;
+opacity:.9;
+}
+
+#safeText{
+position:absolute;
+bottom:40px;
+font-size:18px;
+opacity:.6;
+letter-spacing:2px;
+}
+
+#jumpscare{
+position:absolute;
+width:100%;
+height:100%;
+display:none;
+justify-content:center;
+align-items:center;
+background:black;
+z-index:200;
+}
+
+#jumpscare img{
+width:100%;
+height:100%;
+object-fit:cover;
+animation:shake .08s infinite;
+}
+
+#gameOver{
+position:absolute;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.96);
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:300;
+gap:20px;
+}
+
+#gameOver h1{
+font-size:100px;
+letter-spacing:10px;
+}
+
+#winScreen{
+position:absolute;
+width:100%;
+height:100%;
+background:black;
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:250;
+}
+
+#winScreen h1{
+font-size:120px;
+}
+
+#winScreen p{
+font-size:30px;
+opacity:.8;
+margin-top:20px;
+}
+
+@keyframes flicker{
+0%{opacity:1;}
+50%{opacity:.5;}
+100%{opacity:1;}
+}
+
+@keyframes shake{
+0%{transform:translate(3px);}
+50%{transform:translate(-3px);}
+100%{transform:translate(3px);}
+}
+
+@keyframes vhsLines{
+0%{transform:translateY(0px);}
+100%{transform:translateY(5px);}
+}
+
+@keyframes vhsFlicker{
+0%{opacity:.05;}
+50%{opacity:.12;}
+100%{opacity:.03;}
+}
+
+@keyframes signalGlitch{
+0%{
+transform:translateX(-50%) translate(0px);
+opacity:.7;
+}
+25%{
+transform:translateX(-50%) translate(-2px,1px);
+opacity:1;
+}
+50%{
+transform:translateX(-50%) translate(2px,-1px);
+opacity:.5;
+}
+100%{
+transform:translateX(-50%) translate(0px);
+opacity:.7;
+}
+}
+
+</style>
+</head>
+<body>
+
+<div id="vhsNoise"></div>
+
+<div id="menu">
+
+<div class="title">CAN: TURNO NOCTURNO</div>
+<div class="subtitle">TE CONFUNDIERON CON EL GUARDIA, SOBREVIVE ESTA ÚNICA NOCHE</div>
+
+<button onclick="startGame()">JUGAR</button>
+<button onclick="location.reload()">REGRESAR</button>
+
+</div>
+
+<div id="introImageScreen">
+
+<div id="signalText">ENCONTRASTE UNA PÁGINA EN EL PISO, USA EL ZOOM E INSPECCIONA LA IMAGEN</div>
+
+<div id="zoomContainer">
+<img id="zoomImage" src="peri.png">
+</div>
+
+<button id="continueBtn" onclick="continueToGame()">CONTINUAR</button>
+
+</div>
+
+<div id="game">
+
+<div id="office"></div>
+<div class="darkness"></div>
+
+<div id="topbar">
+<div id="hour">12 AM</div>
+<div id="power">100%</div>
+</div>
+
+<div id="doorLeft"></div>
+<div id="doorRight"></div>
+
+<div class="controlPanel" id="leftPanel">
+<button onclick="toggleLeftDoor()">PUERTA</button>
+</div>
+
+<div class="controlPanel" id="rightPanel">
+<button onclick="toggleRightDoor()">PUERTA</button>
+</div>
+
+<button id="cameraBtn" onclick="toggleCameras()">CÁMARAS</button>
+<button id="closeCamBtn" onclick="toggleCameras()">QUITAR CÁMARAS</button>
+
+<div id="cameraSystem">
+
+<img id="cameraFeed" src="cam1_empty.gif">
+
+<div id="static"></div>
+
+<div id="map">
+
+<div class="camButton" onclick="changeCam(0)">Terraza 1</div>
+<div class="camButton" onclick="changeCam(1)">Escalera</div>
+<div class="camButton" onclick="changeCam(2)">Cuarto 1</div>
+<div class="camButton" onclick="changeCam(3)">Cuarto 2</div>
+<div class="camButton" onclick="changeCam(4)">Cuarto 3</div>
+<div class="camButton" onclick="changeCam(5)">Cuarto 4</div>
+<div class="camButton" onclick="changeCam(6)">Recepción</div>
+<div class="camButton" onclick="changeCam(7)">Oficina</div>
+
+</div>
+
+</div>
+
+<div id="callOverlay">
+
+<h1>LLAMADA ENTRANTE</h1>
+
+<button id="answerBtn" onclick="answerCall()">RESPONDER</button>
+
+<div id="callText"></div>
+
+<div id="safeText">
+EL PERRO NO PUEDE MOVERSE DURANTE LA LLAMADA
+</div>
+
+</div>
+
+<div id="jumpscare">
+<img src="dog_jumpscare.gif">
+</div>
+
+<div id="gameOver">
+
+<h1>GAME OVER</h1>
+
+<button onclick="location.reload()">REINTENTAR</button>
+<button onclick="backToMenu()">SALIR</button>
+
+</div>
+
+<div id="winScreen">
+
+<h1>6 AM</h1>
+<p>Sobreviviste la noche.</p>
+
+<button onclick="location.reload()">VOLVER AL MENÚ</button>
+
+</div>
+
+</div>
+
+<audio id="ambient" src="enelcan.mp3" loop></audio>
+<audio id="phoneAudio" src="123.mp3"></audio>
+<audio id="staticSound" src="wav.mp3"></audio>
+<audio id="doorSound" src="door.mp3"></audio>
+<audio id="jumpscareSound" src="scream.m4a"></audio>
+
+<script>
+
+let gameStarted=false;
+
+let currentCam=0;
+
+let power=100;
+
+let hour=12;
+
+let leftDoor=false;
+let rightDoor=false;
+
+let dogPosition=0;
+
+let aiLevel=1;
+
+let safeMode=true;
+
+let scale=1;
+let pointX=0;
+let pointY=0;
+let isDragging=false;
+let startX,startY;
+
+const zoomImage=document.getElementById("zoomImage");
+
+const feed=document.getElementById("cameraFeed");
+
+const cams=[
+["c1.gif","c2.gif"],
+["c3.gif","c4.gif"],
+["c5.gif","c6.gif"],
+["cam4_empty.jpg","cam4_dog.jpg"],
+["cam5_empty.jpg","cam5_dog.jpg"],
+["cam6_empty.jpg","cam6_dog.jpg"],
+["cam7_empty.jpg","cam7_dog.jpg"],
+["cam8_empty.jpg","cam8_dog.jpg"]
+];
+
+function startGame(){
+
+document.getElementById("menu").style.display="none";
+
+document.getElementById("introImageScreen").style.display="flex";
+
+}
+
+function continueToGame(){
+
+document.getElementById("introImageScreen").style.display="none";
+
+document.getElementById("game").style.display="block";
+
+gameStarted=true;
+
+document.getElementById("ambient").play();
+
+startClock();
+
+startAI();
+
+powerDrain();
+
+}
+
+function setTransform(){
+zoomImage.style.transform=`translate(${pointX}px, ${pointY}px) scale(${scale})`;
+}
+
+const container=document.getElementById("zoomContainer");
+
+container.addEventListener("wheel",(e)=>{
+
+e.preventDefault();
+
+const xs=(e.clientX-pointX)/scale;
+const ys=(e.clientY-pointY)/scale;
+
+const delta=(e.deltaY*-0.0015);
+
+scale+=delta;
+
+if(scale<1) scale=1;
+if(scale>6) scale=6;
+
+pointX=e.clientX-xs*scale;
+pointY=e.clientY-ys*scale;
+
+setTransform();
+
+});
+
+container.addEventListener("mousedown",(e)=>{
+
+isDragging=true;
+
+startX=e.clientX-pointX;
+startY=e.clientY-pointY;
+
+container.style.cursor="grabbing";
+
+});
+
+container.addEventListener("mouseup",()=>{
+
+isDragging=false;
+
+container.style.cursor="grab";
+
+});
+
+container.addEventListener("mouseleave",()=>{
+
+isDragging=false;
+
+container.style.cursor="grab";
+
+});
+
+container.addEventListener("mousemove",(e)=>{
+
+if(!isDragging) return;
+
+pointX=e.clientX-startX;
+pointY=e.clientY-startY;
+
+setTransform();
+
+});
+
+function answerCall(){
+
+document.getElementById("answerBtn").style.display="none";
+
+const audio=document.getElementById("phoneAudio");
+
+audio.play();
+
+const messages=[
+
+"Ah, ¿hola?... tú eres el nuevo ¿no?... el guardia temporal.",
+
+"Bueno... no esperaba que alguien aceptara este turno tan rápido.",
+
+"Bien, tu trabajo es cuidar el establecimiento por esta noche",
+
+"Últimamente se meten sujetos de un colectivo raro.",
+
+"Se hacen llamar colectivo Chanate. Entran a grabar cosas, intervenir paredes y llevarse piezas.No nos pagan lo suficiente para intervenir... pero bueno.",
+"Supongo que ya viste cómo quedó el CAN después de...ya sabes, lo que pasó hace un año...es triste...Más porque solo cerraron todo y dejaron el lugar abandonado.",
+"Entiendo que fue algo muy duro pero, ¿dejar todo su tabrajo botado así como si nada?, bah...",
+"Sobre el perro, era la mascota principal del lugar y una obra enorme, todos aquí lo adoraban, después del cierre lo usaron como una manera de espantar a los rateros, pero ahorita esta medio defectuoso.",
+
+"Aún no sabemos porque, pero las cámaras fallan cuando aparece. Y si llega a la oficina...cierra las puertas inmediatamente, últimamente sus movimientos son algo erraticos y no nos gustaría que te lastimaras, más porque no tenemos presupuesto para tu seguro. Ah... y trata de no quedarte sin energía.",
+
+"Buena suerte."
+
+];
+
+typeMessage(messages,0);
+
+}
+
+function typeMessage(messages,index){
+
+if(index>=messages.length){
+
+document.getElementById("callText").innerHTML="...";
+
+setTimeout(()=>{
+
+document.getElementById("callOverlay").style.display="none";
+
+document.getElementById("safeText").style.display="none";
+
+setTimeout(()=>{
+
+safeMode=false;
+
+},30000);
+
+},3000);
+
+return;
+}
+
+const text=document.getElementById("callText");
+
+text.innerHTML="";
+
+let sentence=messages[index];
+
+let char=0;
+
+const typing=setInterval(()=>{
+
+text.innerHTML += sentence.charAt(char);
+
+char++;
+
+if(char>=sentence.length){
+
+clearInterval(typing);
+
+setTimeout(()=>{
+
+eraseMessage(messages,index);
+
+},2500);
+
+}
+
+},40);
+
+}
+
+function eraseMessage(messages,index){
+
+const text=document.getElementById("callText");
+
+let erase=setInterval(()=>{
+
+text.innerHTML=text.innerHTML.slice(0,-1);
+
+if(text.innerHTML.length<=0){
+
+clearInterval(erase);
+
+typeMessage(messages,index+1);
+
+}
+
+},15);
+
+}
+
+function toggleCameras(){
+
+const camsys=document.getElementById("cameraSystem");
+
+if(camsys.style.display=="block"){
+
+camsys.style.display="none";
+
+document.getElementById("closeCamBtn").style.display="none";
+
+}else{
+
+camsys.style.display="block";
+
+document.getElementById("closeCamBtn").style.display="block";
+
+document.getElementById("staticSound").play();
+
+updateCamera();
+
+}
+
+}
+
+function changeCam(num){
+
+currentCam=num;
+
+updateCamera();
+
+}
+
+function updateCamera(){
+
+if(currentCam===dogPosition){
+
+feed.src=cams[currentCam][1];
+
+}else{
+
+feed.src=cams[currentCam][0];
+
+}
+
+}
+
+function startAI(){
+
+setInterval(()=>{
+
+if(!gameStarted) return;
+
+if(safeMode) return;
+
+let moveChance=Math.random()*10;
+
+if(hour>=2) aiLevel=3;
+if(hour>=3) aiLevel=5;
+if(hour>=4) aiLevel=7;
+if(hour>=5) aiLevel=9;
+
+if(moveChance<aiLevel){
+
+let jumpChance=Math.random();
+
+if(jumpChance>.75 && dogPosition<6){
+
+dogPosition+=2;
+
+}else{
+
+dogPosition+=1;
+
+}
+
+}
+
+if(dogPosition>7){
+
+dogPosition=7;
+
+}
+
+if(dogPosition>=7){
+
+attackOffice();
+
+}
+
+updateCamera();
+
+},4500);
+
+}
+
+function attackOffice(){
+
+if(safeMode) return;
+
+let attackChance=Math.random();
+
+if(attackChance>.25){
+
+if(!leftDoor || !rightDoor){
+
+jumpscare();
+
+}else{
+
+dogPosition=5;
+
+}
+
+}
+
+}
+
+function jumpscare(){
+
+if(safeMode) return;
+
+document.getElementById("jumpscare").style.display="flex";
+
+document.getElementById("jumpscareSound").play();
+
+gameStarted=false;
+
+setTimeout(()=>{
+
+document.getElementById("jumpscare").style.display="none";
+
+document.getElementById("gameOver").style.display="flex";
+
+},3500);
+
+}
+
+function toggleLeftDoor(){
+
+leftDoor=!leftDoor;
+
+document.getElementById("doorSound").play();
+
+document.getElementById("doorLeft").classList.toggle("closedLeft");
+
+}
+
+function toggleRightDoor(){
+
+rightDoor=!rightDoor;
+
+document.getElementById("doorSound").play();
+
+document.getElementById("doorRight").classList.toggle("closedRight");
+
+}
+
+function startClock(){
+
+setInterval(()=>{
+
+if(!gameStarted) return;
+
+hour++;
+
+if(hour===13){
+document.getElementById("hour").innerHTML="1 AM";
+}
+
+if(hour===14){
+document.getElementById("hour").innerHTML="2 AM";
+}
+
+if(hour===15){
+document.getElementById("hour").innerHTML="3 AM";
+}
+
+if(hour===16){
+document.getElementById("hour").innerHTML="4 AM";
+}
+
+if(hour===17){
+document.getElementById("hour").innerHTML="5 AM";
+}
+
+if(hour===18){
+
+document.getElementById("hour").innerHTML="6 AM";
+
+winGame();
+
+}
+
+},60000);
+
+}
+
+function powerDrain(){
+
+setInterval(()=>{
+
+if(!gameStarted) return;
+
+if(leftDoor) power-=0.11;
+if(rightDoor) power-=0.11;
+
+if(document.getElementById("cameraSystem").style.display=="block"){
+power-=0.08;
+}
+
+power-=0.02;
+
+if(power<0){
+power=0;
+}
+
+document.getElementById("power").innerHTML=Math.floor(power)+"%";
+
+if(power<=0){
+
+blackout();
+
+}
+
+},100);
+
+}
+
+function blackout(){
+
+gameStarted=false;
+
+document.getElementById("office").style.filter="brightness(.1)";
+
+document.getElementById("cameraBtn").style.display="none";
+
+document.getElementById("closeCamBtn").style.display="none";
+
+setTimeout(()=>{
+
+safeMode=false;
+
+jumpscare();
+
+},10000);
+
+}
+
+function winGame(){
+
+gameStarted=false;
+
+document.getElementById("winScreen").style.display="flex";
+
+}
+
+function backToMenu(){
+
+location.reload();
+
+}
+
+</script>
+
+</body>
+</html>
