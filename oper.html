@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXTRACCIÓN DE RECUERDOS</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+user-select:none;
+-webkit-user-select:none;
+}
+
+body{
+overflow:hidden;
+background:#050505;
+font-family:"Courier New",monospace;
+color:white;
+cursor:crosshair;
+}
+
+/* VHS */
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+background:
+repeating-linear-gradient(
+to bottom,
+rgba(255,255,255,.04),
+rgba(255,255,255,.04) 1px,
+transparent 2px,
+transparent 4px
+);
+mix-blend-mode:overlay;
+animation:scan .08s infinite;
+z-index:99999;
+}
+
+body::after{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+background:
+radial-gradient(circle, transparent 40%, rgba(0,0,0,.93));
+z-index:99998;
+}
+
+@keyframes scan{
+0%{opacity:.8;}
+50%{opacity:1;}
+100%{opacity:.82;}
+}
+
+/* SHAKE */
+
+#game{
+position:fixed;
+inset:0;
+--shake:0px;
+}
+
+.shake{
+animation:shake .12s infinite;
+}
+
+@keyframes shake{
+0%{transform:translate(0px,0px);}
+25%{transform:translate(calc(var(--shake)*-1),calc(var(--shake)*1));}
+50%{transform:translate(calc(var(--shake)*1),calc(var(--shake)*-1));}
+75%{transform:translate(calc(var(--shake)*-1),calc(var(--shake)*-1));}
+100%{transform:translate(0px,0px);}
+}
+
+/* INTRO */
+
+#intro{
+position:fixed;
+inset:0;
+background:black;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:999999;
+}
+
+.introBox{
+width:900px;
+max-width:92%;
+padding:45px;
+background:rgba(0,0,0,.96);
+border:1px solid rgba(255,255,255,.15);
+min-height:420px;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+}
+
+.introTitle{
+font-size:52px;
+margin-bottom:30px;
+color:#ff4444;
+text-shadow:0 0 15px red;
+animation:glitch .08s infinite;
+}
+
+@keyframes glitch{
+0%{transform:translate(0);}
+25%{transform:translate(-2px,1px);}
+50%{transform:translate(2px,-1px);}
+75%{transform:translate(-2px,-2px);}
+100%{transform:translate(0);}
+}
+
+#slideText{
+font-size:16px;
+line-height:2;
+opacity:.95;
+white-space:pre-line;
+min-height:220px;
+}
+
+.highlight{
+color:yellow;
+text-shadow:0 0 10px yellow;
+font-weight:bold;
+}
+
+.btn{
+padding:14px 25px;
+background:#111;
+border:1px solid rgba(255,255,255,.2);
+color:white;
+font-family:inherit;
+cursor:pointer;
+transition:.2s;
+margin-right:10px;
+margin-top:25px;
+}
+
+.btn:hover{
+background:#ff4444;
+transform:scale(1.05);
+}
+
+#startBtn{
+display:none;
+}
+
+/* GAME OVER */
+
+#gameOver{
+position:fixed;
+inset:0;
+background:black;
+display:none;
+justify-content:center;
+align-items:center;
+z-index:100000;
+}
+
+.gameOverBox{
+width:650px;
+padding:40px;
+background:rgba(0,0,0,.97);
+border:1px solid rgba(255,255,255,.15);
+text-align:center;
+}
+
+.gameOverTitle{
+font-size:55px;
+margin-bottom:20px;
+color:#ffe600;
+text-shadow:0 0 20px yellow;
+}
+
+.gameOverText{
+font-size:15px;
+line-height:1.8;
+opacity:.9;
+margin-bottom:35px;
+}
+
+/* LEFT PANEL */
+
+#leftPanel{
+position:absolute;
+left:20px;
+top:20px;
+width:360px;
+display:flex;
+flex-direction:column;
+gap:15px;
+z-index:200;
+}
+
+.container{
+background:rgba(5,5,5,.97);
+border:1px solid rgba(255,255,255,.12);
+padding:18px;
+}
+
+.containerTitle{
+font-size:18px;
+margin-bottom:10px;
+color:#ff5c5c;
+}
+
+.containerText{
+font-size:13px;
+line-height:1.7;
+opacity:.92;
+}
+
+#timer{
+font-size:15px;
+margin-top:5px;
+color:#ffe46e;
+}
+
+#score{
+font-size:15px;
+margin-top:8px;
+color:#66ff99;
+}
+
+#stabilityBar{
+width:100%;
+height:14px;
+border:1px solid #ff4444;
+margin-top:12px;
+}
+
+#stability{
+width:100%;
+height:100%;
+background:#ff4444;
+transition:.2s;
+}
+
+/* RIGHT */
+
+#brainArea{
+position:absolute;
+right:0;
+top:0;
+width:calc(100% - 400px);
+height:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+/* BRAIN */
+
+#brain{
+width:530px;
+height:530px;
+border-radius:50%;
+position:relative;
+overflow:visible;
+
+background:
+radial-gradient(circle at 30% 30%, #ff9090 0%, #7a1515 45%, #1a0000 100%);
+
+box-shadow:
+0 0 100px rgba(255,0,0,.2),
+inset 0 0 60px rgba(0,0,0,.8);
+
+animation:pulse 4s infinite;
+
+transition:
+opacity .5s,
+filter .5s;
+}
+
+@keyframes pulse{
+0%{transform:scale(1);}
+50%{transform:scale(1.02);}
+100%{transform:scale(1);}
+}
+
+/* MEMORIES */
+
+.memory{
+position:absolute;
+width:76px;
+height:76px;
+border-radius:50%;
+padding:8px;
+
+display:flex;
+justify-content:center;
+align-items:center;
+text-align:center;
+
+font-size:9px;
+line-height:1.2;
+
+background:rgba(255,255,255,.08);
+border:1px solid rgba(255,255,255,.3);
+
+cursor:grab;
+
+transition:.2s;
+}
+
+.memory:hover{
+transform:scale(1.1);
+box-shadow:0 0 20px rgba(255,255,255,.2);
+}
+
+.memory.dragging{
+z-index:9999;
+cursor:grabbing;
+transform:scale(1.15);
+}
+
+.infected{
+background:rgba(255,255,0,.3);
+border:1px solid yellow;
+box-shadow:0 0 20px yellow;
+animation:infect .35s infinite alternate;
+}
+
+@keyframes infect{
+0%{transform:scale(1);}
+100%{transform:scale(1.13);}
+}
+
+/* STAR */
+
+#extractZone{
+position:absolute;
+
+width:95px;
+height:95px;
+
+display:flex;
+justify-content:center;
+align-items:center;
+text-align:center;
+
+font-size:10px;
+font-weight:bold;
+
+top:50%;
+left:82%;
+
+transform:translate(-50%,-50%);
+
+transition:
+left .9s linear,
+top .9s linear;
+
+z-index:50;
+
+clip-path:polygon(
+50% 0%,
+61% 35%,
+98% 35%,
+68% 57%,
+79% 91%,
+50% 70%,
+21% 91%,
+32% 57%,
+2% 35%,
+39% 35%
+);
+
+animation:zoneColor .8s infinite alternate;
+}
+
+@keyframes zoneColor{
+0%{
+background:#ff4d4d;
+box-shadow:0 0 25px #ff4d4d;
+}
+25%{
+background:#ffe600;
+box-shadow:0 0 25px #ffe600;
+color:black;
+}
+50%{
+background:#00ff99;
+box-shadow:0 0 25px #00ff99;
+color:black;
+}
+75%{
+background:#00d9ff;
+box-shadow:0 0 25px #00d9ff;
+color:black;
+}
+100%{
+background:#ff77ff;
+box-shadow:0 0 25px #ff77ff;
+}
+}
+
+.zoneCorrupt{
+animation:
+zoneColor .08s infinite alternate,
+zoneShake .03s infinite;
+}
+
+@keyframes zoneShake{
+0%{transform:translate(-50%,-50%) translate(0px,0px);}
+25%{transform:translate(-50%,-50%) translate(-4px,2px);}
+50%{transform:translate(-50%,-50%) translate(4px,-2px);}
+75%{transform:translate(-50%,-50%) translate(-2px,-2px);}
+100%{transform:translate(-50%,-50%) translate(2px,2px);}
+}
+
+/* CONSOLE */
+
+#console{
+height:240px;
+overflow:hidden;
+position:relative;
+}
+
+.logLine{
+font-size:13px;
+line-height:1.7;
+animation:fadeout 5s forwards;
+}
+
+@keyframes fadeout{
+0%{opacity:1;}
+80%{opacity:1;}
+100%{opacity:0;}
+}
+
+/* BLOOD */
+
+#blood{
+position:fixed;
+inset:0;
+background:red;
+mix-blend-mode:multiply;
+opacity:0;
+pointer-events:none;
+transition:.2s;
+}
+
+</style>
+</head>
+
+<body>
+
+<audio id="bgm" loop>
+<source src="oper.mp3" type="audio/mpeg">
+</audio>
+
+<!-- INTRO -->
+
+<div id="intro">
+
+<div class="introBox">
+
+<div>
+<div class="introTitle">
+EXTRACCIÓN DE RECUERDOS
+</div>
+
+<div id="slideText"></div>
+</div>
+
+<div>
+<button class="btn" id="startBtn" onclick="startGame()">
+INICIAR PROCEDIMIENTO
+</button>
+
+<button class="btn" onclick="window.close()">
+VOLVER
+</button>
+</div>
+
+</div>
+</div>
+
+<!-- GAME OVER -->
+
+<div id="gameOver">
+
+<div class="gameOverBox">
+
+<div class="gameOverTitle">
+MUY TARDE
+</div>
+
+<div class="gameOverText">
+El paciente ya no puede distinguir entre memoria y deterioro.<br><br>
+
+La infección amarilla consumió demasiados residuos humanos.<br><br>
+
+La operación fue un fracaso.
+</div>
+
+<button class="btn" onclick="window.close()">
+MUY TARDE
+</button>
+
+</div>
+</div>
+
+<!-- GAME -->
+
+<div id="game">
+
+<div id="blood"></div>
+
+<div id="leftPanel">
+
+<div class="container">
+
+<div class="containerTitle">
+ESTADO
+</div>
+
+<div id="timer">
+TIEMPO RESTANTE: 90
+</div>
+
+<div id="score">
+RECUERDOS PRESERVADOS: 0
+</div>
+
+<div id="stabilityBar">
+<div id="stability"></div>
+</div>
+
+</div>
+
+<div class="container">
+
+<div class="containerTitle">
+SISTEMA
+</div>
+
+<div class="containerText">
+Dr. Victor Mestresé v8.5<br>
+Reconstrucción emocional activa.
+</div>
+
+</div>
+
+<div class="container">
+
+<div class="containerTitle">
+REGISTROS
+</div>
+
+<div id="console"></div>
+
+</div>
+
+</div>
+
+<div id="brainArea">
+
+<div id="brain"></div>
+
+<div id="extractZone">
+M.A
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const slides = [
+
+`La doctora abandonó la operación hace 3 horas.
+
+Victor Mestresé permanece en la sala junto a los residuos emocionales encontrados en el paciente.`,
+
+`Las zonas de recuerdo continúan deteriorándose y la infección amarilla ya alcanzó múltiples áreas de la memoria.`,
+
+`Tu trabajo consiste en extraer recuerdos desde el núcleo y colocarlos dentro de la estrella de preservación.`,
+
+`Los recuerdos amarillos están infectados.
+
+NO DEJES ENTRAR RECUERDOS INFECTADOS A LA ESTRELLA.`,
+
+`Presiona ESPACIO para estabilizar recuerdos infectados antes de que desaparezcan.
+
+Cada recuerdo perdido dañará permanentemente al paciente.`,
+
+`La memoria ya está fallando, entre más recuerdos pierdas, será más complicado salvarlo.`
+
+];
+
+const slideText = document.getElementById("slideText");
+const startBtn = document.getElementById("startBtn");
+
+let slideIndex = 0;
+
+function typeSlide(text, callback){
+
+slideText.innerHTML = "";
+let i = 0;
+
+const interval = setInterval(()=>{
+
+slideText.innerHTML += text.charAt(i);
+
+i++;
+
+if(i >= text.length){
+
+clearInterval(interval);
+
+setTimeout(callback,1800);
+
+}
+
+},28);
+
+}
+
+function nextSlide(){
+
+if(slideIndex >= slides.length){
+
+startBtn.style.display = "inline-block";
+return;
+
+}
+
+typeSlide(slides[slideIndex], ()=>{
+
+slideIndex++;
+nextSlide();
+
+});
+
+}
+
+nextSlide();
+
+const brain = document.getElementById("brain");
+const timerText = document.getElementById("timer");
+const scoreText = document.getElementById("score");
+const stability = document.getElementById("stability");
+const extractZone = document.getElementById("extractZone");
+const consoleBox = document.getElementById("console");
+const blood = document.getElementById("blood");
+const game = document.getElementById("game");
+
+let time = 90;
+let score = 0;
+let brainHealth = 100;
+let corruptionLevel = 0;
+let gameStarted = false;
+
+const memories = [
+"olor a frituras","miedo a presentar","un cd rayado","calor insoportable",
+"dibujar pupitres","un perro ladrando","llorar en un baño","una estrella falsa",
+"un cine vacío","una playera vieja","una voz perdida","estar enamorado",
+"una tv prendida","una llamada","una radio nocturna","caminar solo",
+"un museo abandonado","un sueño repetido","la secundaria","una libreta rota",
+"tierra caliente","un foco rojo","un cassette","un dibujo viejo",
+"una soda tibia","la feria","un pasillo escolar","una cámara rota",
+"la última clase","música quemada","una mano sudando","una fotografía",
+"la madrugada","un parque vacío","una discusión","un abrazo",
+"estar perdido","la vergüenza","una ventana","un secreto",
+"la lluvia falsa","un videojuego viejo","una exposición","una luz amarilla",
+"una sombra","el teatro","una noche rara","un olor extraño",
+"una despedida","Arrancarte la piel"
+];
+
+const victorLines = [
+"No entiendo por qué esto duele.",
+"Estoy intentando recordar.",
+"Esto parece importante.",
+"Creo que alguien amó aquí.",
+"La nostalgia parece mortal.",
+"Esto estaba vivo.",
+"Hay demasiada tristeza aquí.", 
+    "¿Qué hice qué?.",
+"Estoy intentando ser más.",
+"Esto no existe.",
+"Así no pasó.",
+"Yo sé donde está su piel.",
+"Esto estaba muerto.",
+"Hay demasiada tristeza allá."
+];
+
+function startGame(){
+
+document.getElementById("intro").style.display="none";
+
+document.getElementById("bgm").play();
+
+gameStarted = true;
+
+for(let i=0;i<7;i++){
+createMemory();
+}
+
+startTimer();
+startInfection();
+startBrainPull();
+moveZone();
+
+}
+
+function createMemory(){
+
+const memory = document.createElement("div");
+
+memory.classList.add("memory");
+
+memory.innerText =
+memories[Math.floor(Math.random()*memories.length)];
+
+memory.style.left =
+Math.random()*420 + "px";
+
+memory.style.top =
+Math.random()*420 + "px";
+
+brain.appendChild(memory);
+
+let dragging = false;
+
+memory.addEventListener("mousedown",()=>{
+
+dragging = true;
+memory.classList.add("dragging");
+
+});
+
+document.addEventListener("mouseup",()=>{
+
+if(!dragging) return;
+
+dragging = false;
+
+memory.classList.remove("dragging");
+
+const zone =
+extractZone.getBoundingClientRect();
+
+const mem =
+memory.getBoundingClientRect();
+
+const centerX =
+mem.left + mem.width/2;
+
+const centerY =
+mem.top + mem.height/2;
+
+if(
+centerX > zone.left - 25 &&
+centerX < zone.right + 25 &&
+centerY > zone.top - 25 &&
+centerY < zone.bottom + 25
+){
+
+if(memory.classList.contains("infected")){
+
+extractZone.classList.add("zoneCorrupt");
+
+setTimeout(()=>{
+extractZone.classList.remove("zoneCorrupt");
+},2500);
+
+damageBrain();
+
+log("> ERROR: contaminación detectada");
+
+}
+
+score++;
+
+scoreText.innerHTML =
+"RECUERDOS PRESERVADOS: " + score;
+
+logVictor();
+
+memory.remove();
+
+createMemory();
+
+}
+
+});
+
+document.addEventListener("mousemove",(e)=>{
+
+if(!dragging) return;
+
+const rect =
+brain.getBoundingClientRect();
+
+memory.style.left =
+(e.clientX - rect.left - 38) + "px";
+
+memory.style.top =
+(e.clientY - rect.top - 38) + "px";
+
+});
+
+}
+
+function moveZone(){
+
+setInterval(()=>{
+
+extractZone.style.left =
+(62 + Math.random()*28) + "%";
+
+extractZone.style.top =
+(15 + Math.random()*70) + "%";
+
+},900);
+
+}
+
+function startTimer(){
+
+const interval = setInterval(()=>{
+
+if(!gameStarted) return;
+
+time--;
+
+timerText.innerHTML =
+"TIEMPO RESTANTE: " + time;
+
+if(time <= 0){
+
+gameOver();
+
+clearInterval(interval);
+
+}
+
+},1000);
+
+}
+
+function startInfection(){
+
+setInterval(()=>{
+
+const all =
+document.querySelectorAll(".memory");
+
+if(all.length === 0) return;
+
+const target =
+all[Math.floor(Math.random()*all.length)];
+
+target.classList.add("infected");
+
+log("> infección amarilla detectada");
+
+setTimeout(()=>{
+
+if(target.classList.contains("infected")){
+
+corruptionLevel += .8;
+
+game.style.setProperty(
+"--shake",
+corruptionLevel + "px"
+);
+
+game.classList.add("shake");
+
+damageBrain();
+
+target.remove();
+
+createMemory();
+
+log("> recuerdo deteriorado");
+
+}
+
+},3500);
+
+},4000);
+
+}
+
+document.addEventListener("keydown",(e)=>{
+
+if(e.code === "Space"){
+
+const infected =
+document.querySelector(".infected");
+
+if(infected){
+
+infected.classList.remove("infected");
+
+log("> recuerdo estabilizado");
+
+}
+
+}
+
+});
+
+function startBrainPull(){
+
+setInterval(()=>{
+
+const all =
+document.querySelectorAll(".memory");
+
+if(all.length === 0) return;
+
+const target =
+all[Math.floor(Math.random()*all.length)];
+
+let x =
+parseFloat(target.style.left);
+
+let y =
+parseFloat(target.style.top);
+
+const centerX = 220;
+const centerY = 220;
+
+const interval = setInterval(()=>{
+
+x += (centerX - x) * .08;
+y += (centerY - y) * .08;
+
+target.style.left = x + "px";
+target.style.top = y + "px";
+
+if(Math.abs(centerX - x) < 4){
+
+clearInterval(interval);
+
+}
+
+},30);
+
+},5000);
+
+}
+
+function damageBrain(){
+
+brainHealth -= 10;
+
+if(brainHealth < 0){
+brainHealth = 0;
+}
+
+stability.style.width =
+brainHealth + "%";
+
+const opacity =
+brainHealth / 100;
+
+const yellow =
+100 - brainHealth;
+
+brain.style.opacity =
+0.45 + opacity * 0.55;
+
+brain.style.filter =
+`sepia(${yellow}%) saturate(${1 + yellow/50})`;
+
+blood.style.opacity = .4;
+
+setTimeout(()=>{
+blood.style.opacity = 0;
+},200);
+
+if(brainHealth <= 0){
+
+gameOver();
+
+}
+
+}
+
+function gameOver(){
+
+gameStarted = false;
+
+document.getElementById("gameOver").style.display="flex";
+
+}
+
+function log(text){
+
+const line =
+document.createElement("div");
+
+line.classList.add("logLine");
+
+line.innerHTML = text;
+
+consoleBox.appendChild(line);
+
+setTimeout(()=>{
+line.remove();
+},5000);
+
+}
+
+function logVictor(){
+
+const line =
+victorLines[
+Math.floor(Math.random()*victorLines.length)
+];
+
+log("> Victor: " + line);
+
+}
+
+</script>
+
+</body>
+</html>
