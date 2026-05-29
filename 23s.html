@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Scrapbook Liminal</title>
+
+<style>
+
+body{
+    margin:0;
+    background:#050505;
+    font-family:monospace;
+    overflow:hidden;
+}
+
+/* ===== BOOK CONTAINER ===== */
+
+#book{
+    position:absolute;
+    width:80vw;
+    height:80vh;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    perspective:2000px;
+}
+
+/* ===== PÁGINAS ===== */
+
+.page{
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:#111;
+    color:white;
+    padding:40px;
+
+    backface-visibility:hidden;
+    transition:transform 1s ease;
+    transform-origin:left;
+
+    box-shadow:0 0 80px rgba(0,0,0,0.8);
+    overflow:hidden;
+}
+
+/* estado cerrado */
+.page.hidden{
+    transform:rotateY(-180deg);
+}
+
+/* ===== FOTOS ===== */
+
+.photo{
+    width:250px;
+    height:180px;
+    background-size:cover;
+    background-position:center;
+    margin:20px;
+    border:2px solid white;
+    filter:contrast(1.1) brightness(0.7);
+}
+
+/* ===== FANTASMAS ===== */
+
+.ghost{
+    position:absolute;
+    width:120px;
+    height:120px;
+    background:url("https://i.imgur.com/9Xn4F6T.png");
+    background-size:contain;
+    opacity:0;
+    pointer-events:none;
+    animation:floatGhost 6s infinite ease-in-out;
+    mix-blend-mode:screen;
+}
+
+@keyframes floatGhost{
+    0%{transform:translateY(0); opacity:0;}
+    30%{opacity:0.6;}
+    100%{transform:translateY(-200px); opacity:0;}
+}
+
+/* ===== BOTÓN ===== */
+
+#nextBtn{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    padding:15px 30px;
+    border:2px solid white;
+    background:black;
+    color:white;
+    cursor:pointer;
+}
+
+#nextBtn:hover{
+    background:white;
+    color:black;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="book">
+
+    <div class="page" id="page0">
+        <h1>Archivo 01</h1>
+        <div class="photo" style="background-image:url('https://picsum.photos/400/300?1')"></div>
+        <p>La primera memoria no es confiable.</p>
+    </div>
+
+    <div class="page hidden" id="page1">
+        <h1>Archivo 02</h1>
+        <div class="photo" style="background-image:url('https://picsum.photos/400/300?2')"></div>
+        <p>Algo ya estaba mirando desde aquí.</p>
+    </div>
+
+    <div class="page hidden" id="page2">
+        <h1>Archivo 03</h1>
+        <div class="photo" style="background-image:url('https://picsum.photos/400/300?3')"></div>
+        <p>El registro se fragmenta cuando avanzas.</p>
+    </div>
+
+</div>
+
+<button id="nextBtn">Pasar página</button>
+
+<script>
+
+let currentPage = 0;
+const pages = document.querySelectorAll(".page");
+const maxPages = pages.length;
+
+/* ===== CAMBIO DE PÁGINA ===== */
+
+function nextPage(){
+
+    if(currentPage < maxPages - 1){
+        pages[currentPage].classList.add("hidden");
+        currentPage++;
+        pages[currentPage].classList.remove("hidden");
+
+        spawnGhost(); // 👻 evento narrativo
+    }
+}
+
+/* ===== FANTASMAS DINÁMICOS ===== */
+
+function spawnGhost(){
+
+    const ghost = document.createElement("div");
+    ghost.className = "ghost";
+
+    ghost.style.left = Math.random()*80 + "vw";
+    ghost.style.top = (60 + Math.random()*20) + "vh";
+
+    document.body.appendChild(ghost);
+
+    setTimeout(()=>{
+        ghost.remove();
+    },6000);
+}
+
+/* ===== LOOP AMBIENTAL ===== */
+
+setInterval(()=>{
+    if(Math.random() < 0.4){
+        spawnGhost();
+    }
+},3000);
+
+/* ===== CONTROL ===== */
+
+document.getElementById("nextBtn").onclick = nextPage;
+
+</script>
+
+</body>
+</html>
