@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Intro</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:"Courier New", monospace;
+}
+
+body{
+background:
+linear-gradient(rgba(0,0,0,.84), rgba(0,0,0,.9)),
+url("fondo.jpg");
+
+background-size:cover;
+background-position:center;
+
+overflow:hidden;
+height:100vh;
+color:#ddd;
+}
+
+/* VHS */
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+
+background:
+repeating-linear-gradient(
+to bottom,
+rgba(255,255,255,.04) 0px,
+rgba(255,255,255,.04) 1px,
+transparent 2px,
+transparent 4px
+);
+
+opacity:.2;
+pointer-events:none;
+animation:scan .12s linear infinite;
+z-index:9999;
+}
+
+@keyframes scan{
+from{transform:translateY(0px);}
+to{transform:translateY(4px);}
+}
+
+
+
+.section{
+position:absolute;
+inset:0;
+display:none;
+justify-content:center;
+align-items:center;
+}
+
+.section.active{
+display:flex;
+}
+
+/* ========================= */
+/* CAMERA */
+/* ========================= */
+
+.cameraWrapper{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:25px;
+}
+
+.cameraBox{
+width:420px;
+height:420px;
+overflow:hidden;
+position:relative;
+border:2px solid rgba(255,255,255,.15);
+
+transition:all .8s ease;
+background:black;
+}
+
+.cameraBox.square{
+border-radius:0%;
+}
+
+.cameraBox.circle{
+border-radius:50%;
+}
+
+.cameraBox.heart{
+clip-path:path("M213 384C213 384 26 258 26 125C26 52 84 0 145 0C187 0 213 32 213 32C213 32 239 0 281 0C342 0 400 52 400 125C400 258 213 384 213 384Z");
+}
+
+.cameraBox.star{
+clip-path:polygon(
+50% 0%,
+61% 35%,
+98% 35%,
+68% 57%,
+79% 91%,
+50% 70%,
+21% 91%,
+32% 57%,
+2% 35%,
+39% 35%
+);
+}
+
+#video,
+#canvas{
+position:absolute;
+inset:0;
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+#video{
+opacity:0;
+}
+
+.messageBox{
+width:520px;
+padding:20px;
+
+background:rgba(0,0,0,.72);
+
+border:1px solid rgba(255,255,255,.1);
+
+text-align:center;
+
+line-height:1.7;
+letter-spacing:2px;
+}
+
+.status{
+opacity:.7;
+}
+
+/* ========================= */
+/* INTRO */
+/* ========================= */
+
+.scene{
+width:100%;
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+position:relative;
+}
+
+.centerGif{
+width:520px;
+filter:contrast(120%) brightness(75%) saturate(70%);
+}
+
+.dialogueBox{
+position:absolute;
+bottom:40px;
+width:85%;
+padding:25px;
+background:rgba(10,10,10,.95);
+border:4px solid #dcdcdc;
+}
+
+.dialogueText{
+min-height:100px;
+line-height:1.8;
+}
+
+.choiceContainer{
+display:none;
+gap:15px;
+margin-top:20px;
+}
+
+button,
+a{
+border:1px solid rgba(255,255,255,.12);
+padding:15px 24px;
+background:#101010;
+color:#ddd;
+cursor:pointer;
+letter-spacing:2px;
+width:100%;
+margin-top:15px;
+display:block;
+text-decoration:none;
+text-align:center;
+}
+
+button:hover,
+a:hover{
+transform:scale(1.02);
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ========================= -->
+<!-- CAMERA -->
+<!-- ========================= -->
+
+<section class="section active" id="cameraSection">
+
+<div class="cameraWrapper">
+
+<div class="messageBox" id="messageBox">
+
+<div id="mainMessage">
+ESPERANDO CONECTAR CÁMARA...
+</div>
+
+<div class="status" id="subMessage">
+Victor está observando.
+</div>
+
+</div>
+
+<div class="cameraBox square" id="cameraBox">
+
+<video id="video" autoplay muted playsinline></video>
+
+<canvas id="canvas"></canvas>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ========================= -->
+<!-- INTRO -->
+<!-- ========================= -->
+
+<section class="section" id="introSection">
+
+<div class="scene">
+
+<img class="centerGif" src="ave3.gif">
+
+<div class="dialogueBox" id="dialogueBox">
+
+<div class="dialogueText" id="dialogueText"></div>
+
+<div id="nameInputContainer"
+style="display:none;margin-top:20px;">
+
+<input
+id="nameInput"
+placeholder="ESCRIBE TU NOMBRE"
+
+style="
+width:100%;
+padding:14px;
+background:black;
+color:white;
+border:2px solid white;
+">
+
+<br><br>
+
+<button id="submitName">
+ENVIAR
+</button>
+
+</div>
+
+<div class="choiceContainer" id="choiceContainer">
+
+<a href="overlap.html">
+AYUDAR A VICTOR
+</a>
+
+<a href="no.html">
+NO AYUDAR A VICTOR
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ========================= -->
+<!-- MUSIC -->
+<!-- ========================= -->
+
+<audio id="cameraMusic" loop autoplay>
+<source src="camara.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="introMusic" loop>
+<source src="vicintro.wav" type="audio/mpeg">
+</audio>
+
+<script>
+
+/* ========================= */
+/* CAMERA */
+/* ========================= */
+
+const cameraSection =
+document.getElementById("cameraSection");
+
+const introSection =
+document.getElementById("introSection");
+
+const video =
+document.getElementById("video");
+
+const canvas =
+document.getElementById("canvas");
+
+const ctx =
+canvas.getContext("2d");
+
+const cameraBox =
+document.getElementById("cameraBox");
+
+const mainMessage =
+document.getElementById("mainMessage");
+
+const subMessage =
+document.getElementById("subMessage");
+
+const cameraMusic =
+document.getElementById("cameraMusic");
+
+const introMusic =
+document.getElementById("introMusic");
+
+let stream;
+let running = false;
+
+const phases = [
+
+{
+shape:"square",
+text:"PON UNA CARA FELIZ"
+},
+
+{
+shape:"circle",
+text:"PON UNA CARA TRISTE"
+},
+
+{
+shape:"heart",
+text:"PON UNA CARA DE ENOJO"
+},
+
+{
+shape:"star",
+text:"PON UNA CARA COMO SI ESTUVIERAS MUERTO"
+}
+
+];
+
+async function startCamera(){
+
+try{
+
+await cameraMusic.play().catch(()=>{});
+
+stream =
+await navigator.mediaDevices.getUserMedia({
+video:true
+});
+
+video.srcObject = stream;
+
+canvas.width = 420;
+canvas.height = 420;
+
+running = true;
+
+render();
+
+subMessage.innerText =
+"CÁMARA CONECTADA";
+
+setTimeout(()=>{
+runPhase(0);
+},1500);
+
+}catch(e){
+
+mainMessage.innerText =
+"ERROR DE CÁMARA";
+
+subMessage.innerText =
+"NO SE PUDO ACCEDER";
+}
+}
+
+function render(){
+
+if(!running) return;
+
+ctx.clearRect(0,0,420,420);
+
+ctx.drawImage(video,0,0,420,420);
+
+/* deformación */
+
+ctx.drawImage(
+video,
+80,
+30,
+260,
+260,
+40,
+0,
+340,
+320
+);
+
+for(let i=0;i<12;i++){
+
+let y = Math.random()*420;
+let h = Math.random()*14;
+
+ctx.drawImage(
+canvas,
+0,
+y,
+420,
+h,
+(Math.random()-.5)*70,
+y,
+420,
+h
+);
+}
+
+ctx.fillStyle =
+"rgba(0,30,0,.15)";
+
+ctx.fillRect(0,0,420,420);
+
+requestAnimationFrame(render);
+}
+
+function runPhase(index){
+
+if(index >= phases.length){
+
+finishRecognition();
+
+return;
+}
+
+const phase = phases[index];
+
+cameraBox.className =
+"cameraBox " + phase.shape;
+
+mainMessage.innerText =
+phase.text;
+
+subMessage.innerText =
+"ANALIZANDO...";
+
+setTimeout(()=>{
+
+subMessage.innerText =
+"BIEN HECHO";
+
+setTimeout(()=>{
+
+runPhase(index + 1);
+
+},1400);
+
+},3000);
+}
+
+function finishRecognition(){
+
+mainMessage.innerText =
+"RECONOCIMIENTO TERMINADO";
+
+subMessage.innerText =
+"INICIANDO PERFIL HUMANO...";
+
+setTimeout(()=>{
+
+if(stream){
+
+stream.getTracks().forEach(
+t => t.stop()
+);
+}
+
+cameraMusic.pause();
+cameraMusic.currentTime = 0;
+
+introMusic.pause();
+introMusic.currentTime = 0;
+
+cameraSection.classList.remove("active");
+
+introSection.classList.add("active");
+
+startIntro();
+
+},2500);
+}
+
+startCamera();
+
+
+const introSequence = [
+
+"ANALIZANDO DATOS DE ROSTRO...",
+
+"ROSTRO HUMANO RECONOCIDO...",
+
+"Ingrese su nombre y apellido."
+
+];
+
+const dialogues = [
+"Tras varios filtros, seleccionamos únicamente perfiles con alta tolerancia a lo liminal, lo defectuoso y lo digitalmente humano.",
+
+"El arte convencional no sobrevivirá a lo que viene después de esto..",
+
+"Ahora, comenzaremos con el registro de los datos que acaba de proporcionar.",
+
+"ANALIZANDO DATOS DE NOMBRE...",
+
+"NOMBRE REGISTRADO.",
+
+"",
+
+"ERROR DE COINCIDENCIA.",
+
+"",
+
+"GENERANDO NUEVA IDENTIDAD DIGITAL...",
+
+"...",
+
+"NUEVO NOMBRE ASIGNADO: Victor Mestresé.",
+
+"Conoce a tu nuevo compañero de prueba digital.",
+
+"Él es Victor y es una copia digital de ti, una IA.",
+
+"...",
+
+"Pero él no lo sabe.",
+
+"Debido a leyes digitales actualizadas en 2026, tuvimos que darle una historia diferente a la tuya para evitar intentos de suplantación de identidad.",
+
+"Él piensa que es un hombre torreonense de 40 años, un viejo rabo verde con miles de aspiraciones por los suelos, una esposa resentida, salario mínimo y una gran variedad de trabajo artístico pretencioso que es más material de la basura.",
+
+"Quizás Avelina Lesper le dedicaría uno que otro video para criticarle si no fuera porque no lo reconoce ni su hijo.",
+
+"Aún así Victor quiere ser un gran artista...",
+
+"No es su culpa valer madres y que lo hayan programado así.",
+
+"Pero antes de ser un artista, tiene que ser un humano primero...",
+
+"Para eso Victor tiene que lograr su primer Crepetín.",
+
+"El Crepetín es el momento exacto en el que una risa pasa de ser fingida a ser verdadera.",
+
+"¿Qué es más humano que una risa genuina?",
+
+"Una IA que se vuelve humano, vaya concepto, ¿no?",
+
+"Entonces, ¿ayudamos a Victor a ser un humano?"
+
+];
+
+const dialogueText =
+document.getElementById("dialogueText");
+
+const nameInputContainer =
+document.getElementById("nameInputContainer");
+
+const choiceContainer =
+document.getElementById("choiceContainer");
+
+let userName = "";
+let currentDialogue = 0;
+let typing = false;
+
+function typeText(text, callback){
+
+typing = true;
+
+dialogueText.innerHTML = "";
+
+let i = 0;
+
+const interval = setInterval(()=>{
+
+dialogueText.innerHTML += text[i];
+
+i++;
+
+if(i >= text.length){
+
+clearInterval(interval);
+
+typing = false;
+
+if(callback) callback();
+}
+
+},28);
+}
+
+function startIntro(){
+
+typeText(introSequence[0], ()=>{
+
+setTimeout(()=>{
+
+typeText(introSequence[1], ()=>{
+
+setTimeout(()=>{
+
+typeText(introSequence[2], ()=>{
+
+nameInputContainer.style.display =
+"block";
+
+});
+
+},1000);
+
+});
+
+},1000);
+
+});
+}
+
+function playAutomaticDialogues(){
+
+if(currentDialogue >= dialogues.length){
+
+choiceContainer.style.display =
+"flex";
+
+return;
+}
+
+typeText(dialogues[currentDialogue], ()=>{
+
+setTimeout(()=>{
+
+currentDialogue++;
+
+playAutomaticDialogues();
+
+},2000);
+
+});
+}
+
+document.getElementById("submitName")
+.onclick = ()=>{
+
+userName =
+document.getElementById("nameInput").value;
+
+if(!userName.trim()) return;
+
+/* ========================= */
+/* MUSIC STARTS HERE */
+/* ========================= */
+
+introMusic.play().catch(()=>{});
+
+nameInputContainer.style.display =
+"none";
+
+typeText(`Bienvenido ${userName}.`, ()=>{
+
+setTimeout(()=>{
+
+currentDialogue = 0;
+
+playAutomaticDialogues();
+
+},2000);
+
+});
+};
+
+document.getElementById("dialogueBox")
+.addEventListener("click", (e)=>{
+
+if(
+e.target.tagName === "BUTTON" ||
+e.target.tagName === "INPUT" ||
+e.target.tagName === "A"
+) return;
+
+if(typing || !userName) return;
+
+});
+
+</script>
+
+</body>
+</html>

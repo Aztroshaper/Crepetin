@@ -1,0 +1,473 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEL</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    
+}
+
+body{
+    width:100%;
+    height:100vh;
+    overflow:hidden;
+
+    font-family:Arial, Helvetica, sans-serif;
+
+    background:url("fon.gif");
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    position:relative;
+}
+
+/* CAPA OSCURA */
+
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.35);
+    backdrop-filter:blur(2px);
+    z-index:1;
+}
+
+/* BOTON SALIR */
+
+#volver{
+    position:fixed;
+
+    top:20px;
+    left:20px;
+
+    width:60px;
+    height:60px;
+
+    border:3px solid white;
+    border-radius:50%;
+
+    background:rgba(0,0,0,0.7);
+    color:white;
+
+    font-size:35px;
+    font-weight:bold;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    z-index:99999;
+
+    transition:0.2s;
+}
+
+#volver:hover{
+    transform:scale(1.1) rotate(90deg);
+    background:white;
+    color:black;
+}
+
+/* CONTENEDOR FLOTANTE */
+
+.floatingArea{
+    position:relative;
+    width:100%;
+    height:100vh;
+    z-index:5;
+}
+
+/* MINIATURAS */
+
+.mediaCard{
+    position:absolute;
+
+    width:220px;
+    height:130px;
+
+    border:2px solid white;
+    overflow:hidden;
+
+    background:black;
+
+    box-shadow:0 0 20px rgba(0,0,0,0.8);
+
+    transition:0.25s;
+
+    animation:floatMove linear infinite;
+}
+
+.mediaCard:hover{
+    scale:1.08;
+    z-index:1000;
+    filter:brightness(1.15);
+}
+
+.mediaCard img,
+.mediaCard video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.mediaLabel{
+    position:absolute;
+    bottom:0;
+    left:0;
+
+    width:100%;
+
+    padding:6px;
+
+    background:rgba(0,0,0,0.7);
+    color:white;
+
+    font-size:13px;
+    letter-spacing:1px;
+}
+
+/* MODAL */
+
+#viewer{
+    pointer-events:none;
+    cursor:pointer;
+    position:fixed;
+    inset:0;
+
+    background:rgba(0,0,0,0.92);
+
+    display:none;
+    justify-content:center;
+    align-items:center;
+
+    z-index:9999;
+}
+
+.viewerContent{
+    cursor:default;
+    position:relative;
+
+    width:90%;
+    max-width:1100px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+#mainVideo,
+#mainImage{
+    width:100%;
+    max-height:88vh;
+
+    border:3px solid white;
+    background:black;
+
+    object-fit:contain;
+}
+
+#mainImage{
+    display:none;
+}
+
+.closeViewer{
+    position:absolute;
+
+    top:-70px;
+    right:0;
+
+    width:60px;
+    height:60px;
+
+    border-radius:50%;
+
+    border:3px solid white;
+
+    background:black;
+    color:white;
+
+    font-size:35px;
+    font-weight:bold;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    transition:0.2s;
+}
+
+.closeViewer:hover{
+    transform:rotate(90deg) scale(1.1);
+    background:white;
+    color:black;
+}
+
+
+
+/* ANIMACION */
+
+@keyframes floatMove{
+
+    0%{
+        translate:0px 0px;
+    }
+
+    20%{
+        translate:35px -30px;
+    }
+
+    40%{
+        translate:-25px 20px;
+    }
+
+    60%{
+        translate:40px 35px;
+    }
+
+    80%{
+        translate:-30px -25px;
+    }
+
+    100%{
+        translate:0px 0px;
+    }
+
+}
+
+@media(max-width:700px){
+
+    .mediaCard{
+        width:160px;
+        height:95px;
+    }
+
+    #volver{
+        width:50px;
+        height:50px;
+        font-size:28px;
+    }
+
+    .closeViewer{
+        top:-60px;
+        width:50px;
+        height:50px;
+    }
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="overlay"></div>
+
+<!-- BOTON CERRAR PAGINA -->
+
+<button id="volver" onclick="cerrarPagina()">✕</button>
+
+<!-- MINIATURAS FLOTANTES -->
+
+<div class="floatingArea">
+
+    <!-- VIDEOS -->
+
+    <div class="mediaCard" style="top:3%; left:11%; animation-duration:6s; transform:rotate(-7deg);" onclick="openVideo('found.mp4')">
+        <video muted playsinline autoplay loop preload="metadata">
+            <source src="found.mp4" type="video/mp4">
+        </video>
+        <div class="mediaLabel">Encuentro</div>
+    </div>
+
+    <div class="mediaCard" style="top:27%; left:52%; animation-duration:13s; transform:rotate(8deg);" onclick="openVideo('ayuda.mp4')">
+        <video muted playsinline autoplay loop preload="metadata">
+            <source src="ayuda.mp4" type="video/mp4">
+        </video>
+        <div class="mediaLabel">Vista</div>
+    </div>
+
+    <div class="mediaCard" style="top:70%; left:4%; animation-duration:9s; transform:rotate(-12deg);" onclick="openVideo('eci.mp4')">
+        <video muted playsinline autoplay loop preload="metadata">
+            <source src="eci.mp4" type="video/mp4">
+        </video>
+        <div class="mediaLabel">Éxilio</div>
+    </div>
+
+    <div class="mediaCard" style="top:58%; left:74%; animation-duration:7s; transform:rotate(10deg);" onclick="openVideo('star.mp4')">
+        <video muted playsinline autoplay loop preload="metadata">
+            <source src="star.mp4" type="video/mp4">
+        </video>
+        <div class="mediaLabel">star.mp4</div>
+    </div>
+
+    <div class="mediaCard" style="top:9%; left:78%; animation-duration:14s; transform:rotate(-9deg);" onclick="openVideo('quiero.mp4')">
+        <video muted playsinline autoplay loop preload="metadata">
+            <source src="quiero.mp4" type="video/mp4">
+        </video>
+        <div class="mediaLabel">Noche 1</div>
+    </div>
+
+    <!-- FOTOS -->
+
+    <div class="mediaCard" style="top:41%; left:24%; animation-duration:11s; transform:rotate(13deg);" onclick="openImage('hallazgo.png')">
+        <img src="hallazgo.png">
+        <div class="mediaLabel">Centro</div>
+    </div>
+
+    <div class="mediaCard" style="top:16%; left:61%; animation-duration:10s; transform:rotate(-15deg);" onclick="openImage('hombre.jpg')">
+        <img src="hombre.jpg">
+        <div class="mediaLabel">Escondite</div>
+    </div>
+
+    <div class="mediaCard" style="top:81%; left:44%; animation-duration:12s; transform:rotate(6deg);" onclick="openImage('foto3.jpg')">
+        <img src="foto3.jpg">
+        <div class="mediaLabel">foto3.jpg</div>
+    </div>
+
+</div>
+
+<!-- VISOR -->
+
+<div id="viewer">
+
+    <div class="viewerContent">
+
+        <button class="closeViewer" onclick="closeViewer()">✕</button>
+
+        <video id="mainVideo" controls></video>
+
+        <img id="mainImage">
+
+    </div>
+
+</div>
+
+<!-- CURSOR -->
+
+
+
+<script>
+
+/* AUTOPLAY PREVIEW EN MINIATURAS */
+
+const thumbs = document.querySelectorAll('.mediaCard video');
+
+thumbs.forEach(video=>{
+
+    video.play().catch(()=>{});
+
+});
+
+/* VISOR */
+
+const viewer = document.getElementById('viewer');
+const mainVideo = document.getElementById('mainVideo');
+const mainImage = document.getElementById('mainImage');
+
+function openVideo(src){
+
+    viewer.style.opacity = '1';
+
+    viewer.style.display = 'flex';
+
+    viewer.style.pointerEvents = 'all';
+
+    mainImage.style.display = 'none';
+    mainVideo.style.display = 'block';
+
+    mainVideo.pause();
+    mainVideo.src = src;
+    mainVideo.load();
+
+    setTimeout(()=>{
+        mainVideo.play().catch(()=>{});
+    },100);
+
+}
+
+function openImage(src){
+
+    viewer.style.display = 'flex';
+
+    viewer.style.pointerEvents = 'all';
+
+    mainVideo.pause();
+    mainVideo.removeAttribute('src');
+
+    mainVideo.style.display = 'none';
+
+    mainImage.style.display = 'block';
+    mainImage.src = src;
+
+}
+
+function closeViewer(){
+
+    viewer.style.pointerEvents = 'none';
+
+    viewer.style.display = 'none';
+
+    mainVideo.pause();
+    mainVideo.currentTime = 0;
+
+}
+
+/* BOTON GENERAL */
+
+function cerrarPagina(){
+
+    window.close();
+
+    setTimeout(()=>{
+
+        history.back();
+
+    },200);
+
+}
+
+/* NOMBRES EDITABLES */
+
+/*
+
+Puedes cambiar los nombres visibles modificando el texto dentro de:
+
+<div class="mediaLabel">AQUI</div>
+
+Ejemplo:
+
+<div class="mediaLabel">mi video favorito</div>
+
+*/
+
+/* CERRAR CON ESC */
+
+window.addEventListener('keydown', (e)=>{
+
+    if(e.key === 'Escape'){
+        closeViewer();
+    }
+
+});
+
+/* CLICK FUERA */
+
+viewer.addEventListener('click', (e)=>{
+
+    if(e.target === viewer){
+        closeViewer();
+    }
+
+});
+
+</script>
+
+</body>
+</html>
+```

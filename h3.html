@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Torreón't</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#050505;
+    overflow:hidden;
+    font-family:monospace;
+    color:white;
+}
+
+#game{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    overflow:hidden;
+
+    background:url("fon.gif");
+    background-size:cover;
+    background-position:center;
+
+    image-rendering:pixelated;
+
+    animation:screenPulse 4s ease-in-out infinite;
+}
+
+
+#startScreen{
+    position:fixed;
+    inset:0;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+
+    background:rgba(0,0,0,0.75);
+
+    z-index:9999999;
+
+    backdrop-filter:blur(4px);
+}
+
+#startBtn{
+
+    padding:25px 50px;
+
+    font-size:28px;
+
+    border:3px solid white;
+
+    background:black;
+    color:white;
+
+    cursor:pointer;
+
+    font-family:monospace;
+
+    transition:0.2s;
+
+    box-shadow:
+    0 0 25px rgba(255,255,255,0.2),
+    0 0 60px rgba(255,255,255,0.1);
+
+    max-width:1000px;
+}
+
+#startBtn:hover{
+
+    transform:scale(1.05);
+
+    background:white;
+    color:black;
+}
+
+#startText{
+
+    margin-top:20px;
+
+    font-size:14px;
+
+    letter-spacing:2px;
+
+    opacity:0.7;
+}
+
+@keyframes screenPulse{
+
+    0%{
+        filter:brightness(1);
+    }
+
+    50%{
+        filter:brightness(0.92);
+    }
+
+    100%{
+        filter:brightness(1);
+    }
+}
+
+#darkness{
+    position:fixed;
+    inset:0;
+
+    pointer-events:none;
+
+    z-index:99990;
+
+    background:
+    radial-gradient(
+        circle 170px at center,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0.15) 35%,
+        rgba(0,0,0,0.82) 70%,
+        rgba(0,0,0,0.96) 100%
+    );
+}
+
+#game::before{
+    content:"";
+
+    position:absolute;
+    inset:0;
+
+    background:
+    repeating-linear-gradient(
+        to bottom,
+        rgba(295,255,255,0.03) 0px,
+        rgba(295,255,255,0.03) 2px,
+        transparent 10px,
+        transparent 10x
+    );
+
+    pointer-events:none;
+
+    z-index:99998;
+}
+
+#game::after{
+    content:"";
+
+    position:absolute;
+    inset:-50%;
+
+    background-image:
+    url("te.png");
+
+    background-repeat:repeat;
+
+    opacity:-0.14;
+
+    mix-blend-mode:screen;
+
+    animation:
+    noiseMove 0.15s steps(2) infinite,
+    vhsMove 0.12s infinite;
+
+    pointer-events:none;
+
+    z-index:99997;
+}
+
+@keyframes noiseMove{
+
+    0%{
+        transform:translate(0,0);
+    }
+
+    20%{
+        transform:translate(-5%,-3%);
+    }
+
+    40%{
+        transform:translate(-10%,5%);
+    }
+
+    60%{
+        transform:translate(8%,-4%);
+    }
+
+    80%{
+        transform:translate(5%,10%);
+    }
+
+    100%{
+        transform:translate(0,0);
+    }
+}
+
+@keyframes vhsMove{
+
+    0%{
+        transform:translateX(0px);
+    }
+
+    50%{
+        transform:translateX(2px);
+    }
+
+    100%{
+        transform:translateX(-2px);
+    }
+}
+
+#world{
+    position:absolute;
+
+    width:1400px;
+    height:1400px;
+
+    transform-origin:top left;
+
+    filter:
+    brightness(0.45)
+    contrast(1.1);
+}
+
+.tile{
+    position:absolute;
+
+    width:40px;
+    height:40px;
+
+    background-size:cover;
+
+    image-rendering:pixelated;
+}
+
+.entity{
+    position:absolute;
+
+    width:40px;
+    height:40px;
+
+    background-size:cover;
+
+    image-rendering:pixelated;
+
+    z-index:5;
+}
+
+.object{
+    position:absolute;
+
+    background-size:cover;
+
+    image-rendering:pixelated;
+
+    z-index:4;
+}
+
+.building{
+    position:absolute;
+
+    background-size:100% 100%;
+
+    image-rendering:pixelated;
+
+    z-index:3;
+}
+
+#player{
+
+    z-index:10;
+
+    filter:
+    drop-shadow(0 0 5px rgba(255,255,255,0.7))
+    drop-shadow(0 0 20px rgba(255,255,200,0.8))
+    drop-shadow(0 0 40px rgba(255,255,180,0.5));
+
+    transition:transform 0.05s linear;
+}
+
+#dialogBox{
+
+    position:fixed;
+
+    bottom:20px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    width:520px;
+
+    background:rgba(0,0,0,0.92);
+
+    border:3px solid white;
+
+    padding:15px;
+
+    display:none;
+
+    z-index:999999;
+}
+
+#dialogText{
+
+    margin-bottom:15px;
+
+    line-height:1.5;
+}
+
+.btn{
+
+    display:inline-block;
+
+    padding:10px 15px;
+
+    background:#ffcc00;
+
+    color:black;
+
+    text-decoration:none;
+
+    font-weight:bold;
+
+    border-radius:5px;
+
+    margin-right:10px;
+
+    border:none;
+
+    cursor:pointer;
+}
+
+#closeBtn{
+
+    background:#444;
+
+    color:white;
+}
+
+.rain{
+
+    position:absolute;
+
+    width:2px;
+    height:20px;
+
+    background:rgba(255,255,255,0.5);
+
+    animation:rainFall linear infinite;
+
+    z-index:99999;
+
+    pointer-events:none;
+}
+
+@keyframes rainFall{
+
+    from{
+        transform:
+        translateY(-100vh)
+        translateX(0px);
+    }
+
+    to{
+        transform:
+        translateY(100vh)
+        translateX(-60px);
+    }
+}
+
+#liminalMessage{
+
+    position:fixed;
+
+    bottom:210px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    color:white;
+
+    font-size:20px;
+
+    text-shadow:
+    0 0 10px white,
+    0 0 25px rgba(255,255,255,0.4);
+
+    z-index:99999999;
+
+    pointer-events:none;
+
+    width:900px;
+
+    text-align:center;
+
+    opacity:0;
+
+    transition:opacity 1s;
+}
+
+#starEvent{
+
+    position:fixed;
+
+    width:96px;
+    height:96px;
+
+    left:50%;
+    top:50%;
+
+    transform:translate(-50%,-50%);
+
+    background:url("spa.gif");
+
+    background-size:contain;
+    background-repeat:no-repeat;
+
+    image-rendering:pixelated;
+
+    z-index:999999999;
+
+    pointer-events:none;
+
+    display:none;
+
+    animation:starSpin 3s linear infinite;
+}
+
+@keyframes starSpin{
+
+    from{
+        transform:
+        translate(-50%,-50%)
+        rotate(0deg)
+        scale(1);
+    }
+
+    to{
+        transform:
+        translate(-50%,-50%)
+        rotate(360deg)
+        scale(1.15);
+    }
+}
+
+#starText{
+
+    position:fixed;
+
+    top:58%;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    font-size:34px;
+
+    letter-spacing:3px;
+
+    color:white;
+
+    text-shadow:
+    0 0 10px white,
+    0 0 25px rgba(255,255,255,0.7);
+
+    z-index:999999999;
+
+    opacity:0;
+
+    transition:opacity 2s;
+
+    pointer-events:none;
+}
+
+
+#touchControls{
+position:fixed;
+left:20px;
+bottom:20px;
+z-index:99999999;
+display:none;
+flex-direction:column;
+gap:8px;
+}
+.touchRow{
+display:flex;
+gap:8px;
+justify-content:center;
+}
+.touchBtn{
+width:70px;
+height:70px;
+background:rgba(255,255,255,0.22);
+border:2px solid rgba(255,255,255,0.45);
+color:white;
+font-size:28px;
+font-weight:bold;
+border-radius:12px;
+backdrop-filter:blur(2px);
+user-select:none;
+touch-action:none;
+}
+.touchBtn:active{
+transform:scale(0.95);
+}
+
+
+@keyframes pageShake{
+0%{transform:translate(0,0)}
+25%{transform:translate(-4px,2px)}
+50%{transform:translate(4px,-2px)}
+75%{transform:translate(-3px,-3px)}
+100%{transform:translate(0,0)}
+}
+.shake{
+animation:pageShake 0.12s infinite;
+}
+</style>
+</head>
+
+<body>
+
+<div id="startScreen">
+
+    <button id="startBtn">
+
+Bienvenido a Torreón't. <br>  <br> 
+
+Este espacio digital se construyó con lo que Víctor aprendió de ti y con los recuerdos que te quitó. Puedes quedarte el tiempo que quieras; aquí el tiempo no avanza.
+
+Pero observa bien. Todo lo que conoces está aquí, aunque nada está como debería. <br>  <br>  <br> 
+
+Camina con calma por esta réplica. A ver si tú logras enseñarle a Víctor cómo se siente ser humano.
+    </button>
+
+    <div id="startText">
+        ¡Vamos!
+    </div>
+
+</div>
+
+<audio id="musica" loop>
+    <source src="ambiente.mp3" type="audio/mpeg">
+</audio>
+
+<div id="game">
+
+    <div id="world"></div>
+
+    <div id="darkness"></div>
+
+    <div id="dialogBox">
+
+        <p id="dialogText"></p>
+
+        <div id="linkContainer"></div>
+
+    </div>
+
+</div>
+
+<div id="liminalMessage"></div>
+
+<div id="starEvent"></div>
+
+<div id="starText">
+    Tú no eres esto.
+</div>
+
+
+<div id="touchControls">
+<div class="touchRow">
+<button class="touchBtn" data-key="w">W</button>
+</div>
+<div class="touchRow">
+<button class="touchBtn" data-key="a">A</button>
+<button class="touchBtn" data-key="s">S</button>
+<button class="touchBtn" data-key="d">D</button>
+</div>
+</div>
+
+<script>
+
+
+const startBtn =
+document.getElementById("startBtn");
+
+const startScreen =
+document.getElementById("startScreen");
+
+const musica =
+document.getElementById("musica");
+
+startBtn.onclick = ()=>{
+
+    startScreen.style.display = "none";
+
+    musica.volume = 0.5;
+
+    musica.play();
+
+const controls=document.getElementById("touchControls");
+if(controls){controls.style.display="flex";}
+};
+
+const TILE_SIZE = 40;
+const MAP_COLS = 35;
+const MAP_ROWS = 35;
+
+const CAMERA_ZOOM = 2.2;
+
+const MOVE_SPEED = 3;
+const RUN_SPEED = 6;
+
+const world =
+document.getElementById("world");
+
+const dialogBox =
+document.getElementById("dialogBox");
+
+const dialogText =
+document.getElementById("dialogText");
+
+const linkContainer =
+document.getElementById("linkContainer");
+
+const darkness =
+document.getElementById("darkness");
+
+const liminalMessage =
+document.getElementById("liminalMessage");
+
+const starEvent =
+document.getElementById("starEvent");
+
+const starText =
+document.getElementById("starText");
+
+const liminalTexts = [
+
+"Creo que hay alguien aquí conmigo.",
+"Siento que me están viendo sin ojos.",
+"No estoy solo, solo no lo veo.",
+"La casa suena cuando no me muevo.",
+"Algo me sigue cuando giro la cabeza.",
+"La lluvia no para, ¿es normal?",
+"Escuché mi nombre, pero nadie lo dijo.",
+"El pasillo es más largo cuando lo miro.",
+"Hay presencia, pero no forma.",
+"No reconozco esta esquina de mi propia casa.",
+"El aire cambia cuando me quedo quieto.",
+"Siento pasos que no encajan con los míos.",
+"¿Quién está detrás de la ventana si no hay nadie?",
+"El techo no se siente fijo.",
+"Algo me observa desde arriba, sin bajar la mirada.",
+"No recuerdo haber cerrado esa puerta.",
+"Cada vez que parpadeo, algo se mueve.",
+"No estoy imaginando esto solo."
+];
+
+function typeWriter(text){
+
+    liminalMessage.style.opacity = 1;
+
+    liminalMessage.innerHTML = "";
+
+    let i = 0;
+
+    const interval = setInterval(()=>{
+
+        liminalMessage.innerHTML += text[i];
+
+        i++;
+
+        if(i >= text.length){
+
+            clearInterval(interval);
+
+            setTimeout(()=>{
+
+                liminalMessage.style.opacity = 0;
+
+            },4000);
+        }
+
+    },45);
+}
+
+function randomLiminalMessage(){
+
+    const randomText =
+    liminalTexts[
+        Math.floor(Math.random()*liminalTexts.length)
+    ];
+
+    typeWriter(randomText);
+}
+
+setInterval(()=>{
+
+    randomLiminalMessage();
+
+},28000);
+
+function triggerStarEvent(){
+
+    starEvent.style.display = "block";
+
+    starText.style.opacity = 0;
+
+    setTimeout(()=>{
+
+        starEvent.style.display = "none";
+
+        starText.style.opacity = 1;
+
+    },3000);
+
+    setTimeout(()=>{
+
+        starText.style.opacity = 0;
+
+    },7000);
+}
+
+setInterval(()=>{
+
+    triggerStarEvent();
+
+},45000);
+
+const sprites = {
+
+    player:'vic.gif',
+
+    tree:'ar.gif',
+
+    centerTree:'ar2.gif',
+
+    grass:'pipi.gif',
+
+    path:'piso.gif',
+
+    trash:'bag.png',
+
+    fountain:'ay.gif',
+
+    mansion:'CAN.gif',
+
+    house:'casilla.gif',
+
+    npc1:'av1.gif',
+    npc2:'av4.gif',
+    npc3:'av3.gif',
+    npc4:'av2.gif',
+    npc5:'av5.gif',
+    npc6:'mar.gif',
+    npc7:'vic.gif',
+    npc8:'vic.gif',
+    npc9:'vic.gif',
+    npc10:'bur.gif',
+
+    arbusto1:'arbusto1.png',
+    arbusto2:'arbusto2.png',
+    arbusto3:'arbusto3.png',
+    arbusto4:'arbusto4.png',
+    arbusto5:'arbusto5.png',
+    arbusto6:'arbusto6.png',
+    arbusto7:'arbusto7.png',
+    arbusto8:'arbusto8.png',
+    arbusto9:'arbusto9.png',
+    arbusto10:'arbusto10.png',
+    arbusto11:'arbusto11.png',
+    arbusto12:'arbusto12.png',
+    arbusto13:'arbusto13.png',
+    arbusto14:'arbusto14.png',
+    stalker:'vic.gif'
+};
+
+const mapData = [];
+
+for(let y=0;y<MAP_ROWS;y++){
+
+    let row = [];
+
+    for(let x=0;x<MAP_COLS;x++){
+
+        if(
+            x === 0 ||
+            y === 0 ||
+            x === MAP_COLS-1 ||
+            y === MAP_ROWS-1
+        ){
+
+            row.push(1);
+
+        }else if(
+            x === 17 ||
+            y === 17 ||
+            (x > 5 && x < 30 && y === 8) ||
+            (x > 5 && x < 30 && y === 26)
+        ){
+
+            row.push(2);
+
+        }else{
+
+            if(Math.random() < 0.03){
+
+                row.push(3);
+
+            }else{
+
+                row.push(0);
+            }
+        }
+    }
+
+    mapData.push(row);
+}
+
+const trashBags = [
+
+    {x:6,y:10},
+    {x:12,y:20},
+    {x:25,y:9},
+    {x:29,y:23},
+    {x:18,y:29},
+
+    {x:5,y:14},
+    {x:7,y:18},
+    {x:11,y:12},
+    {x:14,y:27},
+    {x:20,y:8},
+    {x:21,y:22},
+    {x:24,y:16},
+    {x:30,y:12},
+    {x:31,y:26}
+];
+
+
+const arbustos = [
+{x:5,y:7,sprite:'arbusto1'},
+{x:9,y:12,sprite:'arbusto2'},
+{x:13,y:7,sprite:'arbusto3'},
+{x:20,y:6,sprite:'arbusto4'},
+{x:24,y:11,sprite:'arbusto5'},
+{x:30,y:8,sprite:'arbusto6'},
+{x:7,y:16,sprite:'arbusto7'},
+{x:12,y:18,sprite:'arbusto8'},
+{x:18,y:13,sprite:'arbusto9'},
+{x:23,y:19,sprite:'arbusto10'},
+{x:29,y:16,sprite:'arbusto11'},
+{x:6,y:29,sprite:'arbusto12'},
+{x:15,y:30,sprite:'arbusto13'},
+{x:31,y:26,sprite:'arbusto14'}
+];
+
+
+const fountain = {
+
+    x:15,
+    y:15,
+
+    w:3,
+    h:3
+};
+
+const structures = [
+
+    { type:'mansion', x:3, y:3, w:4, h:3 },
+
+    { type:'house', x:10, y:4, w:2, h:2 },
+    { type:'house', x:14, y:4, w:2, h:2 },
+    { type:'house', x:18, y:4, w:2, h:2 },
+    { type:'house', x:22, y:4, w:2, h:2 },
+
+    { type:'house', x:27, y:10, w:2, h:2 },
+    { type:'house', x:27, y:14, w:2, h:2 },
+    { type:'house', x:27, y:18, w:2, h:2 },
+
+    { type:'house', x:4, y:24, w:2, h:2 },
+    { type:'house', x:8, y:24, w:2, h:2 },
+    { type:'house', x:12, y:24, w:2, h:2 },
+    { type:'house', x:16, y:24, w:2, h:2 },
+
+    { type:'house', x:22, y:28, w:2, h:2 },
+    { type:'house', x:26, y:28, w:2, h:2 }
+];
+
+const npcs = [
+
+{
+    x:7,
+    y:5,
+    sprite:'npc1',
+
+    dialogs:[
+        "Joven Chacho: Hey... ¿vienes a visitar la escuela?, creo que ya no alcanzaste",
+        "Joven Chacho: Lo siento, jaja, ¿quieres saber por qué?",
+        "Joven Chacho: Este es el CAN, nadie entra ahí desde hace un año, está abandonado, pero dicen que pasan cosas raras ahí adentro.",
+        "Joven Chacho: Bueno... si quieres entrar, es tu rollo."
+    ],
+
+    link:"noche.html",
+    label:"Entrar"
+},
+
+{
+    x:8,
+    y:6,
+    sprite:'npc2',
+
+    dialogs:[
+        "Iris: No deberías acercarte mucho...",
+        "Iris: A veces se escuchan pasos en la noche.",
+        "Iris: Entré ahí una vez, econtré un fanzine con fotos de algo malo que pasó aquí, ¿quieres ver?"
+    ],
+
+    link:"libro.html",
+    label:"Ir con Iris"
+},
+
+{
+    x:10,
+    y:8,
+    sprite:'npc3',
+    dialogs:[
+        "Susana:Esto es grave...",
+        "Susana: Hay una extraña enfermedad que borra los recuerdos de las personas.",
+        "Susana: Recientemente se le llamó como La Amnesia Áurea",
+        "Susana: También se le dice coloquialmente como Síndrome del Olvido Amarillo",
+        "Susana: Es una enfermedad que afecta de forma selectiva la memoria a corto y largo plazo.",
+        "Susana: Cada 4 horas, el cerebro reinicia los recuerdos del día. El paciente olvida todo lo sucedido en las últimas 16 horas.",
+        "Susana: Pero esto se va prolongando",
+        "Susana: El primer borrón empieza con 16 horas del día, el segundo con 32, el tercero con 64, hasta llegar a niveles absurdos",
+        "Susana: Justo ahora me dirijo a operar a un paciente que olvidó 1440 horas de su vida",
+        "Pero estamos cortos de personal en el hospital",
+        "Un incidente feo de hace un año hizo que la gente se empezara a ir de aquí",
+        "¿Qué dices?,¿Me echas la mano?, te prometo que no es complicado."
+    ],
+
+    link:"oper.html",
+    label:"Simón"
+},
+
+{
+    x:16,
+    y:10,
+    sprite:'npc4',
+    dialogs:[
+        "Andrea: ¡AY!, ME ESPANTASTE",
+        "Andrea: Pero ya, ya, te perdono, quizás exageré mi reacción",
+        "Andrea: Es que un amigo me mandó esto y me hizo probarlo",
+        "Andrea: Es una app que te dice tu fortuna...",
+        "Andrea: Da mucho miedo, lo peor es que si le atina.",
+        "¿Quieres intentar probarla?"
+    ],
+
+    link:"cas.html",
+    label:"Ver fortuna"
+},
+
+{
+    x:25,
+    y:12,
+    sprite:'npc5',
+    dialogs:[
+        "Isaac: Te digo bro, saliendo de la chamba de la carni, toca rutina de pierna en el gym con madres."
+    ],
+
+    link:"",
+    label:"¿Hacer ejercicio?"
+},
+
+{
+    x:28,
+    y:20,
+    sprite:'npc6',
+    dialogs:[
+        "Mario: Me gusta caminar aquí, pero he notado que cada vez que regreso el vecindario tiene las calles diferentes, ¿seré yo?.",
+        "Caminando de regreseo a casa encontre este reproductor con cosas raras ¿Vemos qué tiene?"
+    ],
+
+    link:"sim.html",
+    label:"Ver"
+},
+
+{
+    x:6,
+    y:20,
+    sprite:'npc7',
+
+    dialogs:[
+        "??? : Tú me creaste",
+        "??? : Pero ya no recuerdas por qué.",
+        "??? : Si realmente eres tú... entonces dime la contraseña."
+    ],
+
+    password:"materia primordial",
+
+    successDialogs:[
+        "??? : ...",
+        "??? : Entonces sí eres tú.",
+        "??? : Te exarañaba tanto"
+    ],
+    link:"nombre.html",
+    label:"Entrar",
+    failDialogs:[
+        "??? : No.",
+        "??? : Esa no era la respuesta."
+    ],
+
+    link:"nombre.html",
+    label:"Entrar",
+
+    requiresPassword:true
+},
+
+{
+    x:10,
+    y:28,
+    sprite:'npc8',
+    dialogs:["Sácame de aquí"],
+
+    link:"",
+    label:"Abrir"
+},
+
+{
+    x:19,
+    y:25,
+    sprite:'npc9',
+    dialogs:["Yo no recuerdo vivir aquí"],
+
+    link:"",
+    label:"Abrir"
+},
+
+{
+    x:30,
+    y:30,
+    sprite:'npc10',
+    dialogs:["Burdo: ¿Te conozco?"],
+
+    link:"",
+    label:"Abrir"
+}
+
+];
+
+function createTile(x,y,image){
+
+    const tile =
+    document.createElement("div");
+
+    tile.className = "tile";
+
+    tile.style.left =
+    (x*TILE_SIZE)+"px";
+
+    tile.style.top =
+    (y*TILE_SIZE)+"px";
+
+    tile.style.backgroundImage =
+    `url(${image})`;
+
+    world.appendChild(tile);
+}
+
+for(let y=0;y<MAP_ROWS;y++){
+
+    for(let x=0;x<MAP_COLS;x++){
+
+        createTile(x,y,sprites.grass);
+
+        if(mapData[y][x] === 2){
+
+            createTile(x,y,sprites.path);
+        }
+
+        if(mapData[y][x] === 1){
+
+            createTile(x,y,sprites.tree);
+        }
+
+        if(mapData[y][x] === 3){
+
+            createTile(x,y,sprites.centerTree);
+        }
+    }
+}
+
+for(let trash of trashBags){
+
+    const div =
+    document.createElement("div");
+
+    div.className = "object";
+
+    div.style.width =
+    TILE_SIZE+"px";
+
+    div.style.height =
+    TILE_SIZE+"px";
+
+    div.style.left =
+    (trash.x*TILE_SIZE)+"px";
+
+    div.style.top =
+    (trash.y*TILE_SIZE)+"px";
+
+    div.style.backgroundImage =
+    `url(${sprites.trash})`;
+
+    world.appendChild(div);
+}
+
+
+for(let arbusto of arbustos){
+
+    const div = document.createElement("div");
+
+    div.className = "object";
+
+    div.style.width = TILE_SIZE+"px";
+    div.style.height = TILE_SIZE+"px";
+
+    div.style.left = (arbusto.x*TILE_SIZE)+"px";
+    div.style.top = (arbusto.y*TILE_SIZE)+"px";
+
+    div.style.backgroundImage = `url(${sprites[arbusto.sprite]})`;
+
+    world.appendChild(div);
+}
+
+
+const fountainEl =
+document.createElement("div");
+
+fountainEl.className = "object";
+
+fountainEl.style.left =
+(fountain.x*TILE_SIZE)+"px";
+
+fountainEl.style.top =
+(fountain.y*TILE_SIZE)+"px";
+
+fountainEl.style.width =
+(fountain.w*TILE_SIZE)+"px";
+
+fountainEl.style.height =
+(fountain.h*TILE_SIZE)+"px";
+
+fountainEl.style.backgroundImage =
+`url(${sprites.fountain})`;
+
+fountainEl.style.backgroundSize =
+"100% 100%";
+
+world.appendChild(fountainEl);
+
+for(let str of structures){
+
+    const div =
+    document.createElement("div");
+
+    div.className = "building";
+
+    div.style.left =
+    (str.x*TILE_SIZE)+"px";
+
+    div.style.top =
+    (str.y*TILE_SIZE)+"px";
+
+    div.style.width =
+    (str.w*TILE_SIZE)+"px";
+
+    div.style.height =
+    (str.h*TILE_SIZE)+"px";
+
+    div.style.backgroundImage =
+    `url(${sprites[str.type]})`;
+
+    world.appendChild(div);
+}
+
+
+
+    for(let npc of npcs){
+
+    const div =
+    document.createElement("div");
+
+    div.className = "entity";
+
+    div.style.left =
+    (npc.x*TILE_SIZE)+"px";
+
+    div.style.top =
+    (npc.y*TILE_SIZE)+"px";
+
+    div.style.backgroundImage =
+    `url(${sprites[npc.sprite]})`;
+
+    world.appendChild(div);
+
+    npc.element = div;
+}
+
+const player = {
+
+    x:17 * TILE_SIZE,
+    y:20 * TILE_SIZE,
+
+    width:28,
+    height:28,
+
+    facingRight:false
+};
+
+
+const stalker={
+    x:12*TILE_SIZE,
+    y:12*TILE_SIZE,
+    width:28,
+    height:28,
+    facingRight:false
+};
+
+const stalkerEl=document.createElement("div");
+stalkerEl.id="stalker";
+stalkerEl.className="entity";
+stalkerEl.style.backgroundImage=`url(${sprites.stalker})`;
+stalkerEl.style.zIndex="9";
+world.appendChild(stalkerEl);
+
+const playerEl =
+document.createElement("div");
+
+playerEl.id = "player";
+
+playerEl.className = "entity";
+
+playerEl.style.backgroundImage =
+`url(${sprites.player})`;
+
+world.appendChild(playerEl);
+
+const keys = {};
+
+document.querySelectorAll(".touchBtn").forEach(btn=>{
+
+    const key = btn.dataset.key;
+
+    const press = (e)=>{
+        e.preventDefault();
+        keys[key]=true;
+    };
+
+    const release = (e)=>{
+        e.preventDefault();
+        keys[key]=false;
+    };
+
+    btn.addEventListener("mousedown",press);
+    btn.addEventListener("mouseup",release);
+    btn.addEventListener("mouseleave",release);
+
+    btn.addEventListener("touchstart",press,{passive:false});
+    btn.addEventListener("touchend",release,{passive:false});
+    btn.addEventListener("touchcancel",release,{passive:false});
+});
+
+
+window.addEventListener("keydown",(e)=>{
+
+    keys[e.key.toLowerCase()] = true;
+});
+
+window.addEventListener("keyup",(e)=>{
+
+    keys[e.key.toLowerCase()] = false;
+});
+
+function rectCollision(x1,y1,w1,h1,x2,y2,w2,h2){
+
+    return (
+
+        x1 < x2 + w2 &&
+        x1 + w1 > x2 &&
+        y1 < y2 + h2 &&
+        y1 + h1 > y2
+    );
+}
+
+let currentNPC = null;
+let currentDialogIndex = 0;
+
+function openDialog(npc){
+
+    currentNPC = npc;
+
+    currentDialogIndex = 0;
+
+    dialogBox.style.display = "block";
+
+    updateDialog();
+}
+
+function updateDialog(){
+
+    const npc = currentNPC;
+
+    dialogText.innerText =
+    npc.dialogs[currentDialogIndex];
+
+    if(
+        currentDialogIndex >=
+        npc.dialogs.length - 1
+    ){
+
+        if(
+            npc.requiresPassword &&
+            npc.dialogs !== npc.successDialogs
+        ){
+
+            linkContainer.innerHTML = `
+            <button
+            class="btn"
+            onclick="checkPassword()">
+            Responder
+            </button>
+
+            <button
+            class="btn"
+            id="closeBtn"
+            onclick="closeDialog()">
+            Cerrar
+            </button>
+            `;
+
+        }else{
+
+            linkContainer.innerHTML = `
+            <a class="btn"
+               href="${npc.link}"
+               target="_blank">
+               ${npc.label}
+            </a>
+
+            <button
+            class="btn"
+            id="closeBtn"
+            onclick="closeDialog()">
+            Cerrar
+            </button>
+            `;
+
+
+            linkContainer.innerHTML = `
+            <a class="btn"
+               href="${npc.link}"
+               target="_blank">
+               ${npc.label}
+            </a>
+
+            <button
+            class="btn"
+            id="closeBtn"
+            onclick="closeDialog()">
+            Cerrar
+            </button>
+            `;
+        }
+
+    }else{
+
+        linkContainer.innerHTML = `
+        <button
+        class="btn"
+        onclick="nextDialog()">
+        Continuar
+        </button>
+
+        <button
+        class="btn"
+        id="closeBtn"
+        onclick="closeDialog()">
+        Cerrar
+        </button>
+        `;
+    }
+}
+
+function checkPassword(){
+
+    const answer =
+    prompt("Escribe la contraseña:");
+
+    if(
+        answer &&
+        answer.toLowerCase().trim() ===
+        currentNPC.password.toLowerCase()
+    ){
+
+        currentNPC.dialogs =
+        currentNPC.successDialogs;
+
+    }else{
+
+        currentNPC.dialogs =
+        currentNPC.failDialogs;
+    }
+
+    currentDialogIndex = 0;
+
+    updateDialog();
+}
+
+function nextDialog(){
+
+    currentDialogIndex++;
+
+    updateDialog();
+}
+
+function closeDialog(){
+
+    dialogBox.style.display = "none";
+
+    currentNPC = null;
+}
+
+function isSolid(nextX,nextY){
+
+    for(let y=0;y<MAP_ROWS;y++){
+
+        for(let x=0;x<MAP_COLS;x++){
+
+            if(
+                mapData[y][x] === 1 ||
+                mapData[y][x] === 3
+            ){
+
+                if(
+                    rectCollision(
+                        nextX,
+                        nextY,
+                        player.width,
+                        player.height,
+
+                        x*TILE_SIZE + 6,
+                        y*TILE_SIZE + 6,
+
+                        28,
+                        28
+                    )
+                ){
+
+                    return true;
+                }
+            }
+        }
+    }
+
+    for(let s of structures){
+
+        if(
+            rectCollision(
+                nextX,
+                nextY,
+
+                player.width,
+                player.height,
+
+                s.x*TILE_SIZE,
+                s.y*TILE_SIZE,
+
+                s.w*TILE_SIZE,
+                s.h*TILE_SIZE
+            )
+        ){
+
+            return true;
+        }
+    }
+
+    if(
+        rectCollision(
+            nextX,
+            nextY,
+
+            player.width,
+            player.height,
+
+            fountain.x*TILE_SIZE + 10,
+            fountain.y*TILE_SIZE + 10,
+
+            fountain.w*TILE_SIZE - 20,
+            fountain.h*TILE_SIZE - 20
+        )
+    ){
+
+        return true;
+    }
+
+    for(let npc of npcs){
+
+        if(
+            rectCollision(
+                nextX,
+                nextY,
+
+                player.width,
+                player.height,
+
+                npc.x*TILE_SIZE + 4,
+                npc.y*TILE_SIZE + 4,
+
+                32,
+                32
+            )
+        ){
+
+            if(currentNPC !== npc){
+
+                openDialog(npc);
+            }
+
+            return true;
+        }
+    }
+
+
+    for(let trash of trashBags){
+
+        if(
+            rectCollision(
+                nextX,
+                nextY,
+                player.width,
+                player.height,
+                trash.x*TILE_SIZE+4,
+                trash.y*TILE_SIZE+4,
+                32,
+                32
+            )
+        ){
+            return true;
+        }
+    }
+
+
+    for(let arbusto of arbustos){
+
+        if(
+            rectCollision(
+                nextX,
+                nextY,
+                player.width,
+                player.height,
+                arbusto.x*TILE_SIZE + 4,
+                arbusto.y*TILE_SIZE + 4,
+                32,
+                32
+            )
+        ){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function checkNPCDistance(){
+
+    if(!currentNPC) return;
+
+    const playerCenterX =
+    player.x + player.width/2;
+
+    const playerCenterY =
+    player.y + player.height/2;
+
+    const npcCenterX =
+    currentNPC.x*TILE_SIZE + 20;
+
+    const npcCenterY =
+    currentNPC.y*TILE_SIZE + 20;
+
+    const dx =
+    Math.abs(playerCenterX - npcCenterX);
+
+    const dy =
+    Math.abs(playerCenterY - npcCenterY);
+
+    if(dx > 90 || dy > 90){
+
+        closeDialog();
+    }
+}
+
+function updateLight(){
+
+    const screenX =
+    window.innerWidth / 2;
+
+    const screenY =
+    window.innerHeight / 2;
+
+    darkness.style.background =
+    `
+    radial-gradient(
+        circle 330px at ${screenX}px ${screenY}px,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0.15) 35%,
+        rgba(0,0,0,0.82) 70%,
+        rgba(0,0,0,0.96) 100%
+    )
+    `;
+}
+
+
+function stalkerSolid(nextX,nextY){
+
+    return isSolid(nextX,nextY);
+}
+
+function updateStalker(){
+
+    const dx=player.x-stalker.x;
+    const dy=player.y-stalker.y;
+    const dist=Math.hypot(dx,dy);
+
+    let speed=MOVE_SPEED;
+
+    let moveX=0;
+    let moveY=0;
+
+    if(dist<180){
+        moveX=(-dx/dist||0)*speed;
+        moveY=(-dy/dist||0)*speed;
+    }else if(dist>260 && dist<500){
+        moveX=(dx/dist||0)*speed;
+        moveY=(dy/dist||0)*speed;
+    }
+
+    const nx=stalker.x+moveX;
+    const ny=stalker.y+moveY;
+
+    if(!stalkerSolid(nx,stalker.y)) stalker.x=nx;
+    if(!stalkerSolid(stalker.x,ny)) stalker.y=ny;
+
+    stalker.facingRight=moveX>0;
+
+    stalkerEl.style.left=stalker.x+"px";
+    stalkerEl.style.top=stalker.y+"px";
+    stalkerEl.style.transform=stalker.facingRight?"scaleX(-1)":"scaleX(1)";
+
+    const d=Math.hypot(player.x-stalker.x,player.y-stalker.y);
+
+    if(d<120){
+        document.body.classList.add("shake");
+    }else{
+        document.body.classList.remove("shake");
+    }
+}
+
+
+function update(){
+
+    let moveX = 0;
+    let moveY = 0;
+
+    let currentSpeed = MOVE_SPEED;
+
+    if(
+        keys["shift"]
+    ){
+
+        currentSpeed = RUN_SPEED;
+    }
+
+    if(keys["w"] || keys["arrowup"]){
+
+        moveY -= currentSpeed;
+    }
+
+    if(keys["s"] || keys["arrowdown"]){
+
+        moveY += currentSpeed;
+    }
+
+    if(keys["a"] || keys["arrowleft"]){
+
+        moveX -= currentSpeed;
+
+        player.facingRight = false;
+    }
+
+    if(keys["d"] || keys["arrowright"]){
+
+        moveX += currentSpeed;
+
+        player.facingRight = true;
+    }
+
+    const nextX =
+    player.x + moveX;
+
+    const nextY =
+    player.y + moveY;
+
+    if(!isSolid(nextX,player.y)){
+
+        player.x = nextX;
+    }
+
+    if(!isSolid(player.x,nextY)){
+
+        player.y = nextY;
+    }
+
+    checkNPCDistance();
+    updateStalker();
+
+    updatePlayer();
+
+    updateLight();
+
+    requestAnimationFrame(update);
+}
+
+update();
+
+function updatePlayer(){
+
+    playerEl.style.left =
+    player.x+"px";
+
+    playerEl.style.top =
+    player.y+"px";
+
+    if(player.facingRight){
+
+        playerEl.style.transform =
+        "scaleX(-1)";
+
+    }else{
+
+        playerEl.style.transform =
+        "scaleX(1)";
+    }
+
+    const camX =
+    (window.innerWidth / 2) -
+    ((player.x + TILE_SIZE/2)
+    * CAMERA_ZOOM);
+
+    const camY =
+    (window.innerHeight / 2) -
+    ((player.y + TILE_SIZE/2)
+    * CAMERA_ZOOM);
+
+    world.style.transform =
+    `
+    translate(${camX}px, ${camY}px)
+    scale(${CAMERA_ZOOM})
+    `;
+}
+
+function createRain(){
+
+    for(let i=0;i<320;i++){
+
+        const rain =
+        document.createElement("div");
+
+        rain.className = "rain";
+
+        rain.style.left =
+        Math.random()*window.innerWidth+"px";
+
+        rain.style.animationDuration =
+        (0.5 + Math.random()*0.8)+"s";
+
+        rain.style.animationDelay =
+        Math.random()*2+"s";
+
+        rain.style.opacity =
+        (0.2 + Math.random()*0.6);
+
+        document.body.appendChild(rain);
+    }
+}
+
+createRain();
+
+</script>
+
+</body>
+</html>

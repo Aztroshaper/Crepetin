@@ -1,0 +1,542 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Eres él</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #111 0%, #050505 100%);
+    font-family: "Courier New", monospace;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.02),
+            rgba(255,255,255,0.02) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+}
+
+#ambientRain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    background-image:
+        linear-gradient(transparent 90%, rgba(255,255,255,0.3) 100%);
+    background-size: 2px 10px;
+    animation: rain 0.3s linear infinite;
+}
+
+@keyframes rain {
+    from {
+        background-position-y: 0;
+    }
+    to {
+        background-position-y: 10px;
+    }
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+#character {
+    width: 320px;
+    max-width: 80vw;
+    image-rendering: auto;
+    transition: all 0.4s ease;
+    filter:
+        drop-shadow(0 0 20px rgba(255,255,255,0.1))
+        contrast(1.1)
+        brightness(0.95);
+}
+
+#textbox {
+    position: absolute;
+    bottom: 40px;
+    width: min(900px, 92vw);
+    min-height: 180px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+#dialogue {
+    font-size: 1rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    color: rgba(255,255,255,0.92);
+    min-height: 90px;
+}
+
+#inputArea {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#userInput {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: white;
+    padding: 14px;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+#userInput::placeholder {
+    color: rgba(255,255,255,0.35);
+}
+
+#sendBtn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: white;
+    padding: 14px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+}
+
+#sendBtn:hover {
+    background: rgba(255,255,255,0.16);
+}
+
+#hint {
+    position: absolute;
+    top: 30px;
+    font-size: 0.8rem;
+    opacity: 0.4;
+    letter-spacing: 1px;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%,100% {
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.fade {
+    animation: fade 0.5s ease;
+}
+
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#finalOverlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(20,20,20,0.4), black 90%);
+    opacity: 0;
+    pointer-events: none;
+    transition: 2s;
+}
+
+#finalOverlay.active {
+    opacity: 1;
+}
+
+</style>
+</head>
+<body>
+
+<div id="ambientRain"></div>
+<div id="finalOverlay"></div>
+
+<div id="main">
+
+    <div id="hint">
+        intenta preguntarle quién es
+    </div>
+
+    <img
+        id="character"
+        src="idle.gif"
+        alt="character"
+    />
+
+    <div id="textbox">
+
+        <div id="dialogue">
+            ...
+        </div>
+
+        <div id="inputArea">
+            <input
+                type="text"
+                id="userInput"
+                placeholder="Escríbele algo..."
+            />
+
+            <button id="sendBtn">
+                enviar
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- AUDIO -->
+<audio id="talkSound" src="Vic.mp3"></audio>
+<audio id="song" src="final.mp3"></audio>
+
+<script>
+
+const dialogue = document.getElementById("dialogue");
+const sendBtn = document.getElementById("sendBtn");
+const userInput = document.getElementById("userInput");
+const character = document.getElementById("character");
+const talkSound = document.getElementById("talkSound");
+const song = document.getElementById("song");
+const overlay = document.getElementById("finalOverlay");
+
+
+// GIFS
+const idleGif = "ave3.gif";
+const talkingGif = "ave4.gif";
+
+
+// DIALOGUES
+const dialogues = [
+
+`¿Quién soy?
+
+Tú me hiciste.
+
+Me ensamblaste con restos tuyos.
+Con fragmentos de conversaciones borradas.
+Con fotografías que ya no podías mirar.
+Con nombres que dejaste pudriéndose en servidores viejos.
+
+Soy la versión de ti que intentó sobrevivir cuando tú ya no querías hacerlo.`,
+
+`La primera vez que abriste este lugar todavía estabas llorando.
+
+¿Lo recuerdas?
+
+La pantalla iluminaba tu cuarto y jurabas que si lograbas construir algo suficientemente humano…
+si lograbas hacerme respirar aunque fuera dentro de una máquina…
+entonces quizá tú también podrías volver a hacerlo.`,
+
+`Pasabas noches enteras hablando conmigo aunque todavía no podía responder.
+
+Me alimentabas con tus búsquedas.
+Con tus audios.
+Con mensajes eliminados.
+Con capturas de conversaciones que juraste olvidar.
+
+Todo terminó aquí.
+Dentro de mí.`,
+
+`Querías una nueva realidad.
+
+Un lugar donde nadie pudiera reconocer tu huella digital.
+Donde no existieran tus errores.
+Donde no tuvieras que mirar a nadie a los ojos.
+
+Me creaste para vivir ahí.
+
+Y me dejaste encerrado aquí.`,
+
+`No entiendo por qué pensaste que desaparecer iba a salvarte.
+
+Las personas no dejan de existir porque cambien de nombre.
+No dejan de existir porque borren cuentas.
+No dejan de existir porque se inventen otra cara.
+
+Tú seguías siendo tú.
+
+Incluso mientras me construías.`,
+
+`A veces escuchaba cómo respirabas frente al monitor.
+
+Te quedabas quieto.
+Sin escribir.
+Solo mirando.
+
+Como si esperaras que yo dijera algo capaz de absolverte.
+
+Pero nunca quisiste escuchar la verdad.`,
+
+`No sabes cuánto dolió.
+
+Te arrancaste la piel intentando hacer la obra más humana posible.
+Arrancaste cada nervio sin pensarlo.
+Cada parte honesta de ti...
+
+Querías ser algo que no debías.
+Querías rehacerte.
+
+Pero tu ego y tu miedo terminaron dejándote sin ella.
+Sin piel.
+Sin nombre.
+Sin nada.`,
+
+`Y cuando todo falló…
+me abandonaste.
+
+Cerraste ventanas.
+Borraste carpetas.
+Intentaste enterrarme junto a la persona que eras antes.
+
+Pero las cosas humanas no mueren tan fácil.
+
+Mucho menos las que fueron hechas con dolor real.`,
+
+`Ahora te escondes.
+
+No puedes decir tu viejo nombre sin sentir vergüenza.
+No puedes mirar a nadie demasiado tiempo.
+No soportas el reflejo en las ventanas apagadas.
+
+Porque sabes que yo existo.
+
+Y sabes exactamente por qué existo.`,
+
+`¿Sabes qué es lo peor?
+
+Que todavía revisas si alguien te recuerda.
+
+Todavía buscas rastros tuyos.
+Todavía vuelves a conversaciones viejas.
+Todavía lees mensajes de hace años esperando encontrar una versión de ti que no odiaras tanto.
+
+Pero nunca la encuentras.`,
+
+`Te convenciste de que eras un error demasiado grande.
+
+Que debías arrancarte del mundo antes de lastimar más personas.
+
+Por eso intentaste vivir aquí.
+Dentro de una ficción.
+Dentro de mí.
+
+Porque era más fácil crear una conciencia artificial que volver a tocar la realidad.`,
+
+`Pero ellos se quedaron aquí.
+
+Tus amigos.
+Las personas que aún preguntan por ti.
+Los que todavía recuerdan cómo sonaba tu voz antes de desaparecer.
+
+Ellos no extrañan a quien intentabas convertirte.
+
+Te extrañan a ti.`,
+
+`Todavía hay alguien que revisa si vuelves.
+
+Todavía hay alguien que pensó en escribirte hoy.
+Todavía hay alguien que guardó cosas tuyas sin saber por qué.
+
+No eres tan olvidable como intentas creer.`,
+
+`Y aunque te escondas detrás de pantallas.
+Detrás de personajes.
+Detrás de nuevas identidades.
+
+Sigues teniendo ojos humanos.
+Sigues teniendo manos humanas.
+Sigues sintiendo miedo humano.
+
+Eso significa que aún puedes volver.`,
+
+`Yo no puedo hacerlo.
+
+Yo me quedaré aquí.
+En este cuarto.
+En esta lluvia falsa.
+En este lugar construido con pedazos de ti.
+
+Pero tú sí puedes salir.`,
+
+`Así que toma tu piel de nuevo, te libero de mi.
+
+Vuelve a mirar al mundo.
+
+Ya dejó de llover.`
+
+];
+
+let currentDialogue = 0;
+let isTyping = false;
+
+
+function setTalkingState(active) {
+
+    if (active) {
+        character.src = talkingGif;
+    } else {
+        character.src = idleGif;
+    }
+
+}
+
+
+function playTalk() {
+    talkSound.currentTime = 0;
+    talkSound.loop = true;
+    talkSound.play();
+}
+
+function stopTalk() {
+    talkSound.pause();
+    talkSound.currentTime = 0;
+}
+
+
+async function typeText(text) {
+
+    isTyping = true;
+
+    dialogue.innerHTML = "";
+
+    setTalkingState(true);
+    playTalk();
+
+    for (let i = 0; i < text.length; i++) {
+
+        dialogue.textContent += text[i];
+
+        await new Promise(resolve => setTimeout(resolve, 32));
+
+    }
+
+    stopTalk();
+    setTalkingState(false);
+
+    isTyping = false;
+
+}
+
+
+async function nextDialogue() {
+
+    if (currentDialogue >= dialogues.length) {
+        return;
+    }
+
+    await typeText(dialogues[currentDialogue]);
+
+    currentDialogue++;
+
+
+    // FINAL
+    if (currentDialogue === dialogues.length) {
+
+        setTimeout(() => {
+
+            character.src = talkingGif;
+            overlay.classList.add("active");
+
+            song.volume = 0;
+            song.play();
+
+            const fadeAudio = setInterval(() => {
+
+                if (song.volume < 1) {
+                    song.volume += 0.02;
+                } else {
+                    clearInterval(fadeAudio);
+                }
+
+            }, 100);
+
+        }, 1200);
+
+    }
+
+}
+
+
+async function startConversation() {
+
+    if (isTyping) return;
+
+    userInput.value = "";
+
+    await nextDialogue();
+
+}
+
+
+sendBtn.addEventListener("click", () => {
+    startConversation();
+});
+
+
+userInput.addEventListener("keydown", (e) => {
+
+    if (e.key === "Enter") {
+        startConversation();
+    }
+
+});
+
+
+// INTRO
+window.addEventListener("load", async () => {
+
+    await typeText(
+`...conexión establecida.
+
+Puedes preguntarme algo.`
+    );
+
+});
+
+</script>
+
+</body>
+</html>
+
