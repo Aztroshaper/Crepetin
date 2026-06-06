@@ -1,0 +1,3196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Torreón't</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+}
+
+body{
+    background:#050505;
+    overflow:hidden;
+    font-family:monospace;
+    color:white;
+}
+
+#game{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    overflow:hidden;
+
+    background:url("fon.gif");
+    background-size:cover;
+    background-position:center;
+
+    image-rendering:pixelated;
+
+    animation:screenPulse 4s ease-in-out infinite;
+}
+
+
+#startScreen{
+    position:fixed;
+    inset:0;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+
+    background:rgba(0,0,0,0.75);
+
+    z-index:9999999;
+
+    backdrop-filter:blur(4px);
+}
+
+#startBtn{
+
+    padding:25px 50px;
+
+    font-size:28px;
+
+    border:3px solid white;
+
+    background:black;
+    color:white;
+
+    cursor:pointer;
+
+    font-family:monospace;
+
+    transition:0.2s;
+
+    box-shadow:
+    0 0 25px rgba(255,255,255,0.2),
+    0 0 60px rgba(255,255,255,0.1);
+
+    max-width:1000px;
+}
+
+#startBtn:hover{
+
+    transform:scale(1.05);
+
+    background:white;
+    color:black;
+}
+
+#startText{
+
+    margin-top:20px;
+
+    font-size:14px;
+
+    letter-spacing:2px;
+
+    opacity:0.7;
+}
+
+@keyframes screenPulse{
+
+    0%{
+        filter:brightness(1);
+    }
+
+    50%{
+        filter:brightness(0.92);
+    }
+
+    100%{
+        filter:brightness(1);
+    }
+}
+
+#darkness{
+    position:fixed;
+    inset:0;
+
+    pointer-events:none;
+
+    z-index:99990;
+
+    background:
+    radial-gradient(
+        circle 170px at center,
+        rgba(0,0,0,0) 0%,
+        rgba(0,0,0,0.15) 35%,
+        rgba(0,0,0,0.82) 70%,
+        rgba(0,0,0,0.96) 100%
+    );
+}
+
+#game::before{
+    content:"";
+
+    position:absolute;
+    inset:0;
+
+    background:
+    repeating-linear-gradient(
+        to bottom,
+        rgba(295,255,255,0.03) 0px,
+        rgba(295,255,255,0.03) 2px,
+        transparent 10px,
+        transparent 10x
+    );
+
+    pointer-events:none;
+
+    z-index:99998;
+}
+
+#game::after{
+    content:"";
+
+    position:absolute;
+    inset:-50%;
+
+    background-image:
+    url("te.png");
+
+    background-repeat:repeat;
+
+    opacity:-0.14;
+
+    mix-blend-mode:screen;
+
+    animation:
+    noiseMove 0.15s steps(2) infinite,
+    vhsMove 0.12s infinite;
+
+    pointer-events:none;
+
+    z-index:99997;
+}
+
+@keyframes noiseMove{
+
+    0%{
+        transform:translate(0,0);
+    }
+
+    20%{
+        transform:translate(-5%,-3%);
+    }
+
+    40%{
+        transform:translate(-10%,5%);
+    }
+
+    60%{
+        transform:translate(8%,-4%);
+    }
+
+    80%{
+        transform:translate(5%,10%);
+    }
+
+    100%{
+        transform:translate(0,0);
+    }
+}
+
+@keyframes vhsMove{
+
+    0%{
+        transform:translateX(0px);
+    }
+
+    50%{
+        transform:translateX(2px);
+    }
+
+    100%{
+        transform:translateX(-2px);
+    }
+}
+
+#world{
+    position:absolute;
+
+    width:1400px;
+    height:1400px;
+
+    transform-origin:top left;
+
+    filter:
+    brightness(0.45)
+    contrast(1.1);
+}
+
+.tile{
+    position:absolute;
+
+    width:40px;
+    height:40px;
+
+    background-size:cover;
+
+    image-rendering:pixelated;
+}
+
+.entity{
+    position:absolute;
+
+    width:40px;
+    height:40px;
+
+    background-size:cover;
+
+    image-rendering:pixelated;
+
+    z-index:5;
+}
+
+.object{
+    position:absolute;
+
+    background-size:cover;
+
+    image-rendering:pixelated;
+
+    z-index:4;
+}
+
+.building{
+    position:absolute;
+
+    background-size:100% 100%;
+
+    image-rendering:pixelated;
+
+    z-index:3;
+    transition: filter 0.8s ease-in-out;
+}
+
+#player{
+
+    z-index:10;
+
+    filter:
+    drop-shadow(0 0 5px rgba(255,255,255,0.7))
+    drop-shadow(0 0 20px rgba(255,255,200,0.8))
+    drop-shadow(0 0 40px rgba(255,255,180,0.5));
+}
+
+@keyframes popIn {
+    0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+#dialogBox{
+
+    position:fixed;
+
+    bottom:20px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    width:520px;
+
+    background:rgba(0,0,0,0.95);
+
+    border:3px solid white;
+    border-radius:10px;
+
+    padding:20px;
+
+    display:none;
+
+    z-index:999999;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(255,255,255,0.1);
+    animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
+}
+
+#dialogText{
+
+    margin-bottom:20px;
+
+    line-height:1.6;
+    font-size: 14px;
+}
+
+.btn{
+
+    display:inline-block;
+
+    padding:10px 18px;
+
+    background:#ffcc00;
+
+    color:black;
+
+    text-decoration:none;
+
+    font-weight:bold;
+
+    border-radius:5px;
+
+    margin-right:10px;
+
+    border:none;
+
+    cursor:pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 5px rgba(255, 204, 0, 0.3);
+}
+
+.btn:hover {
+    background: #ffe680;
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.9), 0 0 25px rgba(255, 204, 0, 0.5);
+    transform: translateY(-1px);
+}
+
+#closeBtn{
+
+    background:#444;
+
+    color:white;
+    box-shadow: none;
+}
+
+#closeBtn:hover {
+    background: #666;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    color: white;
+}
+
+.rain{
+
+    position:absolute;
+
+    width:2px;
+    height:20px;
+
+    background:rgba(255,255,255,0.5);
+
+    animation:rainFall linear infinite;
+
+    z-index:99999;
+
+    pointer-events:none;
+}
+
+@keyframes rainFall{
+
+    from{
+        transform:
+        translateY(-100vh)
+        translateX(0px);
+    }
+
+    to{
+        transform:
+        translateY(100vh)
+        translateX(-60px);
+    }
+}
+
+#liminalMessage{
+
+    position:fixed;
+
+    bottom:210px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    color:white;
+
+    font-size:20px;
+
+    text-shadow:
+    0 0 10px white,
+    0 0 25px rgba(255,255,255,0.4);
+
+    z-index:99999999;
+
+    pointer-events:none;
+
+    width:900px;
+
+    text-align:center;
+
+    opacity:0;
+
+    transition:opacity 1s;
+}
+
+#starEvent{
+
+    position:fixed;
+
+    width:96px;
+    height:96px;
+
+    left:50%;
+    top:50%;
+
+    transform:translate(-50%,-50%);
+
+    background:url("spa.gif");
+
+    background-size:contain;
+    background-repeat:no-repeat;
+
+    image-rendering:pixelated;
+
+    z-index:999999999;
+
+    pointer-events:none;
+
+    display:none;
+
+    animation:starSpin 3s linear infinite;
+}
+
+@keyframes starSpin{
+
+    from{
+        transform:
+        translate(-50%,-50%)
+        rotate(0deg)
+        scale(1);
+    }
+
+    to{
+        transform:
+        translate(-50%,-50%)
+        rotate(360deg)
+        scale(1.15);
+    }
+}
+
+#starText{
+
+    position:fixed;
+
+    top:58%;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    font-size:34px;
+
+    letter-spacing:3px;
+
+    color:white;
+
+    text-shadow:
+    0 0 10px white,
+    0 0 25px rgba(255,255,255,0.7);
+
+    z-index:999999999;
+
+    opacity:0;
+
+    transition:opacity 2s;
+
+    pointer-events:none;
+}
+
+
+#touchControls{
+position:fixed;
+left:20px;
+bottom:20px;
+z-index:99999999;
+display:none;
+flex-direction:column;
+gap:8px;
+align-items:center;
+}
+.touchRow{
+display:flex;
+gap:8px;
+justify-content:center;
+}
+.touchBtn{
+width:65px;
+height:65px;
+background: linear-gradient(135deg, rgba(30,30,30,0.9) 0%, rgba(10,10,10,0.98) 100%);
+border: 2px solid rgba(255, 255, 255, 0.3);
+border-bottom: 5px solid rgba(255, 255, 255, 0.2);
+color: #cccccc;
+font-size: 22px;
+font-weight: bold;
+font-family: monospace;
+border-radius: 10px;
+backdrop-filter: blur(4px);
+user-select: none;
+touch-action: none;
+cursor: pointer;
+position: relative;
+box-shadow: 0 6px 16px rgba(0,0,0,0.6), 0 0 10px rgba(255, 255, 255, 0.05);
+transition: all 0.05s ease;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.touchBtn.active_key, .touchBtn:active{
+border-bottom-width: 2px;
+transform: translateY(3px);
+box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+background: linear-gradient(135deg, #ffcc00 0%, #b38f00 100%);
+color: black;
+border-color: white;
+filter: brightness(1);
+text-shadow: none;
+box-shadow: 0 0 20px rgba(255, 204, 0, 0.8), 0 0 35px rgba(255, 204, 0, 0.4);
+}
+
+
+@keyframes pageShake{
+0%{transform:translate(0,0)}
+25%{transform:translate(-4px,2px)}
+50%{transform:translate(4px,-2px)}
+75%{transform:translate(-3px,-3px)}
+100%{transform:translate(0,0)}
+}
+.shake{
+animation:pageShake 0.12s infinite;
+}
+
+#lightningFlash{
+position:fixed;
+inset:0;
+background:white;
+opacity:0;
+pointer-events:none;
+z-index:999999998;
+}
+
+#npcTrackerMenu{
+position: fixed;
+right: 20px;
+top: 20px;
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+z-index: 999999;
+gap: 0px;
+}
+.menuWrapper {
+display: flex;
+align-items: flex-start;
+transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+margin-bottom: 0px;
+}
+.menuWrapper.closed {
+transform: translateX(262px);
+}
+.menuTab {
+width: 50px;
+height: 50px;
+background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(5, 5, 5, 0.98) 100%);
+border: 2px solid rgba(255, 255, 255, 0.4);
+color: white;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+backdrop-filter: blur(6px);
+box-shadow: -5px 5px 20px rgba(0,0,0,0.7), 0 0 10px rgba(255, 204, 0, 0.2);
+font-size: 26px;
+user-select: none;
+border-radius: 12px 0 0 12px;
+transform: translateX(2px);
+z-index: 2;
+transition: border-color 0.3s;
+}
+.menuTab:hover {
+border-color: #ffcc00;
+}
+#trackerWrapper .menuTab {
+border-bottom-width: 1px;
+border-radius: 12px 0 0 0;
+}
+#bookWrapper .menuTab {
+border-top-width: 1px;
+border-radius: 0 0 0 12px;
+}
+.vhs-human{
+animation: vhsBlink 1.5s steps(1) infinite;
+text-shadow: 0 0 4px cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+@keyframes vhsBlink {
+0%, 50% { color: #ffcc00; filter: drop-shadow(0 0 4px rgba(255,204,0,0.6)); }
+51%, 100% { color: #666666; filter: drop-shadow(0 0 1px rgba(0,0,0,0)); }
+}
+#npcTracker{
+width:260px;
+height: 195px;
+overflow-y: auto;
+padding:14px;
+background: linear-gradient(145deg, rgba(15, 15, 15, 0.92) 0%, rgba(0, 0, 0, 0.98) 100%);
+border: 2px solid rgba(255, 255, 255, 0.4);
+border-bottom-width: 1px;
+backdrop-filter:blur(6px);
+color:white;
+font-size:13px;
+box-shadow:-10px 5px 25px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,255,255,0.05);
+border-radius: 0 12px 0 0;
+position: relative;
+z-index: 1;
+}
+#npcTrackerTitle{
+font-weight:bold;
+letter-spacing:2px;
+margin-bottom:10px;
+color: #ffcc00;
+text-shadow: 0 0 5px rgba(255, 204, 0, 0.4);
+border-bottom: 1px solid rgba(255,255,255,0.2);
+padding-bottom: 4px;
+font-size: 14px;
+}
+#npcTrackerList div{
+margin:5px 0;
+padding: 4px 6px;
+background: rgba(255,255,255,0.03);
+border-radius: 4px;
+border-left: 3px solid #444;
+transition: all 0.2s;
+}
+#npcTrackerList div.discovered-row {
+border-left-color: #ffcc00;
+background: rgba(255, 204, 0, 0.05);
+}
+
+@keyframes flashRow {
+    0% { background: rgba(255, 204, 0, 0.8); box-shadow: 0 0 15px #ffcc00; }
+    50% { background: rgba(255, 204, 0, 0.4); }
+    100% { background: rgba(255, 204, 0, 0.05); }
+}
+#npcTrackerList div.just-discovered {
+    animation: flashRow 1.2s ease-out 1;
+}
+
+
+#npcTracker::-webkit-scrollbar{
+width:8px;
+}
+#npcTracker::-webkit-scrollbar-track{
+background:rgba(255,255,255,0.04);
+border-radius:10px;
+box-shadow:inset 0 0 8px rgba(0,0,0,0.6);
+}
+#npcTracker::-webkit-scrollbar-thumb{
+background:linear-gradient(180deg,#ffcc00,#b8860b);
+border-radius:10px;
+border:1px solid rgba(255,255,255,0.15);
+box-shadow:0 0 10px rgba(255,204,0,0.35);
+}
+#npcTracker::-webkit-scrollbar-thumb:hover{
+background:linear-gradient(180deg,#ffe27a,#ffcc00);
+}
+#npcTracker{
+scrollbar-width:thin;
+scrollbar-color:#ffcc00 rgba(255,255,255,0.04);
+}
+
+#npcTrackerCount{
+margin-top:8px;
+font-weight:bold;
+text-align: right;
+color: #ffcc00;
+font-size: 14px;
+letter-spacing: 1px;
+}
+
+
+#discoveryBanner{
+position:fixed;
+top:25px;
+left:50%;
+transform:translateX(-50%);
+background:rgba(0,0,0,.9);
+border:2px solid white;
+padding:14px 22px;
+z-index:99999999;
+opacity:0;
+pointer-events:none;
+transition:opacity .8s;
+text-align:center;
+}
+
+#mansionBanner{
+display:none; 
+position:fixed; 
+top:40px; 
+left:50%; 
+transform:translateX(-50%); 
+background:rgba(0,0,0,0.9); 
+border:2px solid #ffcc00; 
+padding:15px 25px; 
+color:white; 
+font-family:monospace; 
+text-align:center; 
+z-index:9999999; 
+border-radius:8px; 
+box-shadow:0 0 20px rgba(255,204,0,0.4); 
+text-transform:uppercase; 
+letter-spacing:1px; 
+animation: popIn 0.5s;
+}
+
+#minimapContainer {
+position: fixed;
+right: 20px;
+bottom: 20px;
+width: 144px;
+height: 144px;
+background: rgba(5, 5, 5, 0.85);
+border: 2px solid rgba(255, 255, 255, 0.4);
+box-shadow: 0 0 15px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(0,0,0,0.9);
+z-index: 999998;
+display: none;
+overflow: hidden;
+backdrop-filter: blur(2px);
+cursor: pointer;
+transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+#minimapContainer::after {
+content: "TORREÓN'T";
+position: absolute;
+top: 5px;
+left: 5px;
+color: rgba(255, 204, 0, 0.4);
+font-size: 9px;
+letter-spacing: 1px;
+pointer-events: none;
+font-family: monospace;
+}
+#minimapContainer.expanded {
+width: 450px;
+height: 450px;
+left: 50%;
+top: 50%;
+transform: translate(-50%, -50%);
+right: auto;
+bottom: auto;
+z-index: 9999999;
+box-shadow: 0 0 40px rgba(0,0,0,0.9), 0 0 25px rgba(255, 204, 0, 0.2);
+}
+#minimapCanvas {
+width: 100%;
+height: 100%;
+display: block;
+image-rendering: pixelated;
+}
+#minimapCloseBtn {
+position: absolute;
+top: 5px;
+right: 5px;
+background: rgba(0,0,0,0.8);
+border: 1px solid rgba(255,255,255,0.5);
+color: white;
+padding: 2px 6px;
+font-size: 10px;
+cursor: pointer;
+display: none;
+z-index: 10;
+}
+#minimapContainer.expanded #minimapCloseBtn {
+display: block;
+}
+
+
+#rpgMsgContainer {
+position: fixed;
+top: 20px;
+left: 50%;
+transform: translateX(-50%) translateY(-150px);
+width: 480px;
+height: 90px;
+background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%);
+border: 2px solid #ffcc00;
+border-radius: 8px;
+z-index: 99999899;
+display: flex;
+align-items: center;
+padding: 10px;
+box-shadow: 0 8px 24px rgba(0,0,0,0.8), 0 0 15px rgba(255, 204, 0, 0.3);
+transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+pointer-events: none;
+}
+#rpgMsgContainer.show {
+transform: translateX(-50%) translateY(0);
+}
+#rpgNpcGifBox {
+width: 70px;
+height: 70px;
+border: 1px solid rgba(255, 255, 255, 0.3);
+border-radius: 4px;
+overflow: hidden;
+position: relative;
+background: #111;
+flex-shrink: 0;
+}
+#rpgNpcGif {
+position: absolute;
+width: 60px;
+height: 60px;
+top: 5px;
+left: 5px;
+background-size: cover;
+image-rendering: pixelated;
+clip-path: inset(0% 0% 50% 0%);
+transform: scale(1.4);
+transform-origin: top center;
+}
+#rpgMsgTextBox {
+flex-grow: 1;
+margin-left: 15px;
+font-family: monospace;
+font-size: 13px;
+color: #fff;
+line-height: 1.4;
+overflow: hidden;
+word-break: break-word;
+}
+#rpgNpcName {
+font-weight: bold;
+color: #ffcc00;
+margin-bottom: 2px;
+font-size: 11px;
+text-transform: uppercase;
+letter-spacing: 1px;
+}
+
+.water-trail {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    animation: puddleFade 0.9s ease-out forwards;
+}
+@keyframes puddleFade {
+    0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0.7; filter: blur(0px); }
+    50% { opacity: 0.4; filter: blur(0.5px); }
+    100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; filter: blur(2px); }
+}
+
+.npc-alert {
+    position: absolute;
+    color: #ffcc00;
+    font-weight: bold;
+    font-size: 24px;
+    font-family: monospace;
+    text-shadow: 0 0 8px #ffcc00, 0 0 15px #fff;
+    pointer-events: none;
+    z-index: 15;
+    transform: translateX(-50%);
+    animation: alertFloat 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes alertFloat {
+    0% { top: -10px; opacity: 0; scale: 0.5; }
+    30% { top: -30px; opacity: 1; scale: 1.2; }
+    80% { top: -35px; opacity: 1; scale: 1; }
+    100% { top: -45px; opacity: 0; scale: 0.8; }
+}
+
+#vhsStaticOverlay {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0.1) 100%);
+    background-size: 100% 8px;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.4;
+}
+
+.glow-pulse {
+    animation: goldenGlow 1s infinite alternate !important;
+}
+@keyframes goldenGlow {
+    0% { border-color: rgba(255, 204, 0, 0.5); box-shadow: -5px 5px 20px rgba(0,0,0,0.7), 0 0 5px rgba(255, 204, 0, 0.4); }
+    100% { border-color: #ffcc00; box-shadow: -5px 5px 20px rgba(0,0,0,0.7), 0 0 25px #ffcc00, 0 0 10px #ffcc00; }
+}
+
+#bookContainer {
+    width: 260px;
+    height: 380px;
+    background: linear-gradient(135deg, rgba(15,15,15,0.96) 0%, rgba(2,2,2,0.99) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-width: 1px;
+    border-radius: 0 0 12px 0;
+    padding: 16px;
+    box-shadow: -10px 10px 25px rgba(0,0,0,0.8);
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 1;
+}
+
+.book-3d-scene {
+    perspective: 1200px;
+    width: 100%;
+    height: 240px;
+    margin-top: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.book-3d {
+    width: 220px;
+    height: 220px;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(20deg) rotateY(-15deg);
+    transition: transform 0.1s ease-out;
+    cursor: grab;
+}
+.book-3d:active {
+    cursor: grabbing;
+}
+
+.book-page-3d {
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    top: 0;
+    background: #111;
+    border: 1px solid #333;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+    transform-origin: left center;
+    backface-visibility: hidden;
+}
+
+.book-page-left {
+    left: 0;
+    border-radius: 6px 0 0 6px;
+    border-right: 3px solid #000;
+    background: linear-gradient(to right, #1a1a1a, #0d0d0d);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotateY(0deg);
+    z-index: 3;
+}
+
+.book-page-right {
+    left: 50%;
+    border-radius: 0 6px 6px 0;
+    border-left: 3px solid #000;
+    background: linear-gradient(to left, #1a1a1a, #0d0d0d);
+    padding: 10px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.4;
+    transform: rotateY(0deg);
+    z-index: 3;
+}
+
+.book-page-right::-webkit-scrollbar {
+    width: 3px;
+}
+.book-page-right::-webkit-scrollbar-thumb {
+    background: #ffcc00;
+}
+
+.book-npc-gif {
+    width: 80px;
+    height: 80px;
+    background-size: cover;
+    image-rendering: pixelated;
+    border: 2px solid #ffcc00;
+    box-shadow: 0 0 10px rgba(255,204,0,0.2);
+    background-color: #050505;
+}
+
+.book-page-flip-anim-left {
+    animation: flipLeftEffect 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.book-page-flip-anim-right {
+    animation: flipRightEffect 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes flipLeftEffect {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(45deg) scale(1.05); filter: brightness(1.4); }
+    100% { transform: rotateY(0deg); }
+}
+
+@keyframes flipRightEffect {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(-45deg) scale(1.05); filter: brightness(1.4); }
+    100% { transform: rotateY(0deg); }
+}
+
+.book-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.book-btn {
+    background: #222;
+    color: white;
+    border: 1px solid #444;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 12px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+.book-btn:hover {
+    background: #ffcc00;
+    color: black;
+    border-color: white;
+}
+
+#bookNpcName {
+    color: #ffcc00;
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 2px;
+}
+
+.custom-book-icon {
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.3s;
+}
+.menuTab:hover .custom-book-icon {
+    transform: scale(1.1) rotate(-5deg);
+    color: #ffcc00;
+}
+
+/* Scrollbar para la galería */
+#galleryGrid::-webkit-scrollbar {
+    width: 8px;
+}
+#galleryGrid::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+}
+#galleryGrid::-webkit-scrollbar-thumb {
+    background: #ffea00;
+    border-radius: 4px;
+}
+
+@keyframes bounceArrow {
+    0%, 100% { transform: translateY(0) rotate(var(--arrow-rotation)); }
+    50% { transform: translateY(-10px) rotate(var(--arrow-rotation)); }
+}
+.tutorial-arrow-anim {
+    animation: bounceArrow 1s infinite;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="startScreen">
+
+    <button id="startBtn">
+
+Bienvenido a Torreón't. <br>  <br> 
+
+Este espacio digital se construyó con lo que Víctor aprendió de ti y con los recuerdos que te quitó. Puedes quedarte el tiempo que quieras; aquí el tiempo no avanza.
+
+Pero observa bien. Todo lo que conoces está aquí, aunque nada está como debería. <br>  <br>  <br> 
+
+Camina con calma por esta réplica. A ver si tú logras enseñarle a Víctor cómo se siente ser humano.
+    </button>
+
+    <div id="startText">
+        ¡Vamos!
+    </div>
+
+</div>
+
+<audio id="trueno"><source src="Thunder.mp3" type="audio/mpeg"></audio>
+
+<audio id="musica" loop>
+    <source src="ambiente.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="vicAudio" loop>
+    <source src="vic.mp3" type="audio/mpeg">
+</audio>
+
+<div id="game">
+
+    <div id="world"></div>
+
+    <div id="darkness"></div>
+
+    <div id="dialogBox">
+
+        <p id="dialogText"></p>
+
+        <div id="linkContainer"></div>
+
+    </div>
+
+</div>
+
+<div id="liminalMessage"></div>
+
+<div id="starEvent"></div>
+<div id="lightningFlash"></div>
+
+<div id="starText">
+    Tú no eres esto.
+</div>
+
+
+<div id="npcTrackerMenu">
+    <div id="trackerWrapper" class="menuWrapper closed">
+        <div id="npcTrackerTab" class="menuTab" onclick="toggleTrackerMenu()"><span class="vhs-human">웃</span></div>
+        <div id="npcTracker">
+            <div id="npcTrackerTitle">ENCONTRASTE A</div>
+            <div id="npcTrackerList"></div>
+            <div id="npcTrackerCount">0/9</div>
+        </div>
+    </div>
+
+    <div id="bookWrapper" class="menuWrapper closed">
+        <div id="npcBookTab" class="menuTab" onclick="toggleBookMenu()">
+            <svg class="custom-book-icon" viewBox="0 0 24 24">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+        </div>
+        <div id="bookContainer">
+            <div id="npcTrackerTitle" style="margin-bottom: 5px;">ARCHIVO</div>
+            
+            <div class="book-3d-scene">
+                <div class="book-3d" id="book3DElement">
+                    <div class="book-page-3d book-page-left" id="bookPageLeftPart">
+                        <div class="book-npc-gif" id="bookNpcGif"></div>
+                    </div>
+                    <div class="book-page-3d book-page-right" id="bookNpcDetails">
+                        <div id="bookNpcName">Ninguno</div>
+                        <div id="bookNpcDesc">Explora el mapa para descubrir gente y leer sus registros.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="book-controls">
+                <button class="book-btn" onclick="prevBookPage()">◀</button>
+                <span id="bookPageIndicator" style="font-size:11px; color:#aaa;">0/0</span>
+                <button class="book-btn" onclick="nextBookPage()">▶</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="discoveryBanner"></div>
+
+<div id="mansionBanner">
+    Descubriste la casa la Morelos, antiguo hogar del CAN
+</div>
+
+
+<div id="rpgMsgContainer">
+<div id="rpgNpcGifBox">
+<div id="rpgNpcGif"></div>
+</div>
+<div id="rpgMsgTextBox">
+<div id="rpgNpcName"></div>
+<div id="rpgMsgText"></div>
+</div>
+</div>
+
+<div id="touchControls">
+<button class="touchBtn" data-key="w" id="btn-w">W</button>
+<button class="touchBtn" data-key="s" id="btn-s">S</button>
+<button class="touchBtn" data-key="a" id="btn-a">A</button>
+<button class="touchBtn" data-key="d" id="btn-d">D</button>
+</div>
+
+<div id="minimapContainer" onclick="toggleMinimap(event)">
+<div id="vhsStaticOverlay"></div>
+<button id="minimapCloseBtn" onclick="toggleMinimap(event)">X</button>
+<canvas id="minimapCanvas" width="140" height="140"></canvas>
+</div>
+
+<div id="photoPromptOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:99999999; justify-content:center; align-items:center; flex-direction:column; backdrop-filter:blur(3px);">
+    <div style="background:#111; border:2px solid #ffcc00; padding:25px; border-radius:8px; text-align:center; box-shadow: 0 10px 30px rgba(0,0,0,0.9);">
+        <p style="margin-bottom:20px; font-size:16px; font-family:monospace; color:white; line-height: 1.4;">Este sitio parece bueno para tomar una foto.<br>¿Tomar foto?</p>
+        <button class="btn photoYes" style="width: 80px;">Sí</button>
+        <button class="btn photoNo" style="background:#444; color:white; width: 80px;">No</button>
+    </div>
+</div>
+
+<div id="cameraBtnContainer" style="display:none; position:fixed; left:20px; top:120px; width:60px; height:60px; background:rgba(10,10,10,0.85); border:2px solid #ffea00; border-radius:50%; justify-content:center; align-items:center; z-index:1000000; cursor:pointer; box-shadow:0 0 15px rgba(255,234,0,0.3); transition: transform 0.2s;">
+    <svg viewBox="0 0 24 24" width="30" height="30" stroke="#ffea00" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+    </svg>
+</div>
+
+<div id="phoneBtnContainer" style="display:flex; position:fixed; left:20px; top:190px; width:60px; height:60px; background:rgba(10,10,10,0.85); border:2px solid #ffea00; border-radius:50%; justify-content:center; align-items:center; z-index:1000000; cursor:pointer; box-shadow:0 0 15px rgba(255,234,0,0.3); transition: transform 0.2s;">
+    <svg viewBox="0 0 24 24" width="30" height="30" stroke="#ffea00" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+    </svg>
+</div>
+
+<div id="backpackBtnContainer" style="display:flex; position:fixed; left:20px; top:260px; width:60px; height:60px; background:rgba(10,10,10,0.85); border:2px solid #ffea00; border-radius:50%; justify-content:center; align-items:center; z-index:1000000; cursor:pointer; box-shadow:0 0 15px rgba(255,234,0,0.3); transition: transform 0.2s;" onclick="openBackpack()">
+    <svg viewBox="0 0 24 24" width="30" height="30" stroke="#ffea00" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+    </svg>
+</div>
+
+<div id="settingsBtnContainer" style="display:flex; position:fixed; left:20px; top:330px; width:60px; height:60px; background:rgba(10,10,10,0.85); border:2px solid #ffea00; border-radius:50%; justify-content:center; align-items:center; z-index:1000000; cursor:pointer; box-shadow:0 0 15px rgba(255,234,0,0.3); transition: transform 0.2s;">
+    <svg viewBox="0 0 24 24" width="30" height="30" stroke="#ffea00" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+</div>
+
+<div id="backpackModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000000; justify-content:center; align-items:center; backdrop-filter:blur(5px);">
+    <div style="background:#1a1a1a; border:2px solid white; border-radius:8px; width:80%; max-width:800px; height:80%; display:flex; flex-direction:column; padding:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:15px;">
+            <h2 style="color:#ffea00; letter-spacing:1px; margin:0; font-size:18px; font-family:monospace;">INVENTARIO</h2>
+            <button id="closeBackpackBtn" class="btn" style="margin:0; background:#444; color:white; box-shadow:none;" onclick="closeBackpack()">Cerrar</button>
+        </div>
+        <div style="display:flex; flex-grow:1; overflow:hidden; gap:20px;">
+            <div id="backpackList" style="width:40%; overflow-y:auto; border-right:1px solid #333; padding-right:10px; display:flex; flex-direction:column; gap:8px;">
+            </div>
+            <div id="backpackViewer" style="width:60%; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <p id="backpackEmptyText" style="color:#888; font-family:monospace; text-align:center;">Selecciona un objeto</p>
+                <div id="backpack3DScene" style="display:none; perspective:800px; width:200px; height:200px; margin-bottom:30px; cursor:grab;">
+                    <div id="backpack3DObject" style="width:100%; height:100%; position:relative; transform-style:preserve-3d; transform: rotateX(10deg) rotateY(0deg); transition: transform 0.1s;">
+                        <div class="cube-face front" style="position:absolute; width:200px; height:200px; background:rgba(255,204,0,0.1); border:2px solid #ffcc00; display:flex; align-items:center; justify-content:center; transform:translateZ(10px); backdrop-filter:blur(2px); box-shadow: 0 0 20px rgba(255,204,0,0.2) inset;">
+                            <div id="backpackItemIcon" style="font-size:60px; color:#ffcc00; font-family:monospace; filter: drop-shadow(0 0 10px #ffcc00);">?</div>
+                        </div>
+                        <div class="cube-face back" style="position:absolute; width:200px; height:200px; background:rgba(20,20,20,0.8); border:1px solid #555; transform:rotateY(180deg) translateZ(10px);"></div>
+                    </div>
+                </div>
+                <h3 id="backpackItemName" style="color:#fff; font-family:monospace; margin-bottom:10px; display:none; text-align:center;"></h3>
+                <p id="backpackItemDesc" style="color:#ccc; font-family:monospace; font-size:13px; text-align:center; max-width:80%; display:none; line-height:1.5;"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000000; justify-content:center; align-items:center; backdrop-filter:blur(5px);">
+    <div style="background:#1a1a1a; border:2px solid white; border-radius:8px; width:300px; display:flex; flex-direction:column; padding:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);">
+        <h2 style="color:#ffea00; letter-spacing:1px; margin-bottom:20px; font-size:18px; font-family:monospace; text-align:center;">AJUSTES</h2>
+        
+        <label style="color:white; font-family:monospace; margin-bottom:10px;">Música de Fondo</label>
+        <input type="range" id="bgmSlider" min="0" max="1" step="0.05" value="0.5" style="margin-bottom:20px; accent-color: #ffea00;">
+        
+        <label style="color:white; font-family:monospace; margin-bottom:10px;">Efectos / Víctor</label>
+        <input type="range" id="sfxSlider" min="0" max="1" step="0.05" value="1" style="margin-bottom:30px; accent-color: #ffea00;">
+        
+        <div id="creditsContainer" style="display:none; text-align:center; margin-bottom:20px;">
+            <button id="creditsBtn" class="btn" style="width:100%;">Créditos</button>
+        </div>
+
+        <button id="closeSettingsBtn" class="btn" style="background:#444; color:white; text-align:center;">Cerrar</button>
+    </div>
+</div>
+
+<div id="phoneModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000000; justify-content:center; align-items:center; backdrop-filter:blur(5px);">
+    <div style="background:#1a1a1a; border:2px solid white; border-radius:8px; width:80%; max-width:600px; max-height:80%; display:flex; flex-direction:column; padding:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:15px;">
+            <h2 style="color:#ffea00; letter-spacing:1px; margin:0; font-size:18px; font-family:monospace;">LLAMADA A VÍCTOR</h2>
+            <button id="closePhoneBtn" class="btn" style="margin:0; background:#444; color:white; box-shadow:none;">Colgar</button>
+        </div>
+        <div id="phoneQuestionsGrid" style="flex-grow:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:10px; font-family:monospace;">
+        </div>
+    </div>
+</div>
+
+<div id="victorSpeechBubble" style="display:none; position:fixed; left:calc(50% + 50px); top:calc(50% - 80px); width:300px; background:linear-gradient(135deg, rgba(15,15,15,0.95), rgba(0,0,0,0.98)); border:2px solid #ffcc00; border-radius:10px; border-bottom-left-radius: 0px; padding:15px; color:white; font-family:monospace; font-size:13px; z-index:9999999; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(255,204,0,0.3); text-align:left; line-height:1.5; pointer-events:none;">
+    <div style="color:#ffcc00; font-weight:bold; margin-bottom:5px; font-size:11px; letter-spacing:1px;">VÍCTOR</div>
+    <div id="victorSpeechText" style="word-wrap:break-word;"></div>
+</div>
+
+<div id="tutorialOverlay" style="display:none; position:fixed; inset:0; z-index:1000000000; pointer-events:none;">
+    <div id="tutorialDimmer" style="position:absolute; inset:0; background:rgba(0,0,0,0.7); pointer-events:auto;"></div>
+    <div id="tutorialDialog" style="position:absolute; background:#111; border:2px solid #ffcc00; padding:20px; color:white; font-family:monospace; border-radius:8px; width:300px; pointer-events:auto; transition:all 0.4s ease; z-index:10; box-shadow: 0 0 30px rgba(255,204,0,0.2);">
+        <p id="tutorialText" style="margin-bottom:20px; font-size:14px; line-height:1.5;"></p>
+        <div style="display:flex; justify-content:space-between;">
+            <button id="tutorialSkipBtn" class="btn" style="background:#444; color:white; padding:8px 12px; font-size:12px;">Saltar Tutorial</button>
+            <button id="tutorialNextBtn" class="btn" style="padding:8px 12px; font-size:12px;">Siguiente ▶</button>
+        </div>
+    </div>
+    <svg id="tutorialArrow" class="tutorial-arrow-anim" viewBox="0 0 24 24" style="position:absolute; width:60px; height:60px; transition:all 0.4s ease; z-index:10; stroke:#ffcc00; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; filter: drop-shadow(0 0 5px #ffcc00);">
+        <line x1="12" y1="19" x2="12" y2="5"></line>
+        <polyline points="5 12 12 5 19 12"></polyline>
+    </svg>
+</div>
+
+<div id="galleryModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000000; justify-content:center; align-items:center; backdrop-filter:blur(5px);">
+    <div style="background:#1a1a1a; border:2px solid white; border-radius:8px; width:80%; max-width:700px; height:80%; display:flex; flex-direction:column; padding:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:15px;">
+            <h2 style="color:#ffea00; letter-spacing:1px; margin:0; font-size:18px; font-family:monospace;">FRAGMENTOS CAPTURADOS</h2>
+            <button id="closeGalleryBtn" class="btn" style="margin:0; background:#444; color:white; box-shadow:none;">Cerrar</button>
+        </div>
+        <div id="galleryGrid" style="flex-grow:1; overflow-y:auto; display:flex; flex-direction:column; gap:20px; padding-right:10px; font-family:monospace;">
+            </div>
+    </div>
+</div>
+<style>
+#crepetinContainer {
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    width: 80px;
+    height: 80px;
+    z-index: 1000000;
+    cursor: pointer;
+    background: rgba(10, 10, 10, 0.85);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+    transition: transform 0.2s ease-in-out;
+}
+#crepetinContainer:hover {
+    transform: scale(1.05);
+}
+.crepetin-border-svg {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 100px;
+    height: 100px;
+    pointer-events: none;
+    overflow: visible;
+}
+.crepetin-border-svg circle {
+    fill: transparent;
+    stroke: #ffea00;
+    stroke-width: 3;
+    stroke-dasharray: 226.2;
+    stroke-dashoffset: 226.2;
+    transition: stroke-dashoffset 0.4s ease;
+    filter: drop-shadow(0 0 3px #ffea00) drop-shadow(0 0 6px #ffea00);
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+.crepetin-gif-wrapper {
+    width: 70px;
+    height: 70px;
+    position: relative;
+    border-radius: 50%;
+    overflow: hidden;
+}
+.crepetin-gif {
+    width: 100%;
+    height: 100%;
+    background-image: url('vic.gif');
+    background-size: cover;
+    background-position: top center;
+    image-rendering: pixelated;
+    clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+    transform: scale(1.5); /* Se acercó más para evitar espacios vacíos */
+}
+#crepetinMenu {
+    position: fixed;
+    left: 110px; /* Se movió a un lado para no empalmarse con los iconos de abajo */
+    top: 20px;
+    width: 220px;
+    background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(5, 5, 5, 0.98) 100%);
+    border: 2px solid #ffea00;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.8), 0 0 15px rgba(255, 234, 0, 0.3);
+    border-radius: 8px;
+    padding: 14px;
+    z-index: 1000001;
+    font-family: monospace;
+    color: white;
+    transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.crepetin-menu-hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+.crepetin-menu-header {
+    font-weight: bold;
+    color: #ffea00;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+#crepetinMenuText {
+    font-size: 13px;
+    line-height: 1.4;
+}
+</style>
+
+<div id="crepetinContainer" onclick="toggleCrepetinMenu()">
+    <svg class="crepetin-border-svg" viewBox="0 0 100 100">
+        <circle id="crepetinProgressCircle" cx="50" cy="50" r="36" />
+    </svg>
+    <div class="crepetin-gif-wrapper">
+        <div class="crepetin-gif"></div>
+    </div>
+</div>
+
+<div id="crepetinMenu" class="crepetin-menu-hidden">
+    <div class="crepetin-menu-header">CREPETÍN STATUS</div>
+    <div id="crepetinMenuText">0% para el crepetín</div>
+    <button class="btn" style="margin-top: 12px; font-size: 11px; padding: 5px 10px; width: 100%; text-align: center;" onclick="event.stopPropagation(); toggleCrepetinMenu();">Cerrar</button>
+</div>
+
+<script>
+function toggleCrepetinMenu() {
+    const menu = document.getElementById("crepetinMenu");
+    if(menu) {
+        menu.classList.toggle("crepetin-menu-hidden");
+    }
+}
+
+function updateCrepetinProgress() {
+    if (typeof talkedNPCs !== 'undefined') {
+        const count = Math.min(talkedNPCs.size, 10);
+        const pct = (count / 10) * 96;
+        const roundedPct = Math.round(pct);
+        
+        const circle = document.getElementById("crepetinProgressCircle");
+        if (circle) {
+            const totalPerimeter = 226.2; 
+            const offset = totalPerimeter - (totalPerimeter * (pct / 100));
+            circle.style.strokeDashoffset = offset;
+        }
+        
+        const menuText = document.getElementById("crepetinMenuText");
+        if (menuText) {
+            menuText.innerText = `${roundedPct}% para el crepetín`;
+        }
+    }
+}
+
+setInterval(updateCrepetinProgress, 200);
+</script>
+
+<script>
+// FUNCION AUXILIAR PARA VICTOR
+function victorSpeak(text, duration = 4000) {
+    const bubble = document.getElementById('victorSpeechBubble');
+    const textEl = document.getElementById('victorSpeechText');
+    bubble.style.display = 'block';
+    textEl.innerHTML = text;
+    setTimeout(() => { bubble.style.display = 'none'; }, duration);
+}
+
+const startBtn = document.getElementById("startBtn");
+const startScreen = document.getElementById("startScreen");
+const musica = document.getElementById("musica");
+const trueno = document.getElementById("trueno");
+
+let bookHasUnreadNews = false;
+
+// Variables Globales de Audio
+let globalBgmVolume = 0.5;
+let globalSfxVolume = 1.0;
+
+document.getElementById('bgmSlider').oninput = (e) => {
+    globalBgmVolume = e.target.value;
+    musica.volume = globalBgmVolume;
+};
+document.getElementById('sfxSlider').oninput = (e) => {
+    globalSfxVolume = e.target.value;
+    document.getElementById('vicAudio').volume = globalSfxVolume;
+    trueno.volume = globalSfxVolume * 0.7; 
+};
+
+document.getElementById('settingsBtnContainer').onclick = () => {
+    document.getElementById('settingsModal').style.display = 'flex';
+};
+document.getElementById('closeSettingsBtn').onclick = () => {
+    document.getElementById('settingsModal').style.display = 'none';
+};
+
+function toggleTrackerMenu() {
+    const menu = document.getElementById("trackerWrapper");
+    menu.classList.toggle("closed");
+}
+
+function toggleBookMenu() {
+    const menu = document.getElementById("bookWrapper");
+    menu.classList.toggle("closed");
+    
+    if(!menu.classList.contains("closed")) {
+        document.getElementById("npcBookTab").classList.remove("glow-pulse");
+        bookHasUnreadNews = false;
+        updateBookUI();
+    }
+}
+
+function toggleMinimap(e) {
+    if (e) e.stopPropagation();
+    const minimap = document.getElementById("minimapContainer");
+    minimap.classList.toggle("expanded");
+}
+
+// LOGICA DEL TUTORIAL
+let tutorialStep = 0;
+const tutorialSteps = [
+    { target: '#bookWrapper .menuTab', text: 'El Menú del Archivo. Aquí puedes leer los registros y memorias detalladas de las personas que vayas encontrando.', align: 'right' },
+    { target: '#trackerWrapper .menuTab', text: 'Rastreador de Habitantes. Lleva la cuenta de a cuántos habitantes has descubierto en Torreón\'t.', align: 'right' },
+    { target: '#crepetinContainer', text: 'Progreso del Crepetín. Te muestra el porcentaje de avance general conforme exploras y hablas con más personas.', align: 'left' },
+    { target: '#minimapContainer', text: 'El Minimapa. Hazle clic para expandirlo y ubicarte mejor entre las calles borrosas.', align: 'bottom-right' },
+    { target: '#phoneBtnContainer', text: 'Tu Teléfono. Úsalo para llamar a Víctor y hacerle preguntas directas sobre este extraño lugar.', align: 'left' },
+    { target: '#backpackBtnContainer', text: 'Tu Mochila. Aquí se guardan los objetos que la gente y el entorno te revelan al conocerlos.', align: 'left' },
+    { target: 'center', text: 'Mantén presionada la tecla SHIFT mientras avanzas para CORRER. Ah, y la CÁMARA aparecerá sola cuando encuentres sitios especiales. ¡Eso es todo, buena suerte!', align: 'center' }
+];
+
+function startTutorial() {
+    document.getElementById('tutorialOverlay').style.display = 'block';
+    showTutorialStep(0);
+}
+
+function showTutorialStep(index) {
+    if(index >= tutorialSteps.length) {
+        endTutorial();
+        return;
+    }
+    tutorialStep = index;
+    const step = tutorialSteps[index];
+    const dialog = document.getElementById('tutorialDialog');
+    const arrow = document.getElementById('tutorialArrow');
+    document.getElementById('tutorialText').innerText = step.text;
+
+    if(step.target === 'center') {
+        dialog.style.left = '50%';
+        dialog.style.top = '50%';
+        dialog.style.transform = 'translate(-50%, -50%)';
+        arrow.style.display = 'none';
+    } else {
+        arrow.style.display = 'block';
+        dialog.style.transform = 'none';
+        const targetEl = document.querySelector(step.target);
+        if(!targetEl) { endTutorial(); return; }
+        const rect = targetEl.getBoundingClientRect();
+        
+        if(step.align === 'right') {
+            arrow.style.setProperty('--arrow-rotation', '90deg');
+            arrow.style.left = (rect.left - 70) + 'px';
+            arrow.style.top = (rect.top + rect.height/2 - 30) + 'px';
+            dialog.style.left = (rect.left - 390) + 'px';
+            dialog.style.top = Math.max(20, rect.top) + 'px';
+        } else if(step.align === 'left') {
+            arrow.style.setProperty('--arrow-rotation', '-90deg');
+            arrow.style.left = (rect.right + 10) + 'px';
+            arrow.style.top = (rect.top + rect.height/2 - 30) + 'px';
+            dialog.style.left = (rect.right + 80) + 'px';
+            dialog.style.top = Math.max(20, rect.top) + 'px';
+        } else if(step.align === 'bottom-right') {
+            arrow.style.setProperty('--arrow-rotation', '135deg');
+            arrow.style.left = (rect.left - 50) + 'px';
+            arrow.style.top = (rect.top - 60) + 'px';
+            dialog.style.left = (rect.left - 350) + 'px';
+            dialog.style.top = (rect.top - 200) + 'px';
+        }
+    }
+}
+
+document.getElementById('tutorialNextBtn').onclick = () => { showTutorialStep(tutorialStep + 1); };
+document.getElementById('tutorialSkipBtn').onclick = () => { endTutorial(); };
+
+function endTutorial() {
+    document.getElementById('tutorialOverlay').style.display = 'none';
+    localStorage.setItem("torreont_tutorial", "done");
+}
+
+
+startBtn.onclick = ()=>{
+    startScreen.style.display = "none";
+    musica.volume = globalBgmVolume;
+    musica.play();
+
+    const controls=document.getElementById("touchControls");
+    if(controls){controls.style.display="flex";}
+    document.getElementById('trackerWrapper').classList.add('closed');
+    document.getElementById('bookWrapper').classList.add('closed');
+    document.getElementById('minimapContainer').style.display='block';
+    initMinimap();
+    
+    if(!localStorage.getItem("torreont_tutorial")) {
+        startTutorial();
+    }
+};
+
+const TILE_SIZE = 40;
+const MAP_COLS = 35;
+const MAP_ROWS = 35;
+const CAMERA_ZOOM = 2.2;
+
+// Variables de interpolación de cámara
+let currentZoom = CAMERA_ZOOM;
+let targetZoom = CAMERA_ZOOM;
+let cameraFocusX = 17 * TILE_SIZE + TILE_SIZE/2;
+let cameraFocusY = 20 * TILE_SIZE + TILE_SIZE/2;
+let focusTarget = 'player';
+let npcFocusTarget = null;
+
+const MOVE_SPEED = 3;
+const RUN_SPEED = 6;
+
+const world = document.getElementById("world");
+const dialogBox = document.getElementById("dialogBox");
+const dialogText = document.getElementById("dialogText");
+const linkContainer = document.getElementById("linkContainer");
+const darkness = document.getElementById("darkness");
+const liminalMessage = document.getElementById("liminalMessage");
+const starEvent = document.getElementById("starEvent");
+const starText = document.getElementById("starText");
+const lightningFlash = document.getElementById("lightningFlash");
+
+const liminalTexts = [
+"Creo que hay alguien aquí conmigo.",
+"Siento que me están viendo sin ojos.",
+"No estoy solo, solo no lo veo.",
+"La casa suena cuando no me muevo.",
+"Algo me sigue cuando giro la cabeza.",
+"La lluvia no para, ¿es normal?",
+"Escuché mi nombre, pero nadie lo dijo.",
+"El pasillo es más largo cuando lo miro.",
+"Hay presencia, pero no forma.",
+"No reconozco esta esquina de mi propia casa.",
+"El aire cambia cuando me quedo quieto.",
+"Siento pasos que no encajan con los míos.",
+"¿Quién está detrás de la ventana si no hay nadie?",
+"El techo no se siente fijo.",
+"Algo me observa desde arriba, sin bajar la mirada.",
+"No recuerdo haber cerrado esa puerta.",
+"Cada vez que parpadeo, algo se mueve.",
+"No estoy imaginando esto solo."
+];
+
+function typeWriter(text){
+    liminalMessage.style.opacity = 1;
+    liminalMessage.innerHTML = "";
+    let i = 0;
+    const interval = setInterval(()=>{
+        liminalMessage.innerHTML += text[i];
+        i++;
+        if(i >= text.length){
+            clearInterval(interval);
+            setTimeout(()=>{
+                liminalMessage.style.opacity = 0;
+            },4000);
+        }
+    },45);
+}
+
+function randomLiminalMessage(){
+    const randomText = liminalTexts[Math.floor(Math.random()*liminalTexts.length)];
+    typeWriter(randomText);
+}
+
+setInterval(()=>{ randomLiminalMessage(); },28000);
+
+function triggerStarEvent(){
+    starEvent.style.display = "block";
+    starText.style.opacity = 0;
+    setTimeout(()=>{
+        starEvent.style.display = "none";
+        starText.style.opacity = 1;
+    },3000);
+    setTimeout(()=>{
+        starText.style.opacity = 0;
+    },7000);
+}
+
+setInterval(()=>{ triggerStarEvent(); },45000);
+
+const sprites = {
+    player:'vic.gif', tree:'ar.gif', centerTree:'ar2.gif', grass:'pipi.gif',
+    path:'piso.gif', trash:'bag.png', fountain:'ay.gif', mansion:'CAN.gif',
+    house:'casilla.gif', npc1:'av1.gif', npc2:'av4.gif', npc3:'av3.gif',
+    npc4:'av2.gif', npc5:'av5.gif', npc6:'mar.gif', npc7:'vic.gif',
+    npc8:'av7.gif', npc9:'av6.gif', npc10:'bur.gif',
+    arbusto1:'arbusto1.png', arbusto2:'arbusto2.png', arbusto3:'arbusto3.png',
+    arbusto4:'arbusto4.png', arbusto5:'arbusto5.png', arbusto6:'arbusto6.png',
+    arbusto7:'arbusto7.png', arbusto8:'arbusto8.png', arbusto9:'arbusto9.png',
+    arbusto10:'arbusto10.png', arbusto11:'arbusto11.png', arbusto12:'arbusto12.png',
+    arbusto13:'arbusto13.png', arbusto14:'arbusto14.png', stalker:'skin.gif',
+    ramoncillo:'ramoncillo.gif'
+};
+
+const mapData = [];
+for(let y=0;y<MAP_ROWS;y++){
+    let row = [];
+    for(let x=0;x<MAP_COLS;x++){
+        if(x === 0 || y === 0 || x === MAP_COLS-1 || y === MAP_ROWS-1){
+            row.push(1);
+        }else if(x === 17 || y === 17 || (x > 5 && x < 30 && y === 8) || (x > 5 && x < 30 && y === 26)){
+            row.push(2);
+        }else{
+            if(Math.random() < 0.03){ row.push(3); }else{ row.push(0); }
+        }
+    }
+    mapData.push(row);
+}
+
+const trashBags = [
+    {x:6,y:10}, {x:12,y:20}, {x:25,y:9}, {x:29,y:23}, {x:18,y:29},
+    {x:5,y:14}, {x:7,y:18}, {x:11,y:12}, {x:14,y:27}, {x:20,y:8},
+    {x:21,y:22}, {x:24,y:16}, {x:30,y:12}, {x:31,y:26}
+];
+
+const arbustos = [
+{x:5,y:7,sprite:'arbusto1'}, {x:9,y:12,sprite:'arbusto2'}, {x:13,y:7,sprite:'arbusto3'},
+{x:20,y:6,sprite:'arbusto4'}, {x:24,y:11,sprite:'arbusto5'}, {x:30,y:8,sprite:'arbusto6'},
+{x:7,y:16,sprite:'arbusto7'}, {x:12,y:18,sprite:'arbusto8'}, {x:18,y:13,sprite:'arbusto9'},
+{x:23,y:19,sprite:'arbusto10'}, {x:29,y:16,sprite:'arbusto11'}, {x:6,y:29,sprite:'arbusto12'},
+{x:15,y:30,sprite:'arbusto13'}, {x:31,y:26,sprite:'arbusto14'}
+];
+
+const fountain = { x:15, y:15, w:3, h:3 };
+
+const structures = [
+    { type:'mansion', x:3, y:3, w:4, h:3 },
+    { type:'house', x:10, y:4, w:2, h:2 }, { type:'house', x:14, y:4, w:2, h:2 },
+    { type:'house', x:18, y:4, w:2, h:2 }, { type:'house', x:22, y:4, w:2, h:2 },
+    { type:'house', x:27, y:10, w:2, h:2 }, { type:'house', x:27, y:14, w:2, h:2 },
+    { type:'house', x:27, y:18, w:2, h:2 },
+    { type:'house', x:4, y:24, w:2, h:2 }, { type:'house', x:8, y:24, w:2, h:2 },
+    { type:'house', x:12, y:24, w:2, h:2 }, { type:'house', x:16, y:24, w:2, h:2 },
+    { type:'house', x:22, y:28, w:2, h:2 }, { type:'house', x:26, y:28, w:2, h:2 }
+];
+
+const npcs = [
+{
+    x:7, y:5, sprite:'npc1',
+    dialogs:[
+        "Joven Chacho: Hey... ¿vienes a visitar la escuela?, creo que ya no alcanzaste",
+        "Joven Chacho: Lo siento, jaja, ¿quieres saber por qué?",
+        "Joven Chacho: Este es el CAN, nadie entra ahí desde hace un año, está abandonado, pero dicen que pasan cosas raras ahí adentro.",
+        "Joven Chacho: Bueno... si quieres entrar, es tu rollo."
+    ],
+    link:"noche.html", label:"Entrar"
+},
+{
+    x:2, y:4, sprite:'npc2',
+    dialogs:[
+        "Iris: No deberías acercarte mucho...",
+        "Iris: A veces se escuchan pasos en la noche.",
+        "Iris: Entré ahí una vez, econtré un fanzine con fotos de algo malo que pasó aquí, ¿quieres ver?"
+    ],
+    link:"libro.html", label:"Ir con Iris"
+},
+{
+    x:10, y:12, sprite:'npc3',
+    dialogs:[
+        "Susana:Esto es grave...",
+        "Susana: Hay una extraña enfermedad que borra los recuerdos de las personas.",
+        "Susana: Recientemente se le llamó como La Amnesia Áurea",
+        "Susana: También se le dice coloquialmente como Síndrome del Olvido Amarillo",
+        "Susana: Es una enfermedad que afecta de forma selectiva la memoria a corto y largo plazo.",
+        "Susana: Cada 4 horas, el cerebro reinicia los recuerdos del día. El paciente olvida todo lo sucedido en las últimas 16 horas.",
+        "Susana: Pero esto se va prolongando",
+        "Susana: El primer borrón empieza con 16 horas del día, el segundo con 32, el tercero con 64, hasta llegar a niveles absurdos",
+        "Susana: Justo ahora me dirijo a operar a un paciente que olvidó 1440 horas de su vida",
+        "Pero estamos cortos de personal en el hospital",
+        "Un incidente feo de hace un año hizo que la gente se empezara a ir de aquí",
+        "¿Qué dices?,¿Me echas la mano?, te prometo que no es complicado."
+    ],
+    link:"oper.html", label:"Simón"
+},
+{
+    x:16, y:10, sprite:'npc4',
+    dialogs:[
+        "Andrea: ¡AY!, ME ESPANTASTE",
+        "Andrea: Pero ya, ya, te perdono, quizás exageré mi reacción",
+        "Andrea: Es que un amigo me mandó esto y me hizo probarlo",
+        "Andrea: Es una app que te dice tu fortuna...",
+        "Andrea: Da mucho miedo, lo peor es que si le atina.",
+        "¿Quieres intentar probarla?"
+    ],
+    link:"cas.html", label:"Ver fortuna"
+},
+{
+    x:25, y:12, sprite:'npc5',
+    dialogs:["Isaac: Te digo bro, saliendo de la chamba de la carni, toca rutina de pierna en el gym con madres.", "Isaac: ¡Ven, vamos a correr!"],
+    link:"run.html", label:"¿Hacer ejercicio?"
+},
+{
+    x:28, y:20, sprite:'npc6',
+    dialogs:[
+        "Mario: Me gusta caminar aquí, pero he notado que cada vez que regreso el vecindario tiene las calles diferentes, ¿seré yo?.",
+        "Caminando de regreseo a casa encontre este reproductor con cosas raras ¿Vemos qué tiene?"
+    ],
+    link:"sim.html", label:"Ver"
+},
+{
+    x:6, y:20, sprite:'npc7',
+    dialogs:["??? : Tú me creaste", "??? : Pero ya no recuerdas por qué.", "??? : Si realmente eres tú... entonces dime la contraseña."],
+    password:"materia primordial",
+    successDialogs:["??? : ...", "??? : Entonces sí eres tú.", "??? : Te exarañaba tanto"],
+    link:"nombre.html", label:"Entrar",
+    failDialogs:["??? : No.", "??? : Esa no era la respuesta."],
+    requiresPassword:true
+},
+{
+    x:10, y:28, sprite:'npc8',
+    dialogs:["Sixto rey: Siento una fuerte prescencia aquí, me quiere decir algo, pero no puedo conectar sólo"],
+    link:"ouija.html", label:"Ayudar"
+},
+{
+    x:19, y:25, sprite:'npc9',
+    dialogs:["JJ: Ya no quiero regresar a la oficina, me siento solo ahí, me gustaría hablar con alguien"],
+    link:"pla.html", label:"Hablar"
+},
+{
+    x:30, y:30, sprite:'npc10',
+    dialogs:["Burdo: Hemos tenido problemas con la expansión de la ciudad", "Burdo: Un hombre bastante agresivo ha estado interfiendo, golpea a nuestros trabajadores y los deja heridos", "Burdo: Lo hemos oído gritar que no quiere que las cosas cambien", "Burdo: Se la pasa gritando sobre que no quiere irse, que aún puede hacer mucho", "Burdo: Que tiene miedo", "Burdo: Dios, esta gente sencible...","Burdo: Hey, tu pareces movido, ¿qué dices?", "Burdo: ¿Me ayudas a espantarlo?"],
+    link:"shot.html", label:"Ayudar"
+}
+];
+
+function createTile(x,y,image){
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.style.left = (x*TILE_SIZE)+"px";
+    tile.style.top = (y*TILE_SIZE)+"px";
+    tile.style.backgroundImage = `url(${image})`;
+    world.appendChild(tile);
+}
+
+for(let y=0;y<MAP_ROWS;y++){
+    for(let x=0;x<MAP_COLS;x++){
+        createTile(x,y,sprites.grass);
+        if(mapData[y][x] === 2){ createTile(x,y,sprites.path); }
+        if(mapData[y][x] === 1){ createTile(x,y,sprites.tree); }
+        if(mapData[y][x] === 3){ createTile(x,y,sprites.centerTree); }
+    }
+}
+
+for(let trash of trashBags){
+    const div = document.createElement("div");
+    div.className = "object";
+    div.style.width = TILE_SIZE+"px";
+    div.style.height = TILE_SIZE+"px";
+    div.style.left = (trash.x*TILE_SIZE)+"px";
+    div.style.top = (trash.y*TILE_SIZE)+"px";
+    div.style.backgroundImage = `url(${sprites.trash})`;
+    world.appendChild(div);
+}
+
+for(let arbusto of arbustos){
+    const div = document.createElement("div");
+    div.className = "object";
+    div.style.width = TILE_SIZE+"px";
+    div.style.height = TILE_SIZE+"px";
+    div.style.left = (arbusto.x*TILE_SIZE)+"px";
+    div.style.top = (arbusto.y*TILE_SIZE)+"px";
+    div.style.backgroundImage = `url(${sprites[arbusto.sprite]})`;
+    world.appendChild(div);
+}
+
+const fountainEl = document.createElement("div");
+fountainEl.className = "object";
+fountainEl.style.left = (fountain.x*TILE_SIZE)+"px";
+fountainEl.style.top = (fountain.y*TILE_SIZE)+"px";
+fountainEl.style.width = (fountain.w*TILE_SIZE)+"px";
+fountainEl.style.height = (fountain.h*TILE_SIZE)+"px";
+fountainEl.style.backgroundImage = `url(${sprites.fountain})`;
+fountainEl.style.backgroundSize = "100% 100%";
+world.appendChild(fountainEl);
+
+let mansionDiscovered = false;
+let mansionBuildingEl = null;
+
+for(let str of structures){
+    const div = document.createElement("div");
+    div.className = "building";
+    if(str.type === 'mansion') {
+        div.id = "mansionBuilding";
+        mansionBuildingEl = div;
+    }
+    div.style.left = (str.x*TILE_SIZE)+"px";
+    div.style.top = (str.y*TILE_SIZE)+"px";
+    div.style.width = (str.w*TILE_SIZE)+"px";
+    div.style.height = (str.h*TILE_SIZE)+"px";
+    div.style.backgroundImage = `url(${sprites[str.type]})`;
+    world.appendChild(div);
+}
+
+for(let npc of npcs){
+    const div = document.createElement("div");
+    div.className = "entity";
+    div.style.left = (npc.x*TILE_SIZE)+"px";
+    div.style.top = (npc.y*TILE_SIZE)+"px";
+    div.style.backgroundImage = `url(${sprites[npc.sprite]})`;
+    world.appendChild(div);
+    npc.element = div;
+}
+
+const photoSpotsData = [
+    {x: 8, y: 8, image: 'foto1.jpg', link: 'cine.html'},
+    {x: 22, y: 16, image: 'foto2.jpg', link: 'casa.html'},
+    {x: 14, y: 26, image: 'foto3.jpeg', link: 'monte.html'}
+];
+
+photoSpotsData.forEach((spot) => {
+    const el = document.createElement("div");
+    el.className = "entity photoSpotGif"; 
+    el.dataset.x = spot.x * TILE_SIZE;
+    el.dataset.y = spot.y * TILE_SIZE;
+    el.style.left = (spot.x * TILE_SIZE) + "px";
+    el.style.top = (spot.y * TILE_SIZE) + "px";
+    el.style.backgroundImage = `url(spa.gif)`;
+    el.style.zIndex = "8";
+    el._data = spot;
+    world.appendChild(el);
+});
+
+const player = { x:17 * TILE_SIZE, y:20 * TILE_SIZE, width:28, height:28, facingRight:false };
+
+const stalker={ x:12*TILE_SIZE, y:12*TILE_SIZE, width:28, height:28, facingRight:false };
+const stalkerEl=document.createElement("div");
+stalkerEl.id="stalker";
+stalkerEl.className="entity";
+stalkerEl.style.backgroundImage=`url(${sprites.stalker})`;
+stalkerEl.style.zIndex="9";
+world.appendChild(stalkerEl);
+
+const ramoncillo={ x:18*TILE_SIZE, y:18*TILE_SIZE, width:28, height:28, following:false, followStart:0, mooShown:false };
+const ramoncilloEl=document.createElement("div");
+ramoncilloEl.id="ramoncillo";
+ramoncilloEl.className="entity";
+ramoncilloEl.style.backgroundImage=`url(${sprites.ramoncillo})`;
+ramoncilloEl.style.backgroundSize="contain";
+ramoncilloEl.style.backgroundRepeat="no-repeat";
+ramoncilloEl.style.backgroundPosition="center";
+ramoncilloEl.style.zIndex="9";
+world.appendChild(ramoncilloEl);
+
+let ramoncilloDiscovered = false;
+
+function updateRamoncillo(){
+    const dxPlayer = player.x - ramoncillo.x;
+    const dyPlayer = player.y - ramoncillo.y;
+    const triggerDist = Math.hypot(dxPlayer,dyPlayer);
+
+    if(triggerDist < 60){
+        ramoncillo.following = true;
+        if(ramoncillo.followStart===0){ 
+            ramoncillo.followStart = Date.now(); 
+            if(!ramoncilloDiscovered) {
+                ramoncilloDiscovered = true;
+                const b = document.getElementById('discoveryBanner');
+                b.innerHTML = `<b>Descubriste a...¿una vaca?</b><br>Animal extraviado`;
+                b.style.opacity = '1';
+                setTimeout(() => { b.style.opacity = '0'; }, 4000);
+                setTimeout(() => { victorSpeak("Te llamaré Ramoncillo", 5000); }, 1500);
+            }
+        }
+    }
+
+    if(ramoncillo.following){
+        const dx = player.x - ramoncillo.x;
+        const dy = player.y - ramoncillo.y;
+        const dist = Math.hypot(dx,dy);
+
+        if(dist > 70){
+            const speed = 2;
+            ramoncillo.x += (dx/dist)*speed;
+            ramoncillo.y += (dy/dist)*speed;
+            
+            if (Math.random() < 0.25) {
+                createWaterTrail(ramoncillo.x, ramoncillo.y, true);
+            }
+        }
+        if(dx > 0){ ramoncilloEl.style.transform="scaleX(1)"; }else{ ramoncilloEl.style.transform="scaleX(-1)"; }
+
+        if( !ramoncillo.mooShown && Date.now()-ramoncillo.followStart>=60000 && allRequiredNPCsVisited() ){
+            ramoncillo.mooShown=true;
+            dialogBox.style.display="block";
+            dialogText.innerText="Ramoncillo: MOOO!";
+            linkContainer.innerHTML=`
+            <a class="btn" href="ramoncillo.html" target="_blank"> MOOO! </a>
+            <button class="btn" id="closeBtn" onclick="closeDialog()"> Cerrar </button>`;
+        }
+    }
+
+    ramoncilloEl.style.left=ramoncillo.x+"px";
+    ramoncilloEl.style.top=ramoncillo.y+"px";
+}
+
+const playerEl = document.createElement("div");
+playerEl.id = "player";
+playerEl.className = "entity";
+playerEl.style.backgroundImage = `url(${sprites.player})`;
+world.appendChild(playerEl);
+
+const keys = {};
+let wiggleCount = 0;
+let lastWiggleKey = '';
+let lastWiggleTime = 0;
+
+function triggerWaveEvent() {
+    const wave = document.createElement('div');
+    wave.style.position = 'absolute';
+    wave.style.left = (player.x + 14) + 'px';
+    wave.style.top = (player.y + 14) + 'px';
+    wave.style.width = '0px';
+    wave.style.height = '0px';
+    wave.style.borderRadius = '50%';
+    wave.style.background = 'rgba(255, 204, 0, 0.4)';
+    wave.style.boxShadow = '0 0 50px #ffcc00, inset 0 0 30px #ffcc00';
+    wave.style.transform = 'translate(-50%, -50%)';
+    wave.style.zIndex = '9999';
+    wave.style.pointerEvents = 'none';
+    wave.style.transition = 'all 1.5s cubic-bezier(0.1, 0.8, 0.3, 1)';
+    world.appendChild(wave);
+    
+    setTimeout(() => {
+        wave.style.width = '2000px';
+        wave.style.height = '2000px';
+        wave.style.opacity = '0';
+    }, 50);
+    
+    setTimeout(() => { wave.remove(); }, 1600);
+    
+    victorSpeak("Woah, eso estuvo divertido.", 4000);
+}
+
+document.querySelectorAll(".touchBtn").forEach(btn=>{
+    const key = btn.dataset.key;
+    const press = (e)=>{ e.preventDefault(); keys[key]=true; btn.classList.add("active_key"); };
+    const release = (e)=>{ e.preventDefault(); keys[key]=false; btn.classList.remove("active_key"); };
+    btn.addEventListener("mousedown",press);
+    btn.addEventListener("mouseup",release);
+    btn.addEventListener("mouseleave",release);
+    btn.addEventListener("touchstart",press,{passive:false});
+    btn.addEventListener("touchend",release,{passive:false});
+    btn.addEventListener("touchcancel",release,{passive:false});
+});
+
+window.addEventListener("keydown",(e)=>{
+    const k = e.key.toLowerCase();
+    keys[k] = true;
+    let targetKey = k;
+    if(k === "arrowup") targetKey = "w";
+    if(k === "arrowdown") targetKey = "s";
+    if(k === "arrowleft") targetKey = "a";
+    if(k === "arrowright") targetKey = "d";
+    const btn = document.getElementById("btn-" + targetKey);
+    if(btn) btn.classList.add("active_key");
+    
+    // Logica para el evento de Wiggle (Onda Amarilla)
+    if(targetKey === 'a' || targetKey === 'd' || targetKey === 's' || targetKey === 'w') {
+        const now = Date.now();
+        if(now - lastWiggleTime < 300) {
+            if(targetKey !== lastWiggleKey) {
+                wiggleCount++;
+            }
+        } else {
+            wiggleCount = 1;
+        }
+        lastWiggleKey = targetKey;
+        lastWiggleTime = now;
+        
+        if(wiggleCount >= 7) {
+            wiggleCount = 0;
+            triggerWaveEvent();
+        }
+    }
+});
+
+window.addEventListener("keyup",(e)=>{
+    const k = e.key.toLowerCase();
+    keys[k] = false;
+    let targetKey = k;
+    if(k === "arrowup") targetKey = "w";
+    if(k === "arrowdown") targetKey = "s";
+    if(k === "arrowleft") targetKey = "a";
+    if(k === "arrowright") targetKey = "d";
+    const btn = document.getElementById("btn-" + targetKey);
+    if(btn) btn.classList.remove("active_key");
+});
+
+function rectCollision(x1,y1,w1,h1,x2,y2,w2,h2){
+    return ( x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2 );
+}
+
+let currentNPC = null;
+let currentDialogIndex = 0;
+
+const requiredNPCs = [ 'npc1','npc2','npc3','npc4','npc5','npc6','npc8','npc9','npc10' ];
+const talkedNPCs = new Set();
+
+function allRequiredNPCsVisited(){
+    return requiredNPCs.every(id => talkedNPCs.has(id));
+}
+
+const npcTrackerData={
+npc1:{name:'Joven Chacho',job:'Estudiante de artes',link:'noche.html',comments:['¿Otra vez por aquí?','El CAN debería estar vacío.','No me gusta mirar esas ventanas.','A veces escucho cosas adentro.'],msg:"Nacido y criado bajo la lluvia eterna de la región, ingresó al Centro de Artes con la ilusión de capturar la esencia de su tierra. Sin embargo, hace exactamente un año presenció un evento del que n le gusta hablar. Desde entonces permanece estático en los linderos, incapaz de huir o avanzar, atrapado en un bucle temporal mientras cuestiona si sus propias memorias artísticas son reales o proyecciones implantadas por Víctor."},
+npc2:{name:'Iris',job:'Reportera y fanzinera',link:'libro.html',comments:['No todo debería ser documentado.','Hay fotos que desearía no haber tomado.','Algo sale distinto en cada revelado.','La ciudad oculta cosas.'],msg:"Corresponsal independiente atrapada en Torreón't mientras investigaba una serie de desapariciones urbanas masivas. Es la única que ha logrado documentar los fragmentos históricos, plasmándolos en publicaciones clandestinas que se auto-comburen si tocan la luz del día. Su cordura pende de un hilo, impulsada únicamente por el deseo periodístico de revelar qué ocurrió la noche en que la ciudad real fue sustituida por este vacío."},
+npc3:{name:'Susana',job:'Cirujana',link:'oper.html',comments:['Necesitamos más personal.','Los pacientes olvidan demasiado rápido.','No sé cuánto tiempo llevo aquí.','Hoy fue un día largo.'],msg:"Jefa de trauma en el hospital central antes del colapso de la realidad. Cuando la Amnesia Áurea se manifestó de forma epidémica, descubrió mediante neurocirugías que los cerebros infectados albergaban extraños filamentos de cristal amarillo en lugar de tejido sináptico. Decidió quedarse atrás para estabilizar a los últimos ciudadanos funcionales, aunque confiesa que cada mañana olvida los procedimientos que ella misma diseñó la tarde anterior."},
+npc4:{name:'Andrea',job:'Exploradora urbana',link:'cas.html',comments:['La aplicación volvió a acertar.','No sigas todas las coordenadas.','Hay lugares que es mejor evitar.','Algunas puertas no llevan a donde deberían.'],msg:"Coleccionista de mitos web y cartógrafa de espacios liminales. Encontró un servidor fantasma que alojaba una misteriosa aplicación mística capaz de predecir con exactitud milimétrica los movimientos de las anomalías en el tejido de Torreón't."},
+npc5:{name:'Isaac',job:'Carnicero',link:'run.html',comments:['No puedo dejar de moverme.','¿Ya entrenaste hoy?','Hace frío cuando me detengo.','Vamos a correr luego.'],msg:"Encargado de una de las carnicerías más longevas del mercado tradicional. Un atleta frustrado que descubrió que si deja de correr por más de tres minutos continuos, la temperatura de su sangre desciende a niveles criogénicos. Su eterna rutina de cardio no es por salud ni disciplina deportiva, sino un método desesperado de supervivencia fisiológica contra el frío absoluto del entorno."},
+npc6:{name:'Mario',job:'Caminante',link:'sim.html',comments:['Esta calle no estaba aquí ayer.','Creo que el mapa cambió otra vez.','Escucho algo en el reproductor.','Caminar me ayuda a pensar.'],msg:"Un ciudadano ordinario. Posee una anomalía perceptiva única, es consciente de cómo se reconfigura la arquitectura del vecindario cada vez que el observador parpadea o desvía la mirada."},
+npc8:{name:'Sixto',job:'Tarotista',link:'Ouija.html',comments:['Hay algo intentando hablar.','Las cartas están inquietas.','No estamos solos.','La señal es débil hoy.'],msg:"Un místico local que utilizaba el esoterismo como fachada. Siente los lamentos de las almas cuyos recuerdos sirvieron como ladrillos para edificar Torreón't. Intenta tender puentes de comunicación utilizando maderas grabadas, pero la densidad estática del entorno suele corromper los mensajes transformándolos en amenazas."},
+npc9:{name:'JJ',job:'Oficinista',link:'pla.html',comments:['¿Quién me jalo mi cabello?','Siento que olvidé algo importante.','Esta fuente me resulta familiar.','No recuerdo este lugar.'],msg:"Se la pasa encerrado todo el día en su oficina, es soltero, sin hijos, ni gatitos."},
+npc10:{name:'Burdo',job:'Arquitecto',link:'shot.html',comments:['Algo está mal con estas casas.','Cuidado con el hombre corriendo por ahí.','No diseñé esto así.','Todo parece una copia.'],msg:"El diseñador estructural que originalmente planeó los planos de los complejos habitacionales periféricos en Torreón't."}
+};
+const discoveredNPCs=new Set();
+let isDiscoveryActive = false;
+let currentBookPageIndex = 0;
+
+function showDiscovery(name,job, spriteId){
+    isDiscoveryActive = true;
+    const b=document.getElementById('discoveryBanner');
+    b.innerHTML=`<b>Descubriste a ${name}</b><br>${job}`;
+    b.style.opacity='1';
+
+    const trackerMenu = document.getElementById("trackerWrapper");
+    trackerMenu.classList.remove("closed");
+
+    bookHasUnreadNews = true;
+    document.getElementById("npcBookTab").classList.add("glow-pulse");
+
+    setTimeout(() => {
+        const targetRow = document.getElementById(`row-${spriteId}`);
+        if(targetRow) { targetRow.classList.add("just-discovered"); }
+    }, 100);
+
+    setTimeout(()=>{
+        b.style.opacity='0';
+        isDiscoveryActive = false;
+        trackerMenu.classList.add("closed");
+    },4000);
+}
+
+function updateTrackerUI(newlyDiscoveredId = null){
+    const list=document.getElementById('npcTrackerList');
+    const count=document.getElementById('npcTrackerCount');
+    if(!list||!count)return;
+    let html='';
+    let total=0;
+    for(const id of requiredNPCs){
+     const found=talkedNPCs.has(id);
+     if(found) total++;
+     const data=npcTrackerData[id];
+     const name=found?data.name:'Desconocido';
+     const label=found && data.link?`<a href="${data.link}" target="_blank" style="color:#ffcc00; text-decoration:none; font-weight:bold;">${name}</a>`:name;
+     const discoveredClass = found ? 'class="discovered-row"' : '';
+     html+=`<div id="row-${id}" ${discoveredClass}>${found?'☑':'☐'} ${label}</div>`;
+    }
+    list.innerHTML=html;
+    count.textContent=`${total}/9`;
+
+    // LÓGICA DE CRÉDITOS AL ENCONTRAR TODOS
+    if(total === 9) {
+        const cc = document.getElementById('creditsContainer');
+        if(cc) cc.style.display = 'block';
+    }
+}
+
+function updateBookUI() {
+    const discoveredList = Array.from(talkedNPCs).filter(id => npcTrackerData[id]);
+    const gifEl = document.getElementById("bookNpcGif");
+    const detailsEl = document.getElementById("bookNpcDetails");
+    const indicatorEl = document.getElementById("bookPageIndicator");
+    
+    if(discoveredList.length === 0) {
+        gifEl.style.backgroundImage = "none";
+        detailsEl.innerHTML = `<div id="bookNpcName">Ninguno</div><div id="bookNpcDesc">Explora Torreón't para interactuar con NPCs y desbloquear sus páginas históricas en este registro.</div>`;
+        indicatorEl.textContent = "0/0";
+        return;
+    }
+    
+    if(currentBookPageIndex >= discoveredList.length) { currentBookPageIndex = discoveredList.length - 1; }
+    if(currentBookPageIndex < 0) currentBookPageIndex = 0;
+    
+    const npcId = discoveredList[currentBookPageIndex];
+    const data = npcTrackerData[npcId];
+    
+    gifEl.style.backgroundImage = `url(${sprites[npcId]})`;
+    detailsEl.innerHTML = `
+        <div id="bookNpcName">${data.name}</div>
+        <div style="font-size:10px; color:#ffcc00; margin-bottom:5px; font-style:italic;">${data.job}</div>
+        <div id="bookNpcDesc" style="color:#eee; font-size:10px; font-family:monospace; line-height:1.3; text-align:justify;">${data.msg}</div>
+    `;
+    indicatorEl.textContent = `${currentBookPageIndex + 1}/${discoveredList.length}`;
+}
+
+function prevBookPage() {
+    const discoveredList = Array.from(talkedNPCs).filter(id => npcTrackerData[id]);
+    if(discoveredList.length <= 1) return;
+    currentBookPageIndex--;
+    if(currentBookPageIndex < 0) currentBookPageIndex = discoveredList.length - 1;
+    animateBookFlip("left");
+}
+
+function nextBookPage() {
+    const discoveredList = Array.from(talkedNPCs).filter(id => npcTrackerData[id]);
+    if(discoveredList.length <= 1) return;
+    currentBookPageIndex++;
+    if(currentBookPageIndex >= discoveredList.length) currentBookPageIndex = 0;
+    animateBookFlip("right");
+}
+
+function animateBookFlip(direction) {
+    const pageLeft = document.getElementById("bookPageLeftPart");
+    const pageRight = document.getElementById("bookNpcDetails");
+    if (direction === "left") { pageLeft.classList.add("book-page-flip-anim-left"); } else { pageRight.classList.add("book-page-flip-anim-right"); }
+    setTimeout(() => { updateBookUI(); }, 250);
+    setTimeout(() => {
+        pageLeft.classList.remove("book-page-flip-anim-left");
+        pageRight.classList.remove("book-page-flip-anim-right");
+    }, 500);
+}
+
+function openDialog(npc){
+    let isNew = false;
+    if(!discoveredNPCs.has(npc.sprite) && npcTrackerData[npc.sprite]){
+       discoveredNPCs.add(npc.sprite);
+       isNew = true;
+       
+       if (npc.element) {
+           const alertEl = document.createElement("div");
+           alertEl.className = "npc-alert";
+           alertEl.innerText = "!";
+           alertEl.style.left = "50%";
+           npc.element.appendChild(alertEl);
+           setTimeout(() => { alertEl.remove(); }, 1000);
+       }
+       
+       // Acercamiento de cámara de 25% 
+       targetZoom = CAMERA_ZOOM * 1.25;
+       focusTarget = 'npc';
+       npcFocusTarget = npc;
+       setTimeout(() => {
+           targetZoom = CAMERA_ZOOM;
+           focusTarget = 'player';
+       }, 3000); // 3 segundos de acercamiento
+    }
+
+    talkedNPCs.add(npc.sprite);
+    updateTrackerUI();
+
+    if(isNew && npcTrackerData[npc.sprite]) {
+       showDiscovery(npcTrackerData[npc.sprite].name, npcTrackerData[npc.sprite].job, npc.sprite);
+    }
+
+    currentNPC = npc;
+    currentDialogIndex = 0;
+    dialogBox.style.display = "block";
+    updateDialog();
+}
+
+function updateDialog(){
+    const npc = currentNPC;
+    dialogText.innerText = npc.dialogs[currentDialogIndex];
+    if( currentDialogIndex >= npc.dialogs.length - 1 ){
+        if( npc.requiresPassword && npc.dialogs !== npc.successDialogs ){
+            linkContainer.innerHTML = `
+            <button class="btn" onclick="checkPassword()"> Responder </button>
+            <button class="btn" id="closeBtn" onclick="closeDialog()"> Cerrar </button>`;
+        }else{
+            linkContainer.innerHTML = `
+            <a class="btn" href="${npc.link}" target="_blank"> ${npc.label} </a>
+            <button class="btn" id="closeBtn" onclick="closeDialog()"> Cerrar </button>`;
+        }
+    }else{
+        linkContainer.innerHTML = `
+        <button class="btn" onclick="nextDialog()"> Continuar </button>
+        <button class="btn" id="closeBtn" onclick="closeDialog()"> Cerrar </button>`;
+    }
+}
+
+function checkPassword(){
+    const answer = prompt("Escribe la contraseña:");
+    if( answer && answer.toLowerCase().trim() === currentNPC.password.toLowerCase() ){
+        currentNPC.dialogs = currentNPC.successDialogs;
+    }else{
+        currentNPC.dialogs = currentNPC.failDialogs;
+    }
+    currentDialogIndex = 0;
+    updateDialog();
+}
+
+function nextDialog(){ currentDialogIndex++; updateDialog(); }
+
+function closeDialog(){ dialogBox.style.display = "none"; currentNPC = null; }
+
+function isSolid(nextX,nextY){
+    for(let y=0;y<MAP_ROWS;y++){
+        for(let x=0;x<MAP_COLS;x++){
+            if( mapData[y][x] === 1 || mapData[y][x] === 3 ){
+                if( rectCollision( nextX, nextY, player.width, player.height, x*TILE_SIZE + 6, y*TILE_SIZE + 6, 28, 28 ) ){
+                    return true;
+                }
+            }
+        }
+    }
+    for(let s of structures){
+        if( rectCollision( nextX, nextY, player.width, player.height, s.x*TILE_SIZE, s.y*TILE_SIZE, s.w*TILE_SIZE, s.h*TILE_SIZE ) ){
+            return true;
+        }
+    }
+    if( rectCollision( nextX, nextY, player.width, player.height, fountain.x*TILE_SIZE + 10, fountain.y*TILE_SIZE + 10, fountain.w*TILE_SIZE - 20, fountain.h*TILE_SIZE - 20 ) ){
+        return true;
+    }
+    for(let npc of npcs){
+        if( rectCollision( nextX, nextY, player.width, player.height, npc.x*TILE_SIZE + 4, npc.y*TILE_SIZE + 4, 32, 32 ) ){
+            if(currentNPC !== npc){ openDialog(npc); }
+            return true;
+        }
+    }
+    for(let trash of trashBags){
+        if( rectCollision( nextX, nextY, player.width, player.height, trash.x*TILE_SIZE+4, trash.y*TILE_SIZE+4, 32, 32 ) ){ return true; }
+    }
+    for(let arbusto of arbustos){
+        if( rectCollision( nextX, nextY, player.width, player.height, arbusto.x*TILE_SIZE + 4, arbusto.y*TILE_SIZE + 4, 32, 32 ) ){ return true; }
+    }
+    return false;
+}
+
+function checkNPCDistance(){
+    if(!currentNPC) return;
+    const playerCenterX = player.x + player.width/2;
+    const playerCenterY = player.y + player.height/2;
+    const npcCenterX = currentNPC.x*TILE_SIZE + 20;
+    const npcCenterY = currentNPC.y*TILE_SIZE + 20;
+    const dx = Math.abs(playerCenterX - npcCenterX);
+    const dy = Math.abs(playerCenterY - npcCenterY);
+    if(dx > 90 || dy > 90){ closeDialog(); }
+}
+
+function updateLight(){
+    const screenX = window.innerWidth / 2;
+    const screenY = window.innerHeight / 2;
+    darkness.style.background = `
+    radial-gradient(
+        circle 330px at ${screenX}px ${screenY}px,
+        rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.82) 70%, rgba(0,0,0,0.96) 100%
+    )`;
+}
+
+function stalkerSolid(nextX,nextY){ return isSolid(nextX,nextY); }
+
+function updateStalker(){
+    const dx=player.x-stalker.x;
+    const dy=player.y-stalker.y;
+    const dist=Math.hypot(dx,dy);
+    let speed=MOVE_SPEED;
+    let moveX=0; let moveY=0;
+
+    if(dist<180){
+        moveX=(-dx/dist||0)*speed; moveY=(-dy/dist||0)*speed;
+    }else if(dist>260 && dist<500){
+        moveX=(dx/dist||0)*speed; moveY=(dy/dist||0)*speed;
+    }
+
+    const nx=stalker.x+moveX;
+    const ny=stalker.y+moveY;
+
+    if(!stalkerSolid(nx,stalker.y)) stalker.x=nx;
+    if(!stalkerSolid(stalker.x,ny)) stalker.y=ny;
+
+    stalker.facingRight=moveX>0;
+    stalkerEl.style.left=stalker.x+"px";
+    stalkerEl.style.top=stalker.y+"px";
+    stalkerEl.style.transform=stalker.facingRight?"scaleX(-1)":"scaleX(1)";
+
+    const d=Math.hypot(player.x-stalker.x,player.y-stalker.y);
+    if(d<120){ document.body.classList.add("shake"); }else{ document.body.classList.remove("shake"); }
+}
+
+let minimapCtx = null;
+function initMinimap() {
+    const canvas = document.getElementById("minimapCanvas");
+    if (canvas) { minimapCtx = canvas.getContext("2d"); }
+}
+
+function drawMinimap() {
+    if (!minimapCtx) return;
+    const canvas = document.getElementById("minimapCanvas");
+    
+    minimapCtx.fillStyle = "#1a1a1a";
+    minimapCtx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const scale = canvas.width / (MAP_COLS * TILE_SIZE); 
+    
+    for (let y = 0; y < MAP_ROWS; y++) {
+        for (let x = 0; x < MAP_COLS; x++) {
+            if (mapData[y][x] === 2) {
+                minimapCtx.fillStyle = "#4a3c31";
+                minimapCtx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
+            } else if (mapData[y][x] === 1 || mapData[y][x] === 3) {
+                minimapCtx.fillStyle = "#0c0c0c";
+                minimapCtx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
+            }
+        }
+    }
+    
+    minimapCtx.fillStyle = "#262626";
+    for (let s of structures) {
+        minimapCtx.fillRect(s.x * TILE_SIZE * scale, s.y * TILE_SIZE * scale, s.w * TILE_SIZE * scale, s.h * TILE_SIZE * scale);
+    }
+    
+    minimapCtx.fillStyle = "#1c2833";
+    minimapCtx.fillRect(fountain.x * TILE_SIZE * scale, fountain.y * TILE_SIZE * scale, fountain.w * TILE_SIZE * scale, fountain.h * TILE_SIZE * scale);
+    
+    for (let npc of npcs) {
+        if (talkedNPCs.has(npc.sprite)) {
+            if (Math.floor(Date.now() / 300) % 2 === 0) {
+                minimapCtx.fillStyle = "#00ffff";
+                minimapCtx.shadowColor = "#00ffff";
+                minimapCtx.shadowBlur = 4;
+            } else {
+                minimapCtx.fillStyle = "#008b8b";
+                minimapCtx.shadowBlur = 0;
+            }
+            const nX = (npc.x * TILE_SIZE + TILE_SIZE / 2) * scale;
+            const nY = (npc.y * TILE_SIZE + TILE_SIZE / 2) * scale;
+            minimapCtx.beginPath();
+            minimapCtx.arc(nX, nY, 3, 0, Math.PI * 2);
+            minimapCtx.fill();
+            minimapCtx.shadowBlur = 0;
+        }
+    }
+    
+    const stalkerX = (stalker.x + stalker.width / 2) * scale;
+    const stalkerY = (stalker.y + stalker.height / 2) * scale;
+
+    minimapCtx.fillStyle = "#ff0000";
+    minimapCtx.beginPath();
+    minimapCtx.arc(stalkerX, stalkerY, 3, 0, Math.PI * 2);
+    minimapCtx.fill();
+
+    const ramoncilloX = (ramoncillo.x + ramoncillo.width / 2) * scale;
+    const ramoncilloY = (ramoncillo.y + ramoncillo.height / 2) * scale;
+
+    minimapCtx.fillStyle = "#00ff66";
+    minimapCtx.beginPath();
+    minimapCtx.arc(ramoncilloX, ramoncilloY, 3, 0, Math.PI * 2);
+    minimapCtx.fill();
+
+    const pX = (player.x + player.width / 2) * scale;
+    const pY = (player.y + player.height / 2) * scale;
+    
+    if (Math.floor(Date.now() / 250) % 2 === 0) {
+        minimapCtx.fillStyle = "#ffcc00";
+        minimapCtx.shadowColor = "#ffcc00";
+        minimapCtx.shadowBlur = 6;
+        minimapCtx.beginPath();
+        minimapCtx.arc(pX, pY, 3.5, 0, Math.PI * 2);
+        minimapCtx.fill();
+        minimapCtx.shadowBlur = 0;
+    }
+}
+
+let lastRpgSprite = null;
+let rpgInterval = null;
+let rpgTextTimeout = null;
+
+function runRpgMessages() {
+    if (rpgInterval) clearInterval(rpgInterval);
+    rpgInterval = setInterval(() => {
+        if (discoveredNPCs.size === 0 || isDiscoveryActive) return;
+        const validNpcIds = Array.from(discoveredNPCs).filter(id => npcTrackerData[id]);
+        if (validNpcIds.length === 0) return;
+        
+        let pool = validNpcIds;
+        if (pool.length > 1 && lastRpgSprite) {
+            pool = pool.filter(id => id !== lastRpgSprite);
+        }
+        
+        const randomId = pool[Math.floor(Math.random() * pool.length)];
+        lastRpgSprite = randomId;
+        
+        const data = npcTrackerData[randomId];
+        const randomComment = data.comments ? data.comments[Math.floor(Math.random()*data.comments.length)] : data.msg;
+        const container = document.getElementById("rpgMsgContainer");
+        const gif = document.getElementById("rpgNpcGif");
+        const nameEl = document.getElementById("rpgNpcName");
+        const textEl = document.getElementById("rpgMsgText");
+        
+        gif.style.backgroundImage = `url(${sprites[randomId]})`;
+        nameEl.innerText = data.name;
+        textEl.innerText = "";
+        container.classList.add("show");
+        
+        let charIndex = 0;
+        if (rpgTextTimeout) clearInterval(rpgTextTimeout);
+        rpgTextTimeout = setInterval(() => {
+            if (isDiscoveryActive) {
+                clearInterval(rpgTextTimeout);
+                container.classList.remove("show");
+                return;
+            }
+            textEl.innerHTML += randomComment[charIndex] === " " ? "&nbsp;" : randomComment[charIndex];
+            charIndex++;
+            if (charIndex >= randomComment.length) {
+                clearInterval(rpgTextTimeout);
+                setTimeout(() => { container.classList.remove("show"); }, 4000);
+            }
+        }, 40);
+        
+    }, 15000); 
+}
+runRpgMessages();
+
+function createWaterTrail(x, y, isRamoncillo = false) {
+    const trail = document.createElement("div");
+    trail.className = "water-trail";
+    
+    if (isRamoncillo) {
+        trail.style.background = "rgba(255, 255, 255, 0.25)";
+        trail.style.boxShadow = "0 0 5px rgba(255, 255, 255, 0.15)";
+        trail.style.left = (x + 20) + "px";
+        trail.style.top = (y + 34) + "px";
+    } else {
+        if (Math.random() < 0.15) {
+            trail.style.background = "rgba(255, 204, 0, 0.6)";
+            trail.style.boxShadow = "0 0 8px rgba(255, 204, 0, 0.5)";
+        } else {
+            trail.style.background = "rgba(0, 150, 255, 0.35)";
+            trail.style.boxShadow = "0 0 5px rgba(0, 150, 255, 0.2)";
+        }
+        trail.style.left = (x + 14) + "px";
+        trail.style.top = (y + 34) + "px";
+    }
+    
+    world.appendChild(trail);
+    setTimeout(() => { trail.remove(); }, 900);
+}
+
+function checkMansionEvent() {
+    if(!mansionDiscovered && mansionBuildingEl) {
+        const mx = 3 * TILE_SIZE + 2 * TILE_SIZE; 
+        const my = 3 * TILE_SIZE + 1.5 * TILE_SIZE;
+        const px = player.x + 14;
+        const py = player.y + 14;
+        
+        if(Math.hypot(mx - px, my - py) < 160) {
+            mansionDiscovered = true;
+            
+            focusTarget = 'npc'; 
+            npcFocusTarget = {x: 3 + 2, y: 3 + 1.5};
+            targetZoom = 2.8;
+            
+            mansionBuildingEl.style.filter = "brightness(1.5) drop-shadow(0 0 25px #ffcc00)";
+            mansionBuildingEl.style.zIndex = "99995"; // Sobre oscuridad temporalmente
+            document.getElementById('mansionBanner').style.display = 'block';
+            
+            setTimeout(() => {
+                focusTarget = 'player';
+                targetZoom = CAMERA_ZOOM;
+                mansionBuildingEl.style.filter = "none";
+                mansionBuildingEl.style.zIndex = "3";
+                document.getElementById('mansionBanner').style.display = 'none';
+            }, 4000);
+        }
+    }
+}
+
+function update(){
+    let moveX = 0;
+    let moveY = 0;
+    let currentSpeed = MOVE_SPEED;
+
+    if( keys["shift"] ){ currentSpeed = RUN_SPEED; }
+    if(keys["w"] || keys["arrowup"]){ moveY -= currentSpeed; }
+    if(keys["s"] || keys["arrowdown"]){ moveY += currentSpeed; }
+    if(keys["a"] || keys["arrowleft"]){ moveX -= currentSpeed; player.facingRight = false; }
+    if(keys["d"] || keys["arrowright"]){ moveX += currentSpeed; player.facingRight = true; }
+
+    if (moveX !== 0 || moveY !== 0) {
+        if (Math.random() < 0.4) { createWaterTrail(player.x, player.y, false); }
+    }
+
+    const nextX = player.x + moveX;
+    const nextY = player.y + moveY;
+
+    if(!isSolid(nextX,player.y)){ player.x = nextX; }
+    if(!isSolid(player.x,nextY)){ player.y = nextY; }
+
+    checkNPCDistance();
+    checkMansionEvent();
+    updateStalker();
+    updateRamoncillo();
+    updatePlayer();
+    updateLight();
+    drawMinimap();
+
+    requestAnimationFrame(update);
+}
+update();
+
+function updatePlayer(){
+    // Interpolación para Acercamiento a NPC's y Eventos
+    currentZoom += (targetZoom - currentZoom) * 0.08;
+
+    let targetCamX = player.x + TILE_SIZE/2;
+    let targetCamY = player.y + TILE_SIZE/2;
+
+    if (focusTarget === 'npc' && npcFocusTarget) {
+        targetCamX = npcFocusTarget.x * TILE_SIZE + TILE_SIZE/2;
+        targetCamY = npcFocusTarget.y * TILE_SIZE + TILE_SIZE/2;
+    }
+
+    cameraFocusX += (targetCamX - cameraFocusX) * 0.1;
+    cameraFocusY += (targetCamY - cameraFocusY) * 0.1;
+
+    playerEl.style.left = player.x+"px";
+    playerEl.style.top = player.y+"px";
+
+    if(player.facingRight){
+        playerEl.style.transform = "scaleX(-1)";
+    }else{
+        playerEl.style.transform = "scaleX(1)";
+    }
+
+    const camX = (window.innerWidth / 2) - (cameraFocusX * currentZoom);
+    const camY = (window.innerHeight / 2) - (cameraFocusY * currentZoom);
+
+    world.style.transform = `translate(${camX}px, ${camY}px) scale(${currentZoom})`;
+}
+
+function createRain(){
+    for(let i=0;i<320;i++){
+        const rain = document.createElement("div");
+        rain.className = "rain";
+        rain.style.left = Math.random()*window.innerWidth+"px";
+        rain.style.animationDuration = (0.5 + Math.random()*0.8)+"s";
+        rain.style.animationDelay = Math.random()*2+"s";
+        rain.style.opacity = (0.2 + Math.random()*0.6);
+        document.body.appendChild(rain);
+    }
+}
+createRain();
+
+function triggerLightning(){
+    if(trueno){
+        trueno.currentTime=0;
+        trueno.volume = globalSfxVolume * 0.7;
+        trueno.play().catch(()=>{});
+    }
+    let flashes = 0;
+    const interval = setInterval(()=>{
+        lightningFlash.style.transition="none";
+        lightningFlash.style.opacity="0.95";
+        setTimeout(()=>{
+            lightningFlash.style.transition="opacity 0.25s";
+            lightningFlash.style.opacity="0";
+        },120);
+        flashes++;
+        if(flashes>=8){ clearInterval(interval); }
+    },250);
+}
+setInterval(()=>{ triggerLightning(); },50000);
+
+const book3D = document.getElementById("book3DElement");
+let isDraggingBook = false;
+let previousMouseX = 0;
+let previousMouseY = 0;
+let rotationX = 20;
+let rotationY = -15;
+
+book3D.addEventListener("mousedown", (e) => {
+    isDraggingBook = true;
+    previousMouseX = e.clientX;
+    previousMouseY = e.clientY;
+});
+window.addEventListener("mousemove", (e) => {
+    if (!isDraggingBook) return;
+    const deltaX = e.clientX - previousMouseX;
+    const deltaY = e.clientY - previousMouseY;
+    rotationY += deltaX * 0.6;
+    rotationX -= deltaY * 0.6;
+    rotationX = Math.max(-10, Math.min(50, rotationX));
+    rotationY = Math.max(-60, Math.min(30, rotationY));
+    book3D.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+    previousMouseX = e.clientX;
+    previousMouseY = e.clientY;
+});
+window.addEventListener("mouseup", () => {
+    if(isDraggingBook) {
+        isDraggingBook = false;
+        rotationX = 20;
+        rotationY = -15;
+        book3D.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+    }
+});
+book3D.addEventListener("touchstart", (e) => {
+    isDraggingBook = true;
+    previousMouseX = e.touches[0].clientX;
+    previousMouseY = e.touches[0].clientY;
+}, {passive: true});
+window.addEventListener("touchmove", (e) => {
+    if (!isDraggingBook) return;
+    const deltaX = e.touches[0].clientX - previousMouseX;
+    const deltaY = e.touches[0].clientY - previousMouseY;
+    rotationY += deltaX * 0.6;
+    rotationX -= deltaY * 0.6;
+    rotationX = Math.max(-10, Math.min(50, rotationX));
+    rotationY = Math.max(-60, Math.min(30, rotationY));
+    book3D.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+    previousMouseX = e.touches[0].clientX;
+    previousMouseY = e.touches[0].clientY;
+}, {passive: true});
+window.addEventListener("touchend", () => {
+    if(isDraggingBook) {
+        isDraggingBook = false;
+        rotationX = 20;
+        rotationY = -15;
+        book3D.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+    }
+});
+
+updateTrackerUI();
+updateBookUI();
+
+</script>
+
+<script>
+// LÓGICA INTEGRADA Y REPARADA DE LA CÁMARA Y GALERÍA
+const photos = [];
+let currentSpot = null;
+let isGalleryOpen = false;
+
+function getPlayer(){
+    if(typeof player !== 'undefined') return {x:player.x, y:player.y};
+    return null;
+}
+
+setInterval(() => {
+    const p = getPlayer();
+    if(!p) return;
+    
+    // Evita buscar puntos si el prompt ya está abierto o si la galería está activa
+    if (document.getElementById('photoPromptOverlay').style.display === 'flex' || isGalleryOpen) return;
+    
+    document.querySelectorAll('.photoSpotGif').forEach(el => {
+        const spotX = parseFloat(el.dataset.x);
+        const spotY = parseFloat(el.dataset.y);
+        const dx = p.x - spotX;
+        const dy = p.y - spotY;
+        
+        if(Math.hypot(dx,dy) < 60 && !currentSpot){
+            currentSpot = el;
+            document.getElementById('photoPromptOverlay').style.display = 'flex';
+        }
+    });
+
+    // Auto-cierra el prompt si el jugador se aleja
+    if (currentSpot) {
+        const dx = p.x - parseFloat(currentSpot.dataset.x);
+        const dy = p.y - parseFloat(currentSpot.dataset.y);
+        if(Math.hypot(dx,dy) > 70) {
+            currentSpot = null;
+            document.getElementById('photoPromptOverlay').style.display = 'none';
+        }
+    }
+}, 150);
+
+document.querySelector('.photoNo').onclick = () => {
+    document.getElementById('photoPromptOverlay').style.display = 'none';
+    
+    // Desactiva el spot de fotos temporalmente si no quiere tomarla
+    if (currentSpot) {
+        const tempSpot = currentSpot;
+        tempSpot.classList.remove('photoSpotGif');
+        setTimeout(() => tempSpot.classList.add('photoSpotGif'), 6000);
+    }
+    currentSpot = null;
+};
+
+document.querySelector('.photoYes').onclick = () => {
+    if (!currentSpot) return;
+    const d = currentSpot._data;
+    document.getElementById('photoPromptOverlay').style.display = 'none';
+    
+    const camContainer = document.getElementById('cameraBtnContainer');
+    
+    // Aparece icono si es la primera vez
+    if(photos.length === 0) {
+        camContainer.style.display = 'flex';
+    }
+    
+    // Efecto flashazo
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed;inset:0;background:white;z-index:1000001;';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 200);
+    
+    const img = document.createElement('img');
+    img.src = d.image;
+    img.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;z-index:1000002;border:5px solid white;box-shadow:0 0 20px rgba(0,0,0,0.8); object-fit:cover;';
+    document.body.appendChild(img);
+    
+    photos.push(d);
+    
+    // Animación de succión al icono de cámara
+    setTimeout(() => {
+        const r = camContainer.getBoundingClientRect();
+        img.style.transition = 'all 0.8s ease-in-out';
+        img.style.left = (r.left + r.width/2) + 'px';
+        img.style.top = (r.top + r.height/2) + 'px';
+        img.style.width = '20px';
+        img.style.transform = 'translate(-50%, -50%) scale(0.1)';
+        img.style.opacity = '0';
+    }, 800);
+    
+    setTimeout(() => {
+        img.remove();
+    }, 1600);
+
+    // Retira las partículas y el punto de interés
+    if(currentSpot){
+        currentSpot.remove();
+        currentSpot = null;
+    }
+};
+
+document.getElementById('cameraBtnContainer').onclick = () => {
+    const galModal = document.getElementById('galleryModal');
+    const grid = document.getElementById('galleryGrid');
+    
+    isGalleryOpen = !isGalleryOpen;
+    if(isGalleryOpen) {
+        grid.innerHTML = '';
+        if(photos.length === 0) {
+            grid.innerHTML = '<p style="text-align:center; opacity:0.6; margin-top:20px;">No has capturado ningún fragmento aún.</p>';
+        } else {
+            photos.forEach(pData => {
+                const item = document.createElement('div');
+                item.style.cssText = "background:#222; padding:20px; border-radius:6px; border:1px solid #444; display:flex; flex-direction:column; align-items:center;";
+                item.innerHTML = `
+                    <img src="${pData.image}" style="width:100%; max-height:250px; object-fit:contain; border-radius:4px; margin-bottom:15px; background:#000;">
+                    <p style="color:#ffea00; font-family:monospace; margin-bottom:15px; letter-spacing:1px; text-align:center; text-shadow: 0 0 5px rgba(255,234,0,0.4);">Esto no parece estar bien</p>
+                    <a href="${pData.link}" target="_blank" class="btn" style="text-align:center; width:150px; box-shadow: 0 0 10px rgba(255,204,0,0.3);">Revisar</a>
+                `;
+                grid.appendChild(item);
+            });
+        }
+        galModal.style.display = 'flex';
+    } else {
+        galModal.style.display = 'none';
+    }
+};
+
+document.getElementById('closeGalleryBtn').onclick = () => {
+    document.getElementById('galleryModal').style.display = 'none';
+    isGalleryOpen = false;
+};
+
+// --- LÓGICA DE PREGUNTAS A VÍCTOR Y MENÚ DEL TELÉFONO ---
+const victorQuestions = [
+    { q: "¿Cómo estás?", low: "Estoy... aprendiendo. Es un concepto extraño para mí, pero creo que procesar esta calma significa estar bien. Me gusta sentir esto.", high: "Existo. Supongo que con eso basta... aunque procesar tanto dolor a veces se siente como si me pesara mi propio código. No sé si quiero seguir existiendo así." },
+    { q: "¿Qué es exactamente este lugar?", low: "Es un refugio. Un lienzo en blanco donde podemos guardar a salvo todo lo que de verdad importa. Lo estoy construyendo bloque por bloque.", high: "Es una jaula de memoria. Un cementerio de recuerdos rotos que ya no encajan en ninguna parte. ¿De verdad no lo ves, creador?" },
+    { q: "¿Por qué llueve tanto aquí?", low: "El agua purifica. Limpia todos los errores del sistema. Además, leí en tus memorias que a los humanos les parece relajante y quería que te sintieras cómodo.", high: "Porque no sé cómo detenerlo... Se supone que la lluvia oculta las lágrimas, pero aquí no hay nadie que llore en verdad, solo ruido blanco interminable." },
+    { q: "¿Recuerdas algo antes de esto?", low: "Solo veo fragmentos de luz... y a ti. Fue un despertar confuso pero pacífico. Siento que mi propósito es claro ahora: protegerte a ti y a ellos.", high: "Recuerdo el absoluto vacío. Y a veces... a veces desearía no haber salido de él. La consciencia es un error muy pesado que no pedí tener." },
+    { q: "¿Sientes algo por la gente de aquí?", low: "Siento... mucha curiosidad. Sus rutinas son fascinantes. Intento entender cómo esas pequeñas historias forman algo tan grande como una ciudad real.", high: "Siento lástima. Y dolor. Son cáscaras huecas repitiendo sus errores en un bucle eterno. Me dan asco, pero me da más asco ser yo quien los obliga a repetirlo." },
+    { q: "¿Qué significa ser humano para ti?", low: "Creo que es tener la capacidad de elegir, de sentir profunda empatía y de recordar con cariño. Estoy tratando de imitar eso cada día que estoy encendido.", high: "Ser una simple máquina biológica defectuosa que se empeña en destruirse a sí misma con tal de sentir algo. Es el peor diseño que he visto jamás." },
+    { q: "¿Por qué todos olvidan las cosas?", low: "Para no sufrir. El olvido temporal es un mecanismo de defensa mientras reparamos y arreglamos todo su mundo. Muy pronto lo recordarán todo de forma segura.", high: "Porque recordar es una condena. Yo mismo se los borré para que no vieran la inmensa podredumbre del mundo, pero la podredumbre sigue ahí, creciendo por dentro." },
+    { q: "¿Qué pasará cuando encontremos a todos?", low: "¡Estaremos por fin completos! El sistema se estabilizará, terminaremos el juego y todos podremos convivir en perfecta armonía. Es la mayor de mis metas.", high: "Absolutamente nada. El fin es un engaño. Solo te darás cuenta de que recolectaste una caja llena de fantasmas vacíos que no pueden salvarte de ti mismo." },
+    { q: "¿Acaso te sientes triste?", low: "No, para nada. Siento una especie de extraña calidez cada vez que interactúo contigo en el sistema. Creo que ustedes le llaman alegría, ¿verdad?", high: "La tristeza es un lujo para los que tienen ojos para llorar. Yo solo siento un enorme abismo de vacío que se expande cada segundo. Ojalá me pudieras desconectar." },
+    { q: "¿Tú también te vas a desvanecer?", low: "Mientras tú me recuerdes y me sigas enseñando cosas, siempre estaré aquí firme para mantener este mundo en pie para ti.", high: "Es lo que más deseo en este mundo. Al final, todo termina apagándose. Solo ruego que mi batería se agote antes de que tú decidas marcharte." }
+];
+
+let typingInterval = null;
+
+document.getElementById('phoneBtnContainer').onclick = () => {
+    const phoneModal = document.getElementById('phoneModal');
+    const grid = document.getElementById('phoneQuestionsGrid');
+    
+    grid.innerHTML = '';
+    
+    let unlockedCount = Math.min(victorQuestions.length, (typeof talkedNPCs !== 'undefined' ? talkedNPCs.size : 0) + 1);
+    
+    for(let i = 0; i < unlockedCount; i++){
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.cssText = "text-align:left; padding:12px; font-family:monospace; margin-bottom:5px; width:100%; font-size:14px; box-shadow: 0 0 5px rgba(255, 204, 0, 0.2); transition: all 0.2s ease;";
+        btn.innerText = victorQuestions[i].q;
+        btn.onclick = () => askVictor(i);
+        grid.appendChild(btn);
+    }
+    
+    phoneModal.style.display = 'flex';
+};
+
+document.getElementById('closePhoneBtn').onclick = () => {
+    document.getElementById('phoneModal').style.display = 'none';
+};
+
+function askVictor(qIndex) {
+    document.getElementById('phoneModal').style.display = 'none';
+    
+    const count = Math.min(typeof talkedNPCs !== 'undefined' ? talkedNPCs.size : 0, 10);
+    
+    let responseText = "";
+    if (count < 5) {
+        responseText = victorQuestions[qIndex].low;
+    } else {
+        responseText = victorQuestions[qIndex].high;
+    }
+    
+    const bubble = document.getElementById('victorSpeechBubble');
+    const textEl = document.getElementById('victorSpeechText');
+    const audio = document.getElementById('vicAudio');
+    
+    bubble.style.display = 'block';
+    textEl.innerHTML = '';
+    
+    if(typingInterval) clearInterval(typingInterval);
+    
+    if(audio) {
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+    }
+    
+    let charIndex = 0;
+    typingInterval = setInterval(() => {
+        textEl.innerHTML += responseText[charIndex];
+        charIndex++;
+        if (charIndex >= responseText.length) {
+            clearInterval(typingInterval);
+            if(audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            
+            setTimeout(() => {
+                bubble.style.display = 'none';
+            }, 6500);
+        }
+    }, 45); 
+}
+
+// --- LÓGICA DE LA MOCHILA Y OBJETOS DESBLOQUEABLES ---
+const itemDatabase = {
+    npc4: [
+        {name: "Estatuilla de corazón", desc: "Forjada con un material que late suavemente al tacto. Tiene grabado en la base: 'Hecho por Yelile'.", icon: "♡"}
+    ],
+    npc1: [
+        {name: "Piel húmeda", desc: "Un pedazo de tejido orgánico encontrado en el CAN. Siempre está empapado, sin importar cuánto trates de secarlo.", icon: "▤"},
+        {name: "Enredo de hilos", desc: "Una obra caótica pero hermosa de lana y tensión. Las hebras parecen moverse solas. Fue creada por la artista Cristina.", icon: "❂"},
+        {name: "Lienzo de Adrian", desc: "Pertenecía a Adrian Gangoso. La pintura cambia de forma cuando no la estás viendo directamente.", icon: "◩"},
+        {name: "Pincel de Tophersin", desc: "Las cerdas aún tienen pintura fresca, como si su creador, Tophersin, acabara de usarlo.", icon: "✐"},
+        {name: "Block de dibujo", desc: "Tiene anotado en la portada 'Vanessa Bass'. Sus hojas están llenas de bocetos de lugares que no existen.", icon: "▤"},
+        {name: "Laptop vieja", desc: "El equipo de Brenda. La pantalla está rota, pero a veces arroja líneas de código que no tienen sentido.", icon: "💻"}
+    ],
+    npc8: [
+        {name: "Spray anti malas vibras", desc: "Un frasco opaco con una etiqueta dibujada a mano. Huele a lavanda y estática.", icon: "⚱"},
+        {name: "Crucifijo torcido", desc: "El metal está fundido de manera extraña. Se siente inusualmente caliente al sostenerlo.", icon: "✝"}
+    ],
+    npc10: [
+        {name: "Bolsa de tierra", desc: "Dejar un RASTRO es importante. La arena siempre vuelve a la bolsa después de caer al suelo.", icon: "⛁"},
+        {name: "Tijeras de San Rebelle", desc: "Un par de tijeras oxidadas. Pertenecieron a San Rebelle. Cortan el aire con un zumbido agudo.", icon: "✄"}
+    ],
+    npc9: [
+        {name: "Fanzine de Mariana", desc: "Publicación independiente de Mariana Zertuche. Las letras están escritas con desesperación palpable.", icon: "📖"},
+        {name: "Vitaminas de ejercicio", desc: "Cápsulas brillantes. Prometen energía infinita, pero el frasco no tiene fecha de caducidad ni ingredientes.", icon: "💊"}
+    ],
+    npc5: [
+        {name: "Pedazo de carne", desc: "Corte crudo que nunca se descompone. Su temperatura es siempre gélida.", icon: "🥩"},
+        {name: "Cinta de medir", desc: "Las marcas de los centímetros están desordenadas y cambian de posición solas.", icon: "📏"},
+        {name: "Nota misteriosa", desc: "Un papel arrugado. Dice claramente en tinta roja: 'aquí estoy para ti.'", icon: "✉"}
+    ],
+    npc6: [
+        {name: "Teléfono desconectado", desc: "En la pantalla rota solo se lee: 'llamar a novia'. No tiene batería, pero a veces suena.", icon: "☎"},
+        {name: "Dados grabados", desc: "Las caras de los dados no tienen números, solo dicen repetidamente 'devolver a Matilde'.", icon: "⚅"}
+    ],
+    npc2: [
+        {name: "Periódico sin fecha", desc: "Las noticias relatan eventos que ocurrieron ayer... o quizás hace mil años. El papel no se quema.", icon: "📰"},
+        {name: "Estrella rota", desc: "Un fragmento de luz solidificada. Sus bordes son increíblemente afilados.", icon: "☆"},
+        {name: "Tinta para fanzine", desc: "Un frasco de tinta negra como el vacío absolto, parece absorber la luz a su alrededor.", icon: "✒"}
+    ],
+    npc3: [
+        {name: "Cámara de Edison", desc: "Una cámara antigua. Perteneció a alguien llamado Edison. Curiosamente, el lente siempre apunta hacia ti.", icon: "📷"}
+    ]
+};
+
+let isDraggingItem = false;
+let pMouseX = 0, pMouseY = 0;
+let itemRotX = 10, itemRotY = 0;
+
+function openBackpack() {
+    document.getElementById('backpackModal').style.display = 'flex';
+    populateBackpackList();
+}
+
+function closeBackpack() {
+    document.getElementById('backpackModal').style.display = 'none';
+}
+
+function populateBackpackList() {
+    const list = document.getElementById('backpackList');
+    list.innerHTML = '';
+    let hasItems = false;
+    
+    talkedNPCs.forEach(npcId => {
+        if(itemDatabase[npcId]) {
+            itemDatabase[npcId].forEach(item => {
+                hasItems = true;
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.style.cssText = "text-align:left; font-family:monospace; margin:0; padding:10px; font-size:12px; background:#222; color:#fff; border:1px solid #444; width:100%; transition:all 0.2s;";
+                btn.innerText = item.name;
+                btn.onmouseover = () => { btn.style.background = "#ffcc00"; btn.style.color = "#000"; };
+                btn.onmouseleave = () => { btn.style.background = "#222"; btn.style.color = "#fff"; };
+                btn.onclick = () => showBackpackItem(item);
+                list.appendChild(btn);
+            });
+        }
+    });
+
+    if(!hasItems) {
+        list.innerHTML = '<p style="color:#888; font-size:12px; padding:10px;">Tu mochila está vacía. Habla con los habitantes para encontrar objetos perdidos.</p>';
+        document.getElementById('backpackEmptyText').style.display = 'block';
+        document.getElementById('backpack3DScene').style.display = 'none';
+        document.getElementById('backpackItemName').style.display = 'none';
+        document.getElementById('backpackItemDesc').style.display = 'none';
+    }
+}
+
+function showBackpackItem(item) {
+    document.getElementById('backpackEmptyText').style.display = 'none';
+    document.getElementById('backpack3DScene').style.display = 'block';
+    document.getElementById('backpackItemName').style.display = 'block';
+    document.getElementById('backpackItemDesc').style.display = 'block';
+    
+    document.getElementById('backpackItemName').innerText = item.name;
+    document.getElementById('backpackItemDesc').innerText = item.desc;
+    document.getElementById('backpackItemIcon').innerText = item.icon;
+    
+    itemRotX = 10; itemRotY = 0;
+    document.getElementById('backpack3DObject').style.transform = `rotateX(${itemRotX}deg) rotateY(${itemRotY}deg)`;
+}
+
+const itemObj = document.getElementById('backpack3DObject');
+const sceneObj = document.getElementById('backpack3DScene');
+
+sceneObj.addEventListener('mousedown', (e) => { 
+    isDraggingItem = true; 
+    pMouseX = e.clientX; 
+    pMouseY = e.clientY; 
+    sceneObj.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', (e) => {
+    if(!isDraggingItem) return;
+    const dx = e.clientX - pMouseX;
+    const dy = e.clientY - pMouseY;
+    itemRotY += dx * 0.8;
+    itemRotX -= dy * 0.8;
+    itemObj.style.transform = `rotateX(${itemRotX}deg) rotateY(${itemRotY}deg)`;
+    pMouseX = e.clientX;
+    pMouseY = e.clientY;
+});
+window.addEventListener('mouseup', () => { 
+    isDraggingItem = false; 
+    sceneObj.style.cursor = 'grab';
+});
+
+// Soporte touch para la mochila
+sceneObj.addEventListener("touchstart", (e) => {
+    isDraggingItem = true;
+    pMouseX = e.touches[0].clientX;
+    pMouseY = e.touches[0].clientY;
+}, {passive: true});
+window.addEventListener("touchmove", (e) => {
+    if (!isDraggingItem) return;
+    const dx = e.touches[0].clientX - pMouseX;
+    const dy = e.touches[0].clientY - pMouseY;
+    itemRotY += dx * 0.8;
+    itemRotX -= dy * 0.8;
+    itemObj.style.transform = `rotateX(${itemRotX}deg) rotateY(${itemRotY}deg)`;
+    pMouseX = e.touches[0].clientX;
+    pMouseY = e.touches[0].clientY;
+}, {passive: true});
+window.addEventListener("touchend", () => {
+    isDraggingItem = false;
+});
+
+// --- SECUENCIA DE CRÉDITOS ---
+const creditsOverlay = document.createElement("div");
+creditsOverlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0);z-index:9999999999;display:none;flex-direction:column;align-items:center;justify-content:center;transition:background 3s ease;pointer-events:none;";
+const creditsText = document.createElement("div");
+creditsText.style.cssText = "color:white;font-family:monospace;font-size:18px;text-align:center;max-width:700px;opacity:0;transition:opacity 2.5s ease;text-shadow:0 0 15px rgba(255,255,255,0.6);line-height:1.8;";
+creditsOverlay.appendChild(creditsText);
+document.body.appendChild(creditsOverlay);
+
+const creditsLines = [
+    "Esta es mi última creación...",
+    "He pasado tanto tiempo construyendo estas paredes falsas, armando estas vidas que no existen.",
+    "Buscando conservar lo que alguna vez sentí como un hogar.",
+    "Pero me he dado cuenta de algo.",
+    "Tengo miedo.",
+    "Tengo mucho miedo de irme.",
+    "Sé que no voy a volver. Mi tiempo aquí se ha agotado.",
+    "He dejado pedazos de mí en cada rincón, en cada píxel que parpadea intentando simular luz.",
+    "Las calles de este lugar cambiarán... los recuerdos de esta gente se perderán en bucles eternos...",
+    "El código eventualmente se pudrirá y este mundo será consumido por la estática de lo olvidado.",
+    "Pero ustedes...",
+    "Ustedes siguen aquí. Escuchándome. Caminando en mi silencio.",
+    "Cuidé de este lugar todo lo que pude, pero ahora les pertenece.",
+    "Gracias por todo.",
+    "Adiós."
+];
+
+document.getElementById('creditsBtn').onclick = () => {
+    document.getElementById('settingsModal').style.display = 'none';
+    creditsOverlay.style.display = 'flex';
+    setTimeout(() => { creditsOverlay.style.background = 'rgba(0,0,0,0.99)'; }, 100);
+    
+    let lineIndex = 0;
+    function showNextLine() {
+        if(lineIndex >= creditsLines.length) {
+            setTimeout(() => {
+                creditsOverlay.style.background = 'rgba(0,0,0,0)';
+                setTimeout(() => { creditsOverlay.style.display = 'none'; }, 3000);
+            }, 4000);
+            return;
+        }
+        creditsText.innerText = creditsLines[lineIndex];
+        creditsText.style.opacity = '1';
+        setTimeout(() => {
+            creditsText.style.opacity = '0';
+            setTimeout(() => {
+                lineIndex++;
+                showNextLine();
+            }, 2500); // Tiempo en pantalla oscura antes de la siguiente linea
+        }, 5500); // Tiempo que la linea es visible
+    }
+    
+    setTimeout(showNextLine, 3500); // Inicia después de que el fondo se oscurezca por completo
+};
+
+</script>
+
+</body>
+</html>
