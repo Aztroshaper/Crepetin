@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No deberías estar aquí - El Monte</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: crosshair;
+        }
+        #instrucciones {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 2px 2px 5px #000;
+        }
+        #mensaje-final {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            color: #550000; /* Rojo oscuro como sangre seca */
+            font-size: 5vw;
+            font-weight: bold;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            letter-spacing: 5px;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="instrucciones">¿Me acompañas a la cima del monte? <br>Clic para encender la linterna.<br>W, A, S, D para moverte por el monte.<br>ESPACIO para saltar.</div>
+    <div id="mensaje-final">NO DEBERÍAS ESTAR AQUÍ</div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // 1. Configuración Básica (Noche Oscura)
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020302);
+        scene.fog = new THREE.FogExp2(0x020302, 0.08); // Niebla muy densa para limitar la vista
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const playerHeight = 1.8; 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Controles y Linterna Fría
+        const controls = new PointerLockControls(camera, document.body);
+        document.body.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => document.getElementById('instrucciones').style.display = 'none');
+        scene.add(controls.getObject());
+
+        // Linterna con un tono azul/blanco muy frío y espectral
+        const linterna = new THREE.SpotLight(0xddeeff, 2, 35, Math.PI / 4.5, 0.5, 1);
+        linterna.position.set(0, 0, 0);
+        linterna.target.position.set(0, 0, -1);
+        camera.add(linterna);
+        camera.add(linterna.target);
+
+        const collidables = []; // Para las físicas de colisión y gravedad
+
+        // 3. Funciones de Generación Procedural de Texturas
+        function generarTexturaSucia(baseColor, noiseDensity) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(0, 0, 512, 512);
+            for (let i = 0; i < noiseDensity; i++) {
+                ctx.fillStyle = `rgba(10, 15, 10, ${Math.random() * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            const textura = new THREE.CanvasTexture(canvas);
+            textura.wrapS = THREE.RepeatWrapping;
+            textura.wrapT = THREE.RepeatWrapping;
+            return textura;
+        }
+
+        function crearTexturaLapida(texto) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#3a3d3c'; // Piedra oscura
+            ctx.fillRect(0, 0, 256, 256);
+            
+            // Erosión de la piedra
+            for (let i = 0; i < 1500; i++) {
+                ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.15})`;
+                ctx.fillRect(Math.random() * 256, Math.random() * 256, 3, 3);
+            }
+
+            ctx.fillStyle = '#0a0a0a';
+            ctx.font = 'bold 35px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText(texto, 128, 80);
+            
+            ctx.font = '20px Courier New';
+            ctx.fillText("Q.E.P.D.", 128, 120);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // 4. Creación del Monte (Topografía Procedural)
+        const radioMonte = 60;
+        const alturaMaximaMonte = 20;
+        const geometriaMonte = new THREE.PlaneGeometry(radioMonte * 2, radioMonte * 2, 64, 64);
+        const posiciones = geometriaMonte.attributes.position;
+
+        for (let i = 0; i < posiciones.count; i++) {
+            const x = posiciones.getX(i);
+            const y = posiciones.getY(i); // En PlaneGeometry el eje Y es el plano local bidimensional
+            const distancia = Math.hypot(x, y);
+            
+            let z = 0; // Elevación
+            if (distancia < radioMonte) {
+                // Curva de campana para hacer la colina
+                z = Math.cos((distancia / radioMonte) * (Math.PI / 2)) * alturaMaximaMonte;
+            }
+            // Añadir irregularidades al terreno
+            z += Math.random() * 0.6;
+            posiciones.setZ(i, z);
+        }
+        geometriaMonte.computeVertexNormals();
+
+        const materialTierra = new THREE.MeshStandardMaterial({ map: generarTexturaSucia('#121711', 8000), roughness: 1 });
+        const monte = new THREE.Mesh(geometriaMonte, materialTierra);
+        monte.rotation.x = -Math.PI / 2; // Acostarlo para que sea el suelo
+        scene.add(monte);
+        collidables.push(monte);
+
+        // Función para calcular la altura exacta del suelo en cualquier coordenada (X, Z)
+        function obtenerAlturaTerreno(x, z) {
+            const distancia = Math.hypot(x, z);
+            if (distancia >= radioMonte) return 0;
+            return Math.cos((distancia / radioMonte) * (Math.PI / 2)) * alturaMaximaMonte;
+        }
+
+        // 5. El Gran Árbol Ficus en la cima (0, 0)
+        // Tronco grueso
+        const alturaTronco = 8;
+        const troncoGeo = new THREE.CylinderGeometry(2, 3, alturaTronco, 9);
+        const troncoMat = new THREE.MeshStandardMaterial({ color: 0x140d0a, roughness: 1 });
+        const tronco = new THREE.Mesh(troncoGeo, troncoMat);
+        tronco.position.set(0, alturaMaximaMonte + (alturaTronco / 2) - 1, 0); // Hundido 1 unidad
+        scene.add(tronco);
+        collidables.push(tronco);
+
+        // Follaje (Esferas entrelazadas)
+        const hojasMat = new THREE.MeshStandardMaterial({ color: 0x071205, roughness: 0.9 });
+        for(let i = 0; i < 25; i++) {
+            const radioHoja = 4 + Math.random() * 4;
+            const hojaGeo = new THREE.SphereGeometry(radioHoja, 7, 7);
+            const hoja = new THREE.Mesh(hojaGeo, hojasMat);
+            
+            const offsetY = alturaMaximaMonte + alturaTronco + Math.random() * 6;
+            const offsetX = (Math.random() - 0.5) * 14;
+            const offsetZ = (Math.random() - 0.5) * 14;
+            
+            hoja.position.set(offsetX, offsetY, offsetZ);
+            scene.add(hoja);
+        }
+
+        // 6. Las Tumbas
+        const nombresTumbas = ["Ren", "Goio", "Anna", "Melissa", "Fer", "Centli", "Chuy", "Hector", "Andrés", "Diego", "Diego", "Sin nombre", "Sin nombre", "Sin nombre"];
+        const geometriaLapida = new THREE.BoxGeometry(1.6, 2.5, 0.3);
+        const materialPiedra = new THREE.MeshStandardMaterial({ color: 0x3a3d3c, roughness: 1 });
+
+        nombresTumbas.forEach(nombre => {
+            const matFrente = new THREE.MeshStandardMaterial({ map: crearTexturaLapida(nombre), roughness: 1 });
+            const materialesCaja = [materialPiedra, materialPiedra, materialPiedra, materialPiedra, matFrente, materialPiedra];
+            
+            const lapida = new THREE.Mesh(geometriaLapida, materialesCaja);
+            
+            // Posicionar aleatoriamente en la falda del monte
+            const angulo = Math.random() * Math.PI * 2;
+            const distanciaDelCentro = 8 + Math.random() * (radioMonte - 15); // Evitar chocar con el árbol y el borde
+            
+            const px = Math.cos(angulo) * distanciaDelCentro;
+            const pz = Math.sin(angulo) * distanciaDelCentro;
+            const py = obtenerAlturaTerreno(px, pz);
+
+            lapida.position.set(px, py + 0.8, pz); // +0.8 para enterrarla parcialmente
+            
+            // Rotaciones perturbadoras (viejas, torcidas y mirando a lugares aleatorios)
+            lapida.rotation.y = Math.random() * Math.PI * 2;
+            lapida.rotation.x = (Math.random() - 0.5) * 0.3; 
+            lapida.rotation.z = (Math.random() - 0.5) * 0.3;
+
+            scene.add(lapida);
+            collidables.push(lapida); // Se puede chocar/saltar sobre las tumbas
+        });
+
+        // Posición Inicial del Jugador (Al pie del monte)
+        camera.position.set(0, obtenerAlturaTerreno(0, 50) + playerHeight, 50);
+
+        // 7. Físicas y Movimiento
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': if (canJump) { velocity.y += 10; canJump = false; } break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        });
+
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        const raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 10);
+        let prevTime = performance.now();
+
+        // 8. Bucle de Animación y Gravedad
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+
+            if (controls.isLocked === true) {
+                const delta = (time - prevTime) / 1000;
+
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 9.8 * 3.5 * delta; // Gravedad
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * 35.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 35.0 * delta;
+
+                const pos = controls.getObject().position;
+                const distAlCentro = Math.hypot(pos.x, pos.z);
+                if (distAlCentro > radioMonte - 2) {
+                    const ang = Math.atan2(pos.z, pos.x);
+                    pos.x = Math.cos(ang) * (radioMonte - 2);
+                    pos.z = Math.sin(ang) * (radioMonte - 2);
+                }
+
+                // Físicas Verticales (Raycasting contra el monte y las lápidas)
+                raycaster.ray.origin.copy(pos);
+                raycaster.ray.origin.y += 5; 
+                const intersections = raycaster.intersectObjects(collidables, false);
+
+                if (intersections.length > 0) {
+                  
+                    const distanciaReal = intersections[0].distance - 5;
+                    if (distanciaReal <= playerHeight) {
+                        velocity.y = Math.max(0, velocity.y);
+                        pos.y = intersections[0].point.y + playerHeight;
+                        canJump = true;
+                    }
+                }
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+                pos.y += velocity.y * delta;
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+   
+        setTimeout(() => {
+            document.getElementById('mensaje-final').style.display = 'flex';
+            controls.unlock();
+            
+            setTimeout(() => {
+                window.close();
+                document.body.innerHTML = '<div style="background:black; height:100vh;"></div>';
+            }, 2500);
+
+        }, 40000);
+
+    </script>
+</body>
+</html>

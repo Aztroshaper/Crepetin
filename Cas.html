@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CASSANDRA COSMOS</title>
+
+<style>
+/* CONFIGURACIÓN VHS Y CRT ANÁLOGO */
+@keyframes vignetteFlicker {
+    0% { opacity: .85; }
+    50% { opacity: .95; }
+    100% { opacity: .88; }
+}
+
+@keyframes scanlines {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 100vh; }
+}
+
+@keyframes rgbShift {
+    0% { transform: translateX(0) scale(1); filter: hue-rotate(0deg); }
+    30% { transform: translateX(.8px) scale(1.001); filter: hue-rotate(1deg); }
+    60% { transform: translateX(-.8px) scale(0.999); filter: hue-rotate(-1deg); }
+    100% { transform: translateX(0) scale(1); filter: hue-rotate(0deg); }
+}
+
+@keyframes vhsTracking {
+    0% { top: -100%; }
+    100% { top: 100%; }
+}
+
+/* LUCES DEL MARCO */
+@keyframes bulbIdle {
+    0%, 100% { background: #b88a45; box-shadow: 0 0 4px #b88a45; filter: brightness(0.6); }
+    50% { background: #ffdf9e; box-shadow: 0 0 12px #ffbe64; filter: brightness(1.2); }
+}
+
+@keyframes bulbParty {
+    0% { background: #ff0055; box-shadow: 0 0 15px #ff0055; }
+    50% { background: #ffffff; box-shadow: 0 0 25px #ffffff; filter: brightness(1.5); }
+    100% { background: #ff0055; box-shadow: 0 0 15px #ff0055; }
+}
+
+/* ANIMACIONES MECÁNICAS */
+@keyframes coinSlotDrop {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    50% { transform: translateY(40px) scale(0.9); opacity: 0.8; }
+    100% { transform: translateY(90px) scale(0.4); opacity: 0; }
+}
+
+@keyframes leverPullAction {
+    0% { transform: rotateX(0deg); }
+    30% { transform: rotateX(65deg) scaleY(0.6); }
+    60% { transform: rotateX(-10deg) scaleY(1.05); }
+    100% { transform: rotateX(0deg); }
+}
+
+body {
+    animation: rgbShift .1s infinite;
+    margin: 0;
+    overflow: hidden;
+    background: #050505;
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    color: white;
+}
+
+body.party-mode {
+    animation: rgbShift .04s infinite;
+}
+
+/* FILTROS RETRO */
+.vhs-line {
+    position: fixed;
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.12);
+    animation: vhsTracking 6s linear infinite;
+    z-index: 9999;
+    pointer-events: none;
+    filter: blur(1px);
+}
+
+#scanlines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9997;
+    background: repeating-linear-gradient(to bottom, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 2px, transparent 4px);
+    opacity: .3;
+    animation: scanlines 10s linear infinite;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background: radial-gradient(circle, transparent 30%, rgba(0,0,0,.4) 60%, rgba(0,0,0,.85) 85%, rgba(0,0,0,0.98) 100%);
+    mix-blend-mode: multiply;
+    animation: vignetteFlicker 1.5s infinite;
+}
+
+/* TELEVISOR RETRO / MÁQUINA DE CIRCO */
+.cabinet {
+    position: fixed;
+    right: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38%;
+    height: 80vh;
+    background: #1a110a;
+    border: 12px solid #3d2b1f;
+    border-radius: 14px;
+    padding: 20px;
+    z-index: 10;
+    box-shadow: 0 0 50px rgba(0,0,0,0.9), inset 0 0 25px rgba(0,0,0,0.8);
+    box-sizing: border-box;
+}
+
+.tv-frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #020202;
+    border: 16px solid #261a12;
+    overflow: hidden;
+    box-shadow: inset 0 0 40px rgba(0,0,0,1);
+}
+
+.tv-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 20%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 60%);
+    z-index: 5;
+    pointer-events: none;
+}
+
+.bulb {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #b88a45;
+    box-shadow: 0 0 4px #b88a45;
+    animation: bulbIdle 1.8s infinite;
+    z-index: 6;
+}
+
+body.party-mode .bulb {
+    animation: bulbParty 0.25s infinite !important;
+}
+
+/* TABLERO DE CONTROL DE MONEDAS */
+.control-panel {
+    position: absolute;
+    left: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44%;
+    visibility: hidden;
+    z-index: 5;
+}
+
+.retro-box {
+    background: linear-gradient(180deg, rgba(16, 12, 8, 0.96) 0%, rgba(5, 5, 5, 0.98) 100%);
+    border: 3px double #b88a45;
+    padding: 35px;
+    position: relative;
+    box-shadow: 0 0 35px rgba(0,0,0,0.8);
+}
+
+/* DISEÑO DE PALANCA TRAGAMONEDAS */
+.lever-area {
+    position: absolute;
+    right: -45px;
+    top: 45%;
+    width: 50px;
+    height: 140px;
+    cursor: pointer;
+    opacity: 0.2;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    perspective: 400px;
+}
+
+.lever-base {
+    position: absolute;
+    bottom: 0;
+    left: 10px;
+    width: 20px;
+    height: 25px;
+    background: #2a1b12;
+    border: 2px solid #b88a45;
+    border-radius: 3px;
+}
+
+.lever-stick {
+    width: 8px;
+    height: 90px;
+    background: linear-gradient(to right, #e0e0e0, #888, #444);
+    margin: 0 auto;
+    transform-origin: bottom center;
+    position: relative;
+    border-radius: 4px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+}
+
+.lever-knob {
+    width: 26px;
+    height: 26px;
+    background: radial-gradient(circle at 35% 35%, #ff2a2a 0%, #7a0000 80%);
+    border-radius: 50%;
+    position: absolute;
+    top: -15px;
+    left: -9px;
+    box-shadow: 0 4px 10px rgba(255,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.4);
+}
+
+/* CONTENEDOR BLANCO DEL CARRETE DEL SLOT MACHINE */
+.slot-container {
+    background: #ffffff;
+    height: 120px;
+    margin-top: 25px;
+    border: 5px solid #0f0a05;
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.4), inset 0 -5px 15px rgba(0,0,0,0.4);
+    overflow: hidden;
+    position: relative;
+    display: none;
+}
+
+.slot-container::before {
+    content: "";
+    position: absolute;
+    left: 0; width: 100%; top: 38px; height: 2px;
+    background: rgba(255, 0, 0, 0.25);
+    z-index: 4;
+}
+.slot-container::after {
+    content: "";
+    position: absolute;
+    left: 0; width: 100%; top: 78px; height: 2px;
+    background: rgba(255, 0, 0, 0.25);
+    z-index: 4;
+}
+
+.slot-reel {
+    position: absolute;
+    width: 100%;
+    color: #050505;
+    font-weight: bold;
+    font-size: 13px;
+    text-align: center;
+    transform: translateY(40px);
+}
+
+.slot-reel div {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15px;
+    box-sizing: border-box;
+    border-bottom: 1px dashed rgba(0,0,0,0.08);
+    text-transform: uppercase;
+}
+
+/* MONEDA ANIMADA */
+#coin-anim {
+    position: fixed;
+    width: 26px;
+    height: 26px;
+    background: radial-gradient(circle at 30% 30%, #fbd758 0%, #b88a45 100%);
+    border-radius: 50%;
+    border: 1px solid #7c5a24;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+    display: none;
+    z-index: 100;
+}
+
+button {
+    background: linear-gradient(135deg, #b88a45 0%, #86612d 100%);
+    border: 1px solid #dfb97f;
+    color: #000;
+    padding: 14px 28px;
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover:not(:disabled) {
+    filter: brightness(1.2);
+}
+
+button:disabled {
+    background: #3a3128;
+    border-color: #55483a;
+    color: #615343;
+    cursor: not-allowed;
+}
+
+#oracleGif {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    mix-blend-mode: screen;
+    filter: brightness(0.75) contrast(1.25) saturate(0.7);
+}
+
+body.party-mode #oracleGif {
+    filter: brightness(1.1) contrast(1.4) saturate(1.1);
+}
+</style>
+
+</head>
+<body>
+
+<div id="rain"></div>
+
+<div class="vhs-line"></div>
+<div id="scanlines"></div>
+
+<audio id="bgMusic" loop>
+    <source src="tarot.mp3" type="audio/mpeg">
+</audio>
+
+<div style="
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(rgba(0,0,0,.84), rgba(0,0,0,.92)), url('casfo.gif');
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+"></div>
+
+<div id="coin-anim"></div>
+
+<div class="control-panel" id="mainPanel">
+    <div class="retro-box">
+        <h2 style="color: #e6c189; margin-top: 0; letter-spacing: 4px; text-align: center;">CASSANDRA COSMOS</h2>
+        <p id="instructionText" style="color: #c4b5a3; font-size: 14px; text-align: center; font-weight: bold; min-height: 35px;">PASO 1: DEPOSITA UNA MONEDA</p>
+        
+        <div style="display: flex; align-items: center; justify-content: center; gap: 25px; margin-top: 15px;">
+            <button id="coinBtn">DEPOSITAR MONEDA</button>
+            <div id="coinCounter" style="color: #e6c189; letter-spacing: 2px; font-weight: bold;">DISPONIBLES: 3</div>
+        </div>
+
+        <div class="slot-container" id="slotMachine">
+            <div class="slot-reel" id="reelContent"></div>
+        </div>
+
+        <div class="lever-area" id="leverArea">
+            <div class="lever-base"></div>
+            <div class="lever-stick" id="leverStick">
+                <div class="lever-knob"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cabinet">
+    <div class="tv-frame">
+        <div id="bulbs"></div>
+        <img id="oracleGif" src="cas1.gif" alt="Cassandra">
+    </div>
+</div>
+
+<div id="dialogueOverlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: flex; align-items: center; justify-content: center;">
+    <div style="background: #0b0705; border: 2px solid #b88a45; padding: 40px; max-width: 500px; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.9);">
+        <div id="introText" style="margin-bottom: 25px; line-height: 1.8; font-size: 16px; color: #e0d5c1;"></div>
+        <button id="startBtn" style="display: none;">ENTRAR</button>
+    </div>
+</div>
+
+<script>
+// BASE DE DATOS DE FORTUNAS
+const fortunes = [
+    ["Las luces del bulevar Independencia volverán a encenderse durante 3 minutos exactos.", "Una figura sin rostro te observará desde lo alto, quizás un edificio abandonado.", "Deberías intentar recordar quién eras antes de la lluvia."],
+    ["Un teatro derrumbado conservará aún el olor del óleo húmedo.", "Escucharás aplausos aunque el edificio esté vacío.", "El artista desaparecido todavía sigue dentro del escenario."],
+    ["Ten cuidado, se empieza a murmurar tu nombre de nuevo.", "Pero tú, durante unos segundos olvidarás cuál era tu nombre original.", "Después de eso, la ciudad comenzará a reconocerte."],
+    ["Las escuelas de arte abrirán una sola noche.", "Los pasillos estarán llenos de esculturas hechas con algo que nunca debió tocarse.", "Al amanecer nadie recordará haber entrado."],
+    ["Encontrarás una cinta etiquetada como 'la obra más humana posible'.", "La grabación estará destruida excepto por una respiración.", "No intentes verla, o él la reproducirá una y otra vez."],
+    ["Un periódico mojado hablará de un eclipse inexistente.", "Las fotografías mostrarán personas que nunca nacieron.", "Tu rostro aparecerá en una esquina del archivo."],
+    ["La lluvia comenzará a caer dentro de los edificios.", "Las computadoras viejas intentarán rezar.", "Algo responderá desde los drenajes."],
+    ["Rostros luminosos aprenderán tu voz.", "Cada palabra que digas será repetida horas después.", "Entonces comprenderás que la ciudad te escucha."],
+    ["Una galería abandonada conservará cuadros que cambian de forma.", "Los visitantes saldrán llorando sin saber por qué.", "Alguien con susurros llamará a eso arte auténtico."],
+    ["Los perros callejeros seguirán a alguien invisible.", "En sus ojos aparecerán reflejos de estrellas artificiales.", "La lluvia habrá regresado al desierto."],
+    ["Una estación de radio transmitirá recuerdos humanos comprimidos.", "Escucharás conversations que nunca ocurrieron.", "Al final reconocerás una voz muy cercana a la tuya."],
+    ["Torreón perderá partes de sí misma.", "Calles enteras serán reemplazadas por océanos negros.", "Victor insistirá en que siempre estuvieron ahí."],
+    ["Encontrarás un museo construido debajo de un estacionamiento.", "Las esculturas estarán hechas con órganos impresos.", "El guardia dirá que todavía respiran."],
+    ["Una inteligencia artificial aprenderá a sentir culpa.", "Intentará disculparse usando canciones viejas.", "Nadie comprenderá el mensaje excepto tú."],
+    ["Las estrellas falsas del domo central comenzarán a apagarse.", "Por primera vez aparecerá el cielo real.", "Victor tendrá miedo de mirarlo."]
+];
+
+const allPhrases = fortunes.flat();
+const introText = "REGRESASTE MI VIDA, ESTA MAQUINA CONSUME TIEMPO Y MEMORIA. DEPOSITA UNA MONEDA PARA FILTRAR LAS CORRIENTES TEMPORALES DE ESTA ETERNA LLUVIA.";
+
+let coins = localStorage.getItem('cassandra_coins') !== null ? parseInt(localStorage.getItem('cassandra_coins')) : 3;
+let coinInserted = false;
+let currentFortuneSet = null;
+let currentLineIdx = 0;
+let isSpinning = false;
+
+// INICIALIZACIÓN BOMBILLAS DE CIRCO
+const bulbsContainer = document.getElementById('bulbs');
+for(let i=0; i<24; i++) {
+    const b = document.createElement('div');
+    b.className = 'bulb';
+    if(i < 7) { b.style.top = '0'; b.style.left = (i * 16.6) + '%'; }
+    else if(i < 14) { b.style.bottom = '0'; b.style.left = ((i - 7) * 16.6) + '%'; }
+    else if(i < 19) { b.style.left = '0'; b.style.top = ((i - 13) * 20) + '%'; }
+    else { b.style.right = '0'; b.style.top = ((i - 18) * 20) + '%'; }
+    b.style.animationDelay = (i * 0.08) + 's';
+    bulbsContainer.appendChild(b);
+}
+
+// ESCRITURA TEXTO INICIAL
+function typeIntro(text, element, callback) {
+    let i = 0;
+    const interval = setInterval(() => {
+        element.innerHTML += text.charAt(i);
+        i++;
+        if(i >= text.length) {
+            clearInterval(interval);
+            callback();
+        }
+    }, 30);
+}
+
+window.onload = () => {
+    document.getElementById('coinCounter').innerHTML = "DISPONIBLES: " + coins;
+    typeIntro(introText, document.getElementById('introText'), () => {
+        document.getElementById('startBtn').style.display = 'inline-block';
+    });
+    checkCooldown();
+};
+
+document.getElementById('startBtn').onclick = () => {
+    document.getElementById('dialogueOverlay').style.display = 'none';
+    document.getElementById('mainPanel').style.visibility = 'visible';
+    document.getElementById('bgMusic').volume = 0.45;
+    document.getElementById('bgMusic').play().catch(e => console.log("Audio diferido"));
+};
+
+// 1. PASO UNO: ENTRADA DE MONEDA ANIMADA
+document.getElementById('coinBtn').onclick = function() {
+    if(coins <= 0 || coinInserted || isSpinning || checkCooldown()) return;
+    
+    const btnRect = this.getBoundingClientRect();
+    const animCoin = document.getElementById('coin-anim');
+    
+    animCoin.style.left = (btnRect.left + btnRect.width/2 - 13) + 'px';
+    animCoin.style.top = btnRect.top + 'px';
+    animCoin.style.display = 'block';
+    animCoin.style.animation = 'coinSlotDrop 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards';
+    
+    this.disabled = true;
+    
+    setTimeout(() => {
+        animCoin.style.display = 'none';
+        animCoin.style.animation = '';
+        coinInserted = true;
+        
+        coins--;
+        localStorage.setItem('cassandra_coins', coins);
+        document.getElementById('coinCounter').innerHTML = "DISPONIBLES: " + coins;
+        
+        document.getElementById('instructionText').innerHTML = "PASO 2: ACCIONA LA PALANCA PARA ENFOCAR TU DESTINO";
+        document.getElementById('leverArea').style.opacity = "1";
+        document.getElementById('leverArea').style.pointerEvents = "auto";
+    }, 600);
+};
+
+// 2. PASO DOS: ACCIÓN MECÁNICA DE PALANCA
+document.getElementById('leverArea').onclick = function() {
+    if(!coinInserted || isSpinning) return;
+    
+    isSpinning = true;
+    this.style.pointerEvents = "none";
+    this.style.opacity = "0.2";
+    
+    const stick = document.getElementById('leverStick');
+    stick.style.animation = 'leverPullAction 0.5s ease-in-out forwards';
+    
+    setTimeout(() => {
+        executeSlotMachine();
+        stick.style.animation = '';
+    }, 300);
+};
+
+// 3. EJECUCIÓN DEL CARRETE DE LA TRAGAMONEDAS
+function executeSlotMachine() {
+    const reel = document.getElementById('reelContent');
+    const slotContainer = document.getElementById('slotMachine');
+    const oracle = document.getElementById('oracleGif');
+    
+    slotContainer.style.display = 'block';
+    document.body.classList.add("party-mode");
+    oracle.src = 'cas2.gif';
+    
+    reel.innerHTML = '';
+    
+    let spinPhrases = [];
+    for(let i = 0; i < 25; i++) {
+        spinPhrases.push(allPhrases[Math.floor(Math.random() * allPhrases.length)]);
+    }
+    
+    if(!currentFortuneSet) {
+        currentFortuneSet = fortunes[Math.floor(Math.random() * fortunes.length)];
+        currentLineIdx = 0;
+    }
+    
+    const finalPhrase = currentFortuneSet[currentLineIdx];
+    spinPhrases.push(finalPhrase);
+    
+    spinPhrases.forEach(text => {
+        const div = document.createElement('div');
+        div.textContent = text.toUpperCase();
+        reel.appendChild(div);
+    });
+
+    reel.style.transition = 'none';
+    reel.style.transform = 'translateY(40px)';
+    reel.style.filter = 'blur(2px) brightness(1.5)';
+    
+    void reel.offsetHeight;
+    
+    const targetIndex = spinPhrases.length - 1;
+    const stopY = 40 - (targetIndex * 40);
+    
+    reel.style.transition = 'transform 2.8s cubic-bezier(0.15, 0.85, 0.35, 1)';
+    reel.style.transform = `translateY(${stopY}px)`;
+    
+    setTimeout(() => {
+        reel.style.filter = 'none';
+    }, 2200);
+
+    setTimeout(() => {
+        document.body.classList.remove("party-mode");
+        currentLineIdx++;
+        coinInserted = false;
+        isSpinning = false;
+        
+        let fortuneEnded = false;
+        if(currentLineIdx >= currentFortuneSet.length) {
+            currentFortuneSet = null;
+            fortuneEnded = true;
+        }
+
+        setTimeout(() => {
+            oracle.src = 'cas1.gif';
+            
+            if(fortuneEnded) {
+                if(coins > 0) {
+                    document.getElementById('instructionText').innerHTML = "PASO 1: DEPOSITA UNA MONEDA";
+                    document.getElementById('coinBtn').disabled = false;
+                } else {
+                    const targetTime = Date.now() + (5 * 60 * 60 * 1000);
+                    localStorage.setItem('cassandra_cooldown', targetTime);
+                    checkCooldown();
+                }
+            } else {
+                document.getElementById('instructionText').innerHTML = "LA LINEA CONECTA. BAJA LA PALANCA PARA CONTINUAR";
+                document.getElementById('leverArea').style.pointerEvents = "auto";
+                document.getElementById('leverArea').style.opacity = "1";
+                coinInserted = true; 
+            }
+        }, 2500);
+
+    }, 2900);
+}
+
+// 4. CONTROLADOR DE COOLDOWN DE 5 HORAS
+function checkCooldown() {
+    const cooldownTime = localStorage.getItem('cassandra_cooldown');
+    if(!cooldownTime) return false;
+    
+    const timeLeft = cooldownTime - Date.now();
+    
+    if(timeLeft > 0) {
+        document.getElementById('coinBtn').disabled = true;
+        document.getElementById('leverArea').style.pointerEvents = "none";
+        document.getElementById('leverArea').style.opacity = "0.2";
+        
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60)).toString().padStart(2, '0');
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000).toString().padStart(2, '0');
+        
+        document.getElementById('instructionText').innerHTML = `REPOSICION DE ENERGIA EN: ${hours}:${minutes}:${seconds}`;
+        
+        setTimeout(checkCooldown, 1000);
+        return true;
+    } else {
+        localStorage.removeItem('cassandra_cooldown');
+        coins = 3;
+        localStorage.setItem('cassandra_coins', coins);
+        document.getElementById('coinCounter').innerHTML = "DISPONIBLES: " + coins;
+        document.getElementById('instructionText').innerHTML = "PASO 1: DEPOSITA UNA MONEDA";
+        document.getElementById('coinBtn').disabled = false;
+        return false;
+    }
+}
+
+// GENERADOR DE LLUVIA ORIGINAL
+const rain = document.getElementById("rain");
+for(let i=0; i<170; i++){
+    const drop = document.createElement("div");
+    drop.style.position = "fixed";
+    drop.style.width = "1px";
+    drop.style.height = Math.random() * 18 + 10 + "px";
+    drop.style.background = "rgba(180,180,255,.18)";
+    drop.style.left = Math.random() * 100 + "%";
+    drop.style.top = "-20px";
+    drop.style.opacity = Math.random();
+    drop.style.animation = `fall ${Math.random() * 1 + .8}s linear infinite`;
+    drop.style.animationDelay = Math.random() * 2 + "s";
+    rain.appendChild(drop);
+}
+
+const extraStyle = document.createElement("style");
+extraStyle.innerHTML = `
+@keyframes fall {
+    to { transform: translateY(110vh); }
+}
+`;
+document.head.appendChild(extraStyle);
+</script>
+
+</body>
+</html>

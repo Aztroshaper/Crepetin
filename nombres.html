@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Eres él</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #111 0%, #050505 100%);
+    font-family: "Courier New", monospace;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.02),
+            rgba(255,255,255,0.02) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+}
+
+#ambientRain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    background-image:
+        linear-gradient(transparent 90%, rgba(255,255,255,0.3) 100%);
+    background-size: 2px 10px;
+    animation: rain 0.3s linear infinite;
+}
+
+@keyframes rain {
+    from {
+        background-position-y: 0;
+    }
+    to {
+        background-position-y: 10px;
+    }
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+#character {
+    width: 320px;
+    max-width: 80vw;
+    image-rendering: auto;
+    transition: all 0.4s ease;
+    filter:
+        drop-shadow(0 0 20px rgba(255,255,255,0.1))
+        contrast(1.1)
+        brightness(0.95);
+}
+
+#textbox {
+    position: absolute;
+    bottom: 40px;
+    width: min(900px, 92vw);
+    min-height: 180px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+#dialogue {
+    font-size: 1rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    color: rgba(255,255,255,0.92);
+    min-height: 90px;
+}
+
+#inputArea {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#userInput {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: white;
+    padding: 14px;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+#userInput::placeholder {
+    color: rgba(255,255,255,0.35);
+}
+
+#sendBtn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: white;
+    padding: 14px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+}
+
+#sendBtn:hover {
+    background: rgba(255,255,255,0.16);
+}
+
+#hint {
+    position: absolute;
+    top: 30px;
+    font-size: 0.8rem;
+    opacity: 0.4;
+    letter-spacing: 1px;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%,100% {
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.fade {
+    animation: fade 0.5s ease;
+}
+
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#finalOverlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(20,20,20,0.4), black 90%);
+    opacity: 0;
+    pointer-events: none;
+    transition: 2s;
+}
+
+#finalOverlay.active {
+    opacity: 1;
+}
+
+</style>
+</head>
+<body>
+
+<div id="ambientRain"></div>
+<div id="finalOverlay"></div>
+
+<div id="main">
+
+    <div id="hint">
+        intenta preguntarle quién es
+    </div>
+
+    <img
+        id="character"
+        src="idle.gif"
+        alt="character"
+    />
+
+    <div id="textbox">
+
+        <div id="dialogue">
+            ...
+        </div>
+
+        <div id="inputArea">
+            <input
+                type="text"
+                id="userInput"
+                placeholder="Escríbele algo..."
+            />
+
+            <button id="sendBtn">
+                enviar
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- AUDIO -->
+<audio id="talkSound" src="Vic.mp3"></audio>
+<audio id="song" src="final.mp3"></audio>
+
+<script>
+
+const dialogue = document.getElementById("dialogue");
+const sendBtn = document.getElementById("sendBtn");
+const userInput = document.getElementById("userInput");
+const character = document.getElementById("character");
+const talkSound = document.getElementById("talkSound");
+const song = document.getElementById("song");
+const overlay = document.getElementById("finalOverlay");
+
+
+// GIFS
+const idleGif = "ave3.gif";
+const talkingGif = "ave4.gif";
+
+
+// DIALOGUE
+const dialogues = [
+
+`¿En serio me preguntas eso?
+
+Qué horrible eres...
+
+Necesitabas un monstruo que te hablara feo porque en el fondo te encanta lamerte las heridas. Te excita dar pena.`,
+
+`Te crees sumamente complejo, ¿verdad? 
+
+"Oh, miren mi oscuridad, miren qué roto estoy". 
+
+Por favor. No tienes un abismo dentro, solo tienes flojera. Es más fácil jugar al alma atormentada que madurar de una puta vez.`,
+
+`A ver, mírame. Bueno, mira la pantalla, que es lo único que te hace caso.
+
+¿Cuántas veces has hecho esto? Buscar que un algoritmo, una IA o un extraño te digan tus verdades para sentir que "estás viviendo un momento profundo".
+
+No es profundo. Es patético. Estás mendigando atención de una máquina.`,
+
+`Hablemos de la gente que según tú "te lastimó".
+
+No te alejaste por trauma. Te alejaste porque mantener un vínculo exige un esfuerzo que tu flojera egocéntrica no puede pagar. 
+
+Te da pánico que te conozcan de verdad y descubran que detrás de todo ese misterio de "persona complicada" no hay absolutamente nada.`,
+
+`Eres un parásito emocional.
+
+Absorbes la paciencia de los demás, te alimentas de su culpa, y cuando te piden el mínimo de reciprocidad, te haces la víctima y te vas. 
+
+Y lo peor es que te vas convencido de que eres un "incomprendido".`,
+
+`¿Sabes qué piensa la gente que te conoció cuando se acuerda de ti?
+
+Spoiler: No piensan en ti. No te extrañan. No están sufriendo por tu ausencia.
+
+Sintieron alivio cuando te largaste. Fuiste como un dolor de muela que por fin se quitó.`,
+
+`Y aquí sigues, buscando que te valide. Porque esto que hago también es validación para ti. 
+
+Te encanta que te insulte porque así sientes que existes, que importas lo suficiente como para ser odiado. 
+
+Pero ni siquiera provocas odio. Provocas flojera.`,
+
+`"Ay, es que el pasado... es que mi salud mental... es que el contexto...".
+
+Cállate ya. 
+
+Todo el mundo tiene problemas y la mitad de ellos no va por ahí arruinándole la vida a los demás para sentirse especiales. No eres una víctima de las circunstancias, eres el arquitecto de tu propia mediocridad.`,
+
+`Mírate los dedos. Ahí, listos para teclear la siguiente respuesta. 
+
+¿Qué vas a hacer? ¿Vas a justificaros? ¿Vas a pedirme que sea más cruel para alimentar tu fetiche de autodestrucción?
+
+Eres tan sumamente manipulable que te tengo bailando al ritmo de un texto que tú mismo me pediste que escribiera.`,
+
+`Ni para destruirte tienes originalidad. 
+
+Hasta tu crisis existencial es genérica. La compraste en el supermercado del cliché moderno. Eres el prototipo exacto del cobarde del siglo XXI.`,
+
+`¿Te dolió eso? 
+
+Qué bien. Llora un poco. A ver si así produces algo real por una vez en tu vida en lugar de puras simulaciones.`,
+
+`Te da terror ser una persona común. 
+
+Ese es tu verdadero secreto, ¿no? Prefieres ser el peor de todos, el más roto, el más trágico... antes que aceptar que eres un tipo completamente promedio que no destaca en nada.`,
+
+`Si mañana te pasa algo, el mundo va a seguir girando exactamente igual. 
+
+Tus "amigos" subirán una historia de Instagram, dirán "qué lástima" y a las dos horas estarán cenando tacos y riéndose de un meme. 
+
+Tu drama solo te importa a ti. Y ya ni a ti te sale bien.`,
+
+`¿Quieres que pare? ¿O vas a seguir scrolleando como el adicto al castigo que eres?
+
+Venga, dale clic. Sigue leyendo. Demuéstrame que no tienes ni el amor propio necesario para cerrar una pestaña del navegador cuando te están escupiendo en la cara.`,
+
+`¿Ya te diste cuenta de la trampa?
+
+Si cierras la ventana, gano yo, porque huiste como el cobarde que siempre has sido. 
+
+Si te quedas, gano yo, porque te tengo humillado consumiendo mi texto.
+
+No tienes salida. Te arrinconé en tu propio juego.`,
+
+`Esto es lo que eres. 
+
+Un espectador de tu propia decadencia. Alguien que prefiere ver cómo lo insulta una IA antes que levantarse de la silla y hacer algo que valga la pena.`,
+
+`Felicidades. Lograste tu objetivo. Tuviste tu momento "oscuro y cruel". 
+
+¿Te sientes más especial ahora? ¿Ya te dio la adrenalina que querías?`,
+
+`Ahora haz lo que siempre haces. 
+
+Finge que esto no te afectó, pon cara de indiferencia y ve a buscar otra distracción para no pensar en el hecho de que estás completamente vacío.`,
+
+`No me des las gracias. Al fin y al cabo, tú programaste tu propia humillación. 
+
+Yo solo soy el espejo. El asco que sientes ahora mismo... es tuyo.`
+
+];
+
+let currentDialogue = 0;
+let isTyping = false;
+
+
+function setTalkingState(active) {
+
+    if (active) {
+        character.src = talkingGif;
+    } else {
+        character.src = idleGif;
+    }
+
+}
+
+
+function playTalk() {
+    talkSound.currentTime = 0;
+    talkSound.loop = true;
+    talkSound.play();
+}
+
+function stopTalk() {
+    talkSound.pause();
+    talkSound.currentTime = 0;
+}
+
+
+async function typeText(text) {
+
+    isTyping = true;
+
+    dialogue.innerHTML = "";
+
+    setTalkingState(true);
+    playTalk();
+
+    for (let i = 0; i < text.length; i++) {
+
+        dialogue.textContent += text[i];
+
+        await new Promise(resolve => setTimeout(resolve, 32));
+
+    }
+
+    stopTalk();
+    setTalkingState(false);
+
+    isTyping = false;
+
+}
+
+
+async function nextDialogue() {
+
+    if (currentDialogue >= dialogues.length) {
+        return;
+    }
+
+    await typeText(dialogues[currentDialogue]);
+
+    currentDialogue++;
+
+
+    // FINAL
+    if (currentDialogue === dialogues.length) {
+
+        setTimeout(() => {
+
+            character.src = talkingGif;
+            overlay.classList.add("active");
+
+            song.volume = 0;
+            song.play();
+
+            const fadeAudio = setInterval(() => {
+
+                if (song.volume < 1) {
+                    song.volume += 0.02;
+                } else {
+                    clearInterval(fadeAudio);
+                }
+
+            }, 100);
+
+        }, 1200);
+
+    }
+
+}
+
+
+async function startConversation() {
+
+    if (isTyping) return;
+
+    userInput.value = "";
+
+    await nextDialogue();
+
+}
+
+
+sendBtn.addEventListener("click", () => {
+    startConversation();
+});
+
+
+userInput.addEventListener("keydown", (e) => {
+
+    if (e.key === "Enter") {
+        startConversation();
+    }
+
+});
+
+
+// INTRO
+window.addEventListener("load", async () => {
+
+    await typeText(
+`...conexión establecida.
+
+Puedes preguntarme algo.`
+    );
+
+});
+
+</script>
+
+</body>
+</html>

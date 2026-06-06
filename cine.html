@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cine</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: crosshair;
+        }
+        #instrucciones {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #mensaje-final {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            color: #ff0000;
+            font-size: 4vw;
+            font-weight: bold;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="instrucciones">Haz clic en cualquier parte para usar la linterna.<br>Usa W, A, S, D para moverte. da click para empezar</div>
+    <div id="mensaje-final">NO DEBERÍAS ESTAR AQUÍ</div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // 1. Configuración de la Escena
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.Fog(0x000000, 2, 20); // Niebla para limitar la visión
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.y = 2; // Altura del jugador
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Controles en Primera Persona (Sin botón de inicio)
+        const controls = new PointerLockControls(camera, document.body);
+        
+        // El navegador requiere un clic para bloquear el cursor, hacemos toda la pantalla interactiva
+        document.body.addEventListener('click', () => {
+            controls.lock();
+        });
+
+        controls.addEventListener('lock', () => {
+            document.getElementById('instrucciones').style.display = 'none';
+        });
+
+        scene.add(controls.getObject());
+
+        // 3. Iluminación (Solo la linterna)
+        const linterna = new THREE.SpotLight(0xffffff, 2, 40, Math.PI / 5, 0.5, 1);
+        linterna.position.set(0, 0, 0);
+        linterna.target.position.set(0, 0, -1); // Apunta hacia adelante
+        camera.add(linterna);
+        camera.add(linterna.target); // Asegura que la linterna siga a la cámara
+
+        // 4. Creación del Entorno
+        // Suelo
+        const texturaSuelo = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        const suelo = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), texturaSuelo);
+        suelo.rotation.x = -Math.PI / 2;
+        scene.add(suelo);
+
+        // Techo de paneles de colores
+        const tamanoPanel = 4;
+        const geometriaPanel = new THREE.PlaneGeometry(tamanoPanel, tamanoPanel);
+        for (let x = -50; x <= 50; x += tamanoPanel) {
+            for (let z = -50; z <= 50; z += tamanoPanel) {
+                // Color aleatorio para cada panel
+                const colorAleatorio = Math.random() * 0xffffff;
+                const materialPanel = new THREE.MeshStandardMaterial({ color: colorAleatorio, roughness: 0.5 });
+                const panel = new THREE.Mesh(geometriaPanel, materialPanel);
+                panel.position.set(x, 5, z);
+                panel.rotation.x = Math.PI / 2; // Mirando hacia abajo
+                scene.add(panel);
+            }
+        }
+
+        // Pilares Blancos
+        const geometriaPilar = new THREE.BoxGeometry(1, 10, 1);
+        const materialPilar = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+        
+        for (let i = 0; i < 200; i++) {
+            const pilar = new THREE.Mesh(geometriaPilar, materialPilar);
+            // Posición aleatoria
+            pilar.position.x = (Math.random() - 0.5) * 100;
+            pilar.position.y = 2.5;
+            pilar.position.z = (Math.random() - 0.5) * 100;
+            scene.add(pilar);
+        }
+
+        // 5. Movimiento del Jugador
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+
+        const onKeyDown = function (event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+            }
+        };
+
+        const onKeyUp = function (event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        };
+
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let prevTime = performance.now();
+
+        // 6. Animación
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+
+            if (controls.isLocked === true) {
+                const delta = (time - prevTime) / 1000;
+
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize(); // Asegura movimiento consistente en todas las direcciones
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * 40.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 40.0 * delta;
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Ajuste de ventana
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 7. Evento de los 40 Segundos
+        setTimeout(() => {
+            // Mostrar el mensaje en pantalla completa
+            document.getElementById('mensaje-final').style.display = 'flex';
+            
+            // Desbloquear el mouse para que la página pueda cerrarse/romperse
+            controls.unlock();
+
+            // Esperar 2.5 segundos para que el usuario lea el mensaje antes de cerrar
+            setTimeout(() => {
+                window.close();
+                // Fallback de seguridad
+                document.body.innerHTML = '<div style="background:black; height:100vh;"></div>';
+            }, 2500);
+
+        }, 40000); // 40,000 milisegundos = 40 segundos
+
+    </script>
+</body>
+</html>

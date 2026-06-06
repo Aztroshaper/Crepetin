@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No deberías estar aquí - Mansión</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: crosshair;
+        }
+        #instrucciones {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 2px 2px 5px #000;
+        }
+        #mensaje-final {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            color: #4a0000; /* Rojo oscuro y sucio */
+            font-size: 5vw;
+            font-weight: bold;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            letter-spacing: 5px;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="instrucciones">Clic para encender la linterna.<br>W, A, S, D para moverte.<br>ESPACIO para saltar.</div>
+    <div id="mensaje-final">NO DEBERÍAS ESTAR AQUÍ</div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // 1. Configuración Básica
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.Fog(0x050505, 2, 25); // Niebla opresiva
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const playerHeight = 2; // Altura de los ojos
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Controles y Linterna
+        const controls = new PointerLockControls(camera, document.body);
+        document.body.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => document.getElementById('instrucciones').style.display = 'none');
+        scene.add(controls.getObject());
+
+        const linterna = new THREE.SpotLight(0xfff0e6, 2, 40, Math.PI / 4, 0.5, 1); // Luz un poco amarillenta
+        linterna.position.set(0, 0, 0);
+        linterna.target.position.set(0, 0, -1);
+        camera.add(linterna);
+        camera.add(linterna.target);
+
+        // 3. Generador de Texturas "Minimalista Sucio"
+        function generarTexturaSucia(baseColor, dirtDensity) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(0, 0, 512, 512);
+            
+            // Manchas de suciedad
+            for (let i = 0; i < dirtDensity; i++) {
+                ctx.fillStyle = `rgba(30, 30, 30, ${Math.random() * 0.15})`;
+                ctx.beginPath();
+                ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Rayones
+            for (let i = 0; i < dirtDensity / 2; i++) {
+                ctx.strokeStyle = `rgba(0, 0, 0, ${Math.random() * 0.2})`;
+                ctx.lineWidth = Math.random() * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * 512, Math.random() * 512);
+                ctx.lineTo(Math.random() * 512, Math.random() * 512);
+                ctx.stroke();
+            }
+
+            const textura = new THREE.CanvasTexture(canvas);
+            textura.wrapS = THREE.RepeatWrapping;
+            textura.wrapT = THREE.RepeatWrapping;
+            return textura;
+        }
+
+        const materialParedSucia = new THREE.MeshStandardMaterial({ map: generarTexturaSucia('#e0e0e0', 3000), roughness: 0.9 });
+        const materialSueloSucio = new THREE.MeshStandardMaterial({ map: generarTexturaSucia('#b0b0b0', 5000), roughness: 1 });
+        const materialMaderaSucia = new THREE.MeshStandardMaterial({ map: generarTexturaSucia('#3a2c20', 1000), roughness: 0.8 });
+
+        const collidables = []; // Array para físicas
+
+        // 4. Arquitectura de la Mansión (Hall Principal)
+        // Suelo
+        const suelo = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), materialSueloSucio);
+        suelo.rotation.x = -Math.PI / 2;
+        scene.add(suelo);
+        collidables.push(suelo);
+
+        // Techo
+        const techo = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), materialParedSucia);
+        techo.rotation.x = Math.PI / 2;
+        techo.position.y = 15;
+        scene.add(techo);
+
+        // Paredes
+        const geometriaPared = new THREE.BoxGeometry(60, 15, 1);
+        const paredes = [
+            { x: 0, z: -30, rot: 0 }, { x: 0, z: 30, rot: 0 },
+            { x: -30, z: 0, rot: Math.PI / 2 }, { x: 30, z: 0, rot: Math.PI / 2 }
+        ];
+        paredes.forEach(p => {
+            const pared = new THREE.Mesh(geometriaPared, materialParedSucia);
+            pared.position.set(p.x, 7.5, p.z);
+            pared.rotation.y = p.rot;
+            scene.add(pared);
+        });
+
+        // 5. Puertas y Letreros
+        function crearLetrero(texto) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#dcdcdc'; // Fondo sucio
+            ctx.fillRect(0, 0, 512, 128);
+            
+            // Manchas en el letrero
+            for (let i = 0; i < 500; i++) {
+                ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.1})`;
+                ctx.fillRect(Math.random() * 512, Math.random() * 128, 5, 5);
+            }
+
+            ctx.fillStyle = '#111'; // Texto casi negro
+            ctx.font = 'bold 45px Courier New';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(texto, 256, 64);
+
+            return new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(canvas), roughness: 0.9 });
+        }
+
+        const datosPuertas = [
+            { x: -10, z: -29.4, texto: "galeria del can" },
+            { x: 10, z: -29.4, texto: "estudio de fotografía" },
+            { x: -29.4, z: 0, texto: "chiosko", rot: Math.PI / 2 }
+        ];
+
+        const geometriaPuerta = new THREE.BoxGeometry(4, 7, 0.2);
+        const geometriaLetrero = new THREE.PlaneGeometry(4, 1);
+
+        datosPuertas.forEach(dp => {
+            // Puerta
+            const puerta = new THREE.Mesh(geometriaPuerta, materialMaderaSucia);
+            puerta.position.set(dp.x, 3.5, dp.z);
+            if (dp.rot) puerta.rotation.y = dp.rot;
+            scene.add(puerta);
+
+            // Letrero
+            const letrero = new THREE.Mesh(geometriaLetrero, crearLetrero(dp.texto));
+            
+            // Posicionar letrero sobre la puerta con la rotación correcta
+            if (dp.rot) {
+                letrero.position.set(dp.x + 0.11, 8, dp.z);
+                letrero.rotation.y = dp.rot;
+            } else {
+                letrero.position.set(dp.x, 8, dp.z + 0.11);
+            }
+            scene.add(letrero);
+        });
+
+        // 6. Escalera de Caracol
+        const centroEscalera = { x: 0, z: 0 };
+        const numEscalones = 60;
+        const geometriaEscalon = new THREE.BoxGeometry(4, 0.2, 1.5);
+        
+        // Un pilar central para la escalera
+        const pilarCentral = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 15, 16), materialParedSucia);
+        pilarCentral.position.set(centroEscalera.x, 7.5, centroEscalera.z);
+        scene.add(pilarCentral);
+
+        for (let i = 0; i < numEscalones; i++) {
+            const escalon = new THREE.Mesh(geometriaEscalon, materialParedSucia);
+            const angulo = i * 0.3; // Curvatura
+            
+            // Calcular posición en círculo
+            escalon.position.x = centroEscalera.x + Math.cos(angulo) * 2.5;
+            escalon.position.y = i * 0.25; // Sube poco a poco
+            escalon.position.z = centroEscalera.z + Math.sin(angulo) * 2.5;
+            
+            escalon.rotation.y = -angulo; // Orientar hacia el centro
+            scene.add(escalon);
+            collidables.push(escalon); // Añadir a físicas para poder pisarlo
+        }
+
+        // 7. Físicas y Controles (Gravedad, Salto y Movimiento)
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': 
+                    if (canJump) { velocity.y += 10; canJump = false; } 
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        });
+
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        const raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 10);
+        let prevTime = performance.now();
+
+        // 8. Bucle de Animación
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+
+            if (controls.isLocked === true) {
+                const delta = (time - prevTime) / 1000;
+
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 9.8 * 3.0 * delta; // Gravedad
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * 35.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 35.0 * delta;
+
+                // Físicas Verticales (Raycasting para detectar suelo/escaleras)
+                raycaster.ray.origin.copy(controls.getObject().position);
+                const intersections = raycaster.intersectObjects(collidables, false);
+
+                if (intersections.length > 0 && intersections[0].distance <= playerHeight) {
+                    // Tocar el suelo/escalón
+                    velocity.y = Math.max(0, velocity.y); // Detener caída
+                    controls.getObject().position.y = intersections[0].point.y + playerHeight;
+                    canJump = true;
+                }
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+                controls.getObject().position.y += velocity.y * delta; // Aplicar salto/gravedad
+
+                // Limitar al jugador dentro de las paredes para que no caiga al vacío infinito
+                if(controls.getObject().position.x > 28) controls.getObject().position.x = 28;
+                if(controls.getObject().position.x < -28) controls.getObject().position.x = -28;
+                if(controls.getObject().position.z > 28) controls.getObject().position.z = 28;
+                if(controls.getObject().position.z < -28) controls.getObject().position.z = -28;
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+     
+        setTimeout(() => {
+            document.getElementById('mensaje-final').style.display = 'flex';
+            controls.unlock();
+            
+         
+            setTimeout(() => {
+                window.close();
+                document.body.innerHTML = '<div style="background:black; height:100vh;"></div>';
+            }, 2500);
+
+        }, 40000);
+
+    </script>
+</body>
+</html>

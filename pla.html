@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Decisión de JJ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #080808;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* LIENZO HD CENTRADO */
+        .viewport-hd {
+            position: relative;
+            width: 1280px;
+            height: 720px;
+            background-image: url('pas.gif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            overflow: hidden;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+        }
+
+        /* CAPA DE INTRODUCCIÓN OSCURA */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0a0a0a;
+            transition: background-color 3s ease;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .overlay.ambient {
+            background-color: rgba(15, 13, 12, 0.5);
+        }
+
+        /* PERSONAJES */
+        .character {
+            position: absolute;
+            bottom: 12%; 
+            width: 145px; 
+            height: auto;
+            image-rendering: pixelated;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        #jj-character {
+            left: 50%;
+            transform: translateX(-115%);
+        }
+
+        #vic-character {
+            left: 50%;
+            transform: translateX(15%);
+        }
+
+        /* CUADRO DE DIÁLOGO SUPERIOR */
+        .rpg-box {
+            position: absolute;
+            top: 50px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            max-width: 750px;
+            background-image: url('skin.gif');
+            background-size: cover;
+            background-position: center;
+            border: 4px solid #bdae9e;
+            outline: 4px solid #241e19;
+            min-height: 150px;
+            z-index: 20;
+            box-shadow: 0px 12px 30px rgba(0,0,0,0.8);
+            user-select: none;
+        }
+
+        .rpg-content {
+            width: 100%;
+            height: 100%;
+            min-height: 142px;
+            background-color: rgba(15, 13, 11, 0.94);
+            padding: 30px 28px 22px 28px; 
+            position: relative;
+        }
+
+        /* Nombre visible y reposicionado */
+        .rpg-name {
+            position: absolute;
+            top: -16px;
+            left: 20px;
+            background-color: #141210;
+            padding: 4px 16px;
+            border: 2px solid #bdae9e;
+            color: #a17952;
+            font-weight: bold;
+            font-size: 1.15rem;
+            letter-spacing: 1px;
+            z-index: 25; 
+        }
+
+        /* TEXTO Y CURSOR */
+        .rpg-text {
+            color: #d1c5b4;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .rpg-text::after {
+            content: '█';
+            margin-left: 2px;
+            color: #a17952;
+            animation: cursor-blink 0.8s infinite;
+        }
+
+        /* CONTENEDOR DE BOTONES RETRO */
+        .btn-container {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .rpg-btn {
+            background-color: #241e19;
+            border: 2px solid #bdae9e;
+            color: #d1c5b4;
+            padding: 6px 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rpg-btn:hover {
+            background-color: #a17952;
+            color: #0f0d0b;
+        }
+
+        #advance-btn {
+            display: none; 
+        }
+
+        #close-btn {
+            display: none; 
+        }
+
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" src="jj.wav" loop></audio>
+
+    <div class="viewport-hd">
+        <div id="fade-layer" class="overlay"></div>
+
+        <!-- Cuadro de Diálogo -->
+        <div class="rpg-box">
+            <div id="speaker-name" class="rpg-name">???</div>
+            <div class="rpg-content">
+                <p id="dialogue" class="rpg-text"></p>
+                <div class="btn-container">
+                    <button id="advance-btn" class="rpg-btn" onclick="activarConversacionJJ()">[ Avanzar ]</button>
+                    <button id="close-btn" class="rpg-btn" onclick="cerrarVentana()">De nada.</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personajes -->
+        <img id="jj-character" class="character" src="av6.gif" alt="JJ">
+        <img id="vic-character" class="character" src="vic.gif" alt="Vic">
+    </div>
+
+    <script>
+        // Guion adaptado: más tranquilo, reflexivo y con tono mexicano neutro
+        const escena = [
+            { nombre: "Narrador", texto: "Entraste a la oficina abandonada junto a JJ.", pausa: 2500 },
+            { nombre: "Narrador", texto: "El silencio es denso, apenas interrumpido por el zumbido de las luces.", pausa: 2500, detieneParaBoton: true },
+            
+            // Bloque JJ 
+            { nombre: "JJ", texto: "Ya da lo mismo, ¿sabes?", pausa: 1800 },
+            { nombre: "JJ", texto: "Mírame. Ya no tengo absolutamente nada que perder.", pausa: 2000 },
+            { nombre: "JJ", texto: "Elegí no sentir nada.", pausa: 2200 },
+            { nombre: "JJ", texto: "Me obsesioné con construir una pared enorme entre el mundo y yo.", pausa: 2400 },
+            { nombre: "JJ", texto: "Un lugar seguro donde no pudiera cometer errores.", pausa: 2400 },
+            { nombre: "JJ", texto: "Donde nadie pudiera rechazarme ni romperme el corazón.", pausa: 2200 },
+            { nombre: "JJ", texto: "Fui un cobarde muy astuto.", pausa: 1800 },
+            { nombre: "JJ", texto: "Te proteges de las heridas de afuera, de acuerdo...", pausa: 2200 },
+            { nombre: "JJ", texto: "Pero no te das cuenta de que el alma se te va apagando por dentro.", pausa: 2500 },
+            { nombre: "JJ", texto: "Se deshace lento, sin hacer ruido ni dejar manchas.", pausa: 2400 },
+            { nombre: "JJ", texto: "Se siente como no ser real.", pausa: 2500 },
+            { nombre: "JJ", texto: "Un simple espectador que ve los días pasar desde la orilla.", pausa: 2500 },
+            { nombre: "JJ", texto: "Y a veces, cuando la noche se vuelve demasiado asfixiante...", pausa: 2600 },
+            { nombre: "JJ", texto: "Me pregunto si en algún otro lugar, en otra circunstancia...", pausa: 2400 },
+            { nombre: "JJ", texto: "Habrá alguien con mi misma cara que sí tuvo los pantalones.", pausa: 2400 },
+            { nombre: "JJ", texto: "Alguien que sintió este mismo temor de quedarse vacío...", pausa: 2400 },
+            { nombre: "JJ", texto: "Pero en lugar de esconderse en un rincón, usó sus manos para crear algo real.", pausa: 2800 },
+            { nombre: "JJ", texto: "Sin importarle terminar destruido, expuesto o lastimado.", pausa: 2400 },
+            { nombre: "JJ", texto: "No sé quién eres tú ni por qué estás aquí escuchándome...", pausa: 2600 },
+            { nombre: "JJ", texto: "Pero gracias por oírme.", pausa: 3000, final: true }
+        ];
+
+        const velocidadLetra = 30;
+        let pasoActual = 0;
+        let indiceLetra = 0;
+
+        const contenedorTexto = document.getElementById("dialogue");
+        const contenedorNombre = document.getElementById("speaker-name");
+        const fadeLayer = document.getElementById("fade-layer");
+        const jjImg = document.getElementById("jj-character");
+        const vicImg = document.getElementById("vic-character");
+        const botonAvanzar = document.getElementById("advance-btn");
+        const botonCierre = document.getElementById("close-btn");
+        const musica = document.getElementById("bg-music");
+
+        function ejecutarEscena() {
+            if (pasoActual < escena.length) {
+                const info = escena[pasoActual];
+                
+                contenedorNombre.innerText = info.nombre;
+                contenedorTexto.innerHTML = "";
+                indiceLetra = 0;
+
+                escribirLetra(info);
+            }
+        }
+
+        function escribirLetra(info) {
+            if (indiceLetra < info.texto.length) {
+                contenedorTexto.innerHTML += info.texto.charAt(indiceLetra);
+                indiceLetra++;
+                setTimeout(() => escribirLetra(info), velocidadLetra);
+            } else {
+                if (info.detieneParaBoton) {
+                    botonAvanzar.style.display = "block";
+                } else if (info.final) {
+                    botonCierre.style.display = "block";
+                } else {
+                    pasoActual++;
+                    setTimeout(ejecutarEscena, info.pausa || 2000);
+                }
+            }
+        }
+
+        function activarConversacionJJ() {
+            botonAvanzar.style.display = "none";
+            
+            fadeLayer.classList.add("ambient");
+            jjImg.style.opacity = "1";
+            vicImg.style.opacity = "1";
+
+            musica.volume = 0.4; 
+            musica.play().catch(error => console.log("Audio bloqueado o archivo ausente:", error));
+
+            pasoActual++;
+            ejecutarEscena();
+        }
+
+        function cerrarVentana() {
+            window.close();
+            document.body.innerHTML = "<div style='color:#a17952; font-family:\"Courier New\"; font-size:1.2rem; text-align:center; margin-top:20%;'>Conexión terminada. Ya puedes cerrar esta pestaña.</div>";
+        }
+
+        window.onload = () => {
+            setTimeout(ejecutarEscena, 1000);
+        };
+    </script>
+
+</body>
+</html>

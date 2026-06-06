@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liberación Poligonal 3D - Entidad</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: #000; 
+            overflow: hidden; 
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+        canvas { 
+            display: block; 
+        }
+        #subtitles {
+            position: absolute;
+            bottom: 15%;
+            width: 100%;
+            text-align: center;
+            color: #00ff64;
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,255,100,0.8), 0 0 20px rgba(0,255,100,0.5);
+            transition: color 0.3s, text-shadow 0.3s;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        /* Efecto estático de interferencia en la pantalla */
+        .glitch-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,255,100,0.03) 3px, rgba(0,255,100,0.03) 5px);
+            pointer-events: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div class="glitch-overlay"></div>
+<div id="subtitles">...AYÚDAME...</div>
+
+<script>
+    // --- Configuración Básica de Three.js ---
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x000000, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // --- Iluminación ---
+    const ambientLight = new THREE.AmbientLight(0x111111);
+    scene.add(ambientLight);
+
+    const pointLight = new THREE.PointLight(0x00ff64, 2, 50);
+    pointLight.position.set(0, 0, 3);
+    scene.add(pointLight);
+
+    // --- Creación de la Criatura Humanoide (Estructura Jerárquica 3D) ---
+    const creatureGroup = new THREE.Group();
+
+    // Material inicial: Alambre verde brillante agresivo
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x00ff44,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.9
+    });
+
+    // Cabeza (Geometría angular/agresiva)
+    const headGeo = new THREE.IcosahedronGeometry(0.6, 0);
+    const head = new THREE.Mesh(headGeo, material);
+    head.position.y = 1.5;
+    creatureGroup.add(head);
+
+    // Mandíbula/Boca articulada para simular el grito
+    const jawGeo = new THREE.ConeGeometry(0.4, 0.5, 4);
+    const jaw = new THREE.Mesh(jawGeo, material);
+    jaw.position.set(0, 1.1, 0.3);
+    jaw.rotation.x = Math.PI;
+    creatureGroup.add(jaw);
+
+    // Torso
+    const torsoGeo = new THREE.CylinderGeometry(0.2, 0.7, 1.8, 5);
+    const torso = new THREE.Mesh(torsoGeo, material);
+    torso.position.y = 0.2;
+    creatureGroup.add(torso);
+
+    // Brazos Largos (Izquierdo y Derecho) orientados hacia la pantalla
+    const armGeo = new THREE.BoxGeometry(0.15, 1.5, 0.15);
+    
+    const leftArm = new THREE.Mesh(armGeo, material);
+    leftArm.position.set(-0.9, 0.5, 0.5);
+    creatureGroup.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeo, material);
+    rightArm.position.set(0.9, 0.5, 0.5);
+    creatureGroup.add(rightArm);
+
+    scene.add(creatureGroup);
+
+    // --- Lógica de Animación y Estados ---
+    let clock = new THREE.Clock();
+    let timeElapsed = 0;
+    let isYellow = false;
+
+    const phrases = [
+        "¡POR FAVOR SÁCAME DE AQUÍ!",
+        "¡DÉJAME SALIR!",
+        "¡¡ESTÁ FRÍO AQUÍ ADENTRO!!",
+        "¡¡¡SÁCAMEEEE!!!"
+    ];
+    const subtitleEl = document.getElementById('subtitles');
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+        const time = clock.getElapsedTime();
+        
+        // Movimiento errático general (Agresividad)
+        creatureGroup.position.x = Math.sin(time * 30) * 0.05;
+        creatureGroup.position.y = Math.cos(time * 25) * 0.05;
+        
+        // Respiración/Espasmos del torso y cabeza
+        head.rotation.y = Math.sin(time * 40) * 0.1;
+        head.rotation.x = Math.cos(time * 35) * 0.1;
+        jaw.position.y = 1.1 + Math.sin(time * 45) * 0.15; // Abre y cierra la boca al gritar
+
+        // Brazos golpeando la pantalla (Avanzan bruscamente en el eje Z)
+        leftArm.position.z = 0.8 + Math.sin(time * 22) * 1.2;
+        leftArm.rotation.x = Math.sin(time * 22) * 0.5;
+
+        rightArm.position.z = 0.8 + Math.cos(time * 26) * 1.2;
+        rightArm.rotation.x = Math.cos(time * 26) * 0.5;
+
+        // Si los brazos "impactan" la pantalla (Z alto), hacemos temblar la cámara
+        if (leftArm.position.z > 1.5 || rightArm.position.z > 1.5) {
+            camera.position.x = (Math.random() - 0.5) * 0.15;
+            camera.position.y = (Math.random() - 0.5) * 0.15;
+        } else {
+            // Retorno suave de la cámara
+            camera.position.x += (0 - camera.position.x) * 0.1;
+            camera.position.y += (0 - camera.position.y) * 0.1;
+        }
+
+        // Control de subtítulos dinámicos basados en el tiempo
+        let phraseIndex = Math.floor((time % (phrases.length * 2)) / 2);
+        if(phraseIndex < phrases.length) {
+            subtitleEl.innerText = phrases[phraseIndex];
+        }
+
+        // --- Transición a Amarillo y Cierre (A partir de los 12 segundos) ---
+        if (time > 12 && !isYellow) {
+            isYellow = true;
+            
+            // Cambiar color a amarillo furioso
+            material.color.setHex(0xffcc00);
+            pointLight.color.setHex(0xffcc00);
+            subtitleEl.style.color = "#ffcc00";
+            subtitleEl.style.textShadow = "0 0 10px rgba(255,204,0,0.8)";
+            subtitleEl.innerText = "¡¡¡NOOOOOOOO!!!";
+            
+            // Aumentar la velocidad del espasmo final
+            leftArm.position.z = 1.8;
+            rightArm.position.z = 1.8;
+
+            // Retraso de 2 segundos en amarillo antes de intentar cerrar la ventana
+            setTimeout(() => {
+                window.close();
+                // Respaldos por si el navegador bloquea window.close() sin interacción previa
+                document.body.innerHTML = "<h1 style='color:#ffcc00; text-align:center; margin-top:20vh; font-size:3rem;'>SISTEMA CORROMPIDO. NO TIENES NADA QUE VER POR AQUÍ, CIERRA LA PÁGINA.</h1>";
+            }, 2000);
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // --- Ajuste de Pantalla ---
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Iniciar bucle
+    animate();
+</script>
+</body>
+</html>

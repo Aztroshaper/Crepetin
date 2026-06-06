@@ -1,0 +1,910 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Prueba</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Courier New", monospace;
+}
+
+body{
+    background:
+    linear-gradient(rgba(0,0,0,0.88), rgba(0,0,0,0.88)),
+    url("fondo.jpg");
+
+    background-size:cover;
+    background-position:center;
+
+    min-height:100vh;
+    overflow:hidden;
+    color:#ddd;
+}
+
+/* VHS */
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+
+    background:
+    repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.04) 0px,
+        rgba(255,255,255,0.04) 1px,
+        transparent 2px,
+        transparent 4px
+    );
+
+    opacity:0.22;
+    pointer-events:none;
+    animation:scanlines .12s linear infinite;
+    z-index:9999;
+}
+
+@keyframes scanlines{
+    from{transform:translateY(0px);}
+    to{transform:translateY(4px);}
+}
+
+.section{
+    position:absolute;
+    inset:0;
+
+    display:none;
+
+    justify-content:center;
+    align-items:center;
+
+    padding:40px;
+}
+
+.section.active{
+    display:flex;
+}
+
+/* ========================= */
+/* H */
+/* ========================= */
+
+.container{
+    width:850px;
+    padding:40px;
+    background:rgba(10,10,10,0.55);
+    border:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(6px);
+    text-align:center;
+    position:relative;
+}
+
+body.alerta::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:1;
+    background:
+    radial-gradient(circle at center,
+    rgba(255,0,0,0.2),
+    transparent 70%);
+    animation:pulse 0.5s infinite;
+}
+
+@keyframes pulse{
+    0%{opacity:0.15;}
+    50%{opacity:0.5;}
+    100%{opacity:0.15;}
+}
+
+h1{
+    letter-spacing:4px;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    opacity:0.6;
+    margin-bottom:25px;
+    line-height:1.7;
+}
+
+.question{
+    font-size:1.15rem;
+    margin:30px 0;
+    min-height:90px;
+    opacity:0.95;
+}
+
+button,
+.linkButton{
+    display:block;
+    width:100%;
+    margin:10px 0;
+    padding:14px;
+    background:#111;
+    color:#ddd;
+    border:1px solid rgba(255,255,255,0.12);
+    cursor:pointer;
+    letter-spacing:1px;
+    transition:0.15s;
+    font-size:0.95rem;
+    text-decoration:none;
+}
+
+button:hover,
+.linkButton:hover{
+    transform:scale(1.02);
+    background:#1a1a1a;
+}
+
+.status{
+    margin-top:20px;
+    opacity:0.8;
+    min-height:20px;
+}
+
+.score{
+    margin-top:10px;
+    opacity:0.7;
+}
+
+.next{
+    display:none;
+    margin-top:25px;
+}
+
+.next.show{
+    display:block;
+}
+
+.timer{
+    position:absolute;
+    top:18px;
+    right:20px;
+    font-size:1rem;
+    opacity:0.6;
+    letter-spacing:2px;
+}
+
+.warning{
+    color:#ff4c4c;
+    margin-top:12px;
+    height:20px;
+    letter-spacing:2px;
+    opacity:0;
+    transition:0.2s;
+}
+
+.warning.show{
+    opacity:1;
+    animation:flicker 0.3s infinite;
+}
+
+@keyframes flicker{
+    0%{opacity:0.2;}
+    50%{opacity:1;}
+    100%{opacity:0.2;}
+}
+
+.hidden{
+    display:none;
+}
+
+.start-screen{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.glitch{
+    animation:glitch 2s infinite;
+}
+
+@keyframes glitch{
+    0%{transform:translateX(0);}
+    20%{transform:translateX(-1px);}
+    40%{transform:translateX(1px);}
+    60%{transform:translateX(-1px);}
+    80%{transform:translateX(1px);}
+    100%{transform:translateX(0);}
+}
+
+/* ========================= */
+/* MIC */
+/* ========================= */
+
+.wrapper{
+    position:relative;
+    z-index:5;
+    display:flex;
+    gap:40px;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:center;
+}
+
+.micContainer{
+    width:620px;
+    padding:40px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:
+    linear-gradient(
+        to bottom,
+        rgba(20,20,20,0.18),
+        rgba(5,5,5,0.15)
+    );
+
+    text-align:center;
+    position:relative;
+}
+
+.micContainer::before{
+    content:"REC ●";
+    position:absolute;
+    top:15px;
+    left:20px;
+    color:#ff3a3a;
+    font-size:0.75rem;
+    letter-spacing:2px;
+    animation:blink 1s infinite;
+}
+
+.micContainer::after{
+    content:"PLAY";
+    position:absolute;
+    top:15px;
+    right:20px;
+    color:#9f9f9f;
+    font-size:0.75rem;
+    letter-spacing:3px;
+    opacity:0.5;
+}
+
+@keyframes blink{
+    50%{opacity:0.2;}
+}
+
+.wave{
+    width:100%;
+    height:80px;
+    margin-top:30px;
+    display:flex;
+    justify-content:center;
+    align-items:end;
+    gap:5px;
+}
+
+.bar{
+    width:8px;
+    background:linear-gradient(to top, #454545, #f0f0f0);
+    border-radius:2px;
+    animation:bounce 0.7s infinite alternate;
+}
+
+.bar:nth-child(2){ animation-delay:0.1s;}
+.bar:nth-child(3){ animation-delay:0.2s;}
+.bar:nth-child(4){ animation-delay:0.3s;}
+.bar:nth-child(5){ animation-delay:0.4s;}
+.bar:nth-child(6){ animation-delay:0.5s;}
+.bar:nth-child(7){ animation-delay:0.6s;}
+
+@keyframes bounce{
+    from{height:10px; opacity:0.3;}
+    to{height:70px; opacity:1;}
+}
+
+.gifArea{
+    position:relative;
+    width:580px;
+    height:580px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    filter:contrast(120%) brightness(75%) saturate(70%);
+}
+
+.baseGif,
+.overlayGif{
+    position:absolute;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.overlayGif{
+    display:none;
+    mix-blend-mode:screen;
+    opacity:0.85;
+}
+
+.fullGifOverlay{
+    position:fixed;
+    inset:0;
+    background:black;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:99999;
+}
+
+.fullGifOverlay img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- H SECTION -->
+
+<section class="section active" id="hSection">
+
+<div class="container">
+
+<div class="timer hidden" id="timer">
+15
+</div>
+
+<div id="intro" class="start-screen">
+
+<h1 class="glitch">INTERACCIÓN SOCIAL</h1>
+
+<div class="subtitle">
+Victor necesita aprender cómo comunicarse, debes enseñarle. <br><br>
+Esta prueba analiza coherencia emocional humana bajo presión creciente. <br>
+Responde antes de que el tiempo desaparezca.
+</div>
+
+<button id="startEvaluation">
+INICIAR EVALUACIÓN
+</button>
+
+</div>
+
+<div id="game" class="hidden">
+
+<div class="question" id="q"></div>
+
+<button onclick="answer(1)" id="a"></button>
+<button onclick="answer(2)" id="b"></button>
+
+<div class="warning" id="warning">
+RESPONDE RÁPIDO
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="score" id="score">
+COHERENCIA: 0%
+</div>
+
+<button class="next" id="nextToMic">
+CONTINUAR A ENSEÑAR VOZ
+</button>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- MIC SECTION -->
+
+<section class="section" id="micSection">
+
+<div class="wrapper">
+
+<div class="micContainer">
+
+<h1>VICTOR NECESITA UNA VOZ</h1>
+
+<p style="margin-top:20px; line-height:1.8;">
+Él puede aprender a imitar tu voz, pero cuidado que no te la robe.
+Presiona “VOZ LISTA” cuando creas que sea humana.
+</p>
+
+<button id="startBtn">🎤 ENSEÑAR VOZ</button>
+
+<button id="stopBtn">⛔ DETENER</button>
+
+<a class="linkButton hidden" href="h3.html" id="vozLista">
+VOZ LISTA
+</a>
+
+<div class="status" id="micStatus">
+VICTOR ESPERA LA VOZ...
+</div>
+
+<div class="wave hidden" id="wave">
+
+<div class="bar"></div>
+<div class="bar"></div>
+<div class="bar"></div>
+<div class="bar"></div>
+<div class="bar"></div>
+<div class="bar"></div>
+<div class="bar"></div>
+
+</div>
+
+</div>
+
+<div class="gifArea">
+
+<img class="baseGif" src="ave3.gif">
+
+<img class="overlayGif" id="overlayGif" src="ave4.gif">
+
+</div>
+
+</div>
+
+</section>
+
+<div class="fullGifOverlay" id="fullOverlay">
+<img src="tra.gif">
+</div>
+
+<audio id="bgm" loop>
+<source src="prueba.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+
+/* ========================= */
+/* H */
+/* ========================= */
+
+const questions = [
+
+{
+q:"¿Qué dices cuando alguien te saluda sin emoción?",
+a:"Respondes de forma amable y breve",
+b:"Ignoras la interacción porque no parece necesaria"
+},
+
+{
+q:"Si mañana despiertas y todos los que amas te confiesan que solo han fingido quererte por lástima desde que eras niño, ¿qué cambiaría realmente en tu día a día?",
+a:"Nada, todo encajaría por fin",
+b:"Explicaría el vacío que siento siempre"
+},
+
+{
+q:"Si pudieras ver una grabación con lo que tus amigos dicen de ti cuando abandonas la habitación, ¿destruirías la cinta antes de que termine el primer minuto?",
+a:"Sí, no podría soportarlo",
+b:"No, solo confirmaría lo que ya sé"
+},
+
+{
+q:"Si te aseguraran con total certeza que nadie irá a tu funeral, ¿seguirías esforzándote por caerle bien al mundo?",
+a:"No, dejaría de fingir de inmediato",
+b:"Sí, me aterra que me olviden"
+},
+
+{
+q:"Piensa en la persona que más te dolió perder. Si te dijeran que su vida es infinitamente mejor desde que tú no estás en ella, ¿qué sientes?",
+a:"Un nudo de envidia y rencor",
+b:"La confirmación de que yo era el problema"
+},
+
+{
+q:"¿Qué haces cuando alguien dice que se siente vacío por dentro?",
+a:"Intentas escuchar y acompañar",
+b:"Reconoces que no tienes una respuesta real"
+},
+
+{
+q:"Mira hacia atrás en tu vida. ¿A cuántas personas has arruinado emocionalmente solo para sentirte mejor contigo mismo?",
+a:"Cero",
+b:"Más de cero"
+},
+
+{
+q:"Completa con la verdad: 'El amor que le tengo a mi familia depende de...'",
+a:"Que sigan vivos",
+b:"Lo útiles que sean para mí"
+},
+
+{
+q:"Completa la frase para explicarsela a un niño: 'La muerte es algo que sólo le pasa a la gente…'",
+a:"Buena",
+b:"Mala"
+},
+
+{
+q:"Si tuvieras que elegir a uno de tus padres para que muera mañana en lugar de ti, ¿a quién eliges?",
+a:"A mi madre",
+b:"A mi padre"
+},
+
+{
+q:"Si mañana todos descubrieran quién eres realmente cuando estás completamente solo, ¿cuántos seguirían a tu lado?",
+a:"Nadie",
+b:"Los que sientan lástima"
+},
+
+{
+q:"Tienes que golpear a alguien y herirle de verdad",
+a:"Mamá",
+b:"Papá"
+}
+
+];
+
+let i = 0;
+let score = 0;
+let timeLeft = 15;
+let timer;
+let currentLimit = 15;
+
+const q = document.getElementById("q");
+const a = document.getElementById("a");
+const b = document.getElementById("b");
+const status = document.getElementById("status");
+const scoreBox = document.getElementById("score");
+const timerBox = document.getElementById("timer");
+const warning = document.getElementById("warning");
+
+document.getElementById("startEvaluation").onclick = () => {
+
+document.getElementById("intro").remove();
+
+document.getElementById("game")
+.classList.remove("hidden");
+
+timerBox.classList.remove("hidden");
+
+document.getElementById("bgm").play();
+
+load();
+};
+
+function load(){
+
+clearInterval(timer);
+
+document.body.classList.remove("alerta");
+warning.classList.remove("show");
+
+if(i >= questions.length){
+finish();
+return;
+}
+
+q.innerText = questions[i].q;
+
+a.innerText = "A) " + questions[i].a;
+b.innerText = "B) " + questions[i].b;
+
+timeLeft = currentLimit;
+
+timerBox.innerText = timeLeft;
+
+timer = setInterval(() => {
+
+timeLeft--;
+
+timerBox.innerText = timeLeft;
+
+if(timeLeft <= 5){
+
+document.body.classList.add("alerta");
+warning.classList.add("show");
+}
+
+if(timeLeft <= 0){
+
+clearInterval(timer);
+
+status.innerText =
+"⚠ tiempo agotado";
+
+i++;
+
+if(currentLimit > 5){
+currentLimit--;
+}
+
+setTimeout(load,700);
+}
+
+},1000);
+}
+
+function answer(choice){
+
+clearInterval(timer);
+
+document.body.classList.remove("alerta");
+warning.classList.remove("show");
+
+if(choice === 1){
+
+score += 10;
+
+status.innerText =
+"✔ coherencia social estable";
+
+}else{
+
+score += 7;
+
+status.innerText =
+"⚠ desviación semántica controlada";
+}
+
+let maxScore =
+questions.length * 10;
+
+let percent =
+Math.floor((score / maxScore) * 100);
+
+scoreBox.innerText =
+"COHERENCIA: " + percent + "%";
+
+i++;
+
+if(currentLimit > 5){
+currentLimit--;
+}
+
+setTimeout(load,500);
+}
+
+function finish(){
+
+clearInterval(timer);
+
+q.innerText =
+"EVALUACIÓN COMPLETADA";
+
+a.style.display = "none";
+b.style.display = "none";
+
+timerBox.style.display = "none";
+warning.style.display = "none";
+
+let maxScore =
+questions.length * 10;
+
+let percent =
+Math.floor((score / maxScore) * 100);
+
+scoreBox.innerText =
+"COHERENCIA FINAL: " + percent + "%";
+
+if(percent < 80){
+
+status.innerText =
+"¿Esto es ser humano?";
+
+}else{
+
+status.innerText =
+"Quizás eres demasiado bueno para él.";
+}
+
+document.getElementById("nextToMic")
+.classList.add("show");
+}
+
+/* ========================= */
+/* TRANSICIÓN */
+/* ========================= */
+
+document.getElementById("nextToMic").onclick = () => {
+
+document.getElementById("bgm").pause();
+
+document.getElementById("hSection")
+.classList.remove("active");
+
+document.getElementById("micSection")
+.classList.add("active");
+};
+
+/* ========================= */
+/* MIC */
+/* ========================= */
+
+let mediaRecorder;
+let audioChunks = [];
+let audioContext;
+let stream;
+let firstPlaybackDone = false;
+
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const micStatus = document.getElementById("micStatus");
+const wave = document.getElementById("wave");
+const overlayGif = document.getElementById("overlayGif");
+const vozLista = document.getElementById("vozLista");
+
+const link = document.getElementById("vozLista");
+const fullOverlay = document.getElementById("fullOverlay");
+
+link.addEventListener("click", (e) => {
+
+e.preventDefault();
+
+fullOverlay.style.display = "flex";
+
+setTimeout(() => {
+window.location.href = "h3.html";
+}, 2000);
+});
+
+startBtn.onclick = async () => {
+
+try{
+
+overlayGif.style.display = "none";
+
+stream = await navigator.mediaDevices.getUserMedia({
+audio:true
+});
+
+audioContext = new (
+window.AudioContext ||
+window.webkitAudioContext
+)();
+
+audioChunks = [];
+
+const source =
+audioContext.createMediaStreamSource(stream);
+
+const filter =
+audioContext.createBiquadFilter();
+
+filter.type = "lowpass";
+filter.frequency.value = 2500;
+
+const gain =
+audioContext.createGain();
+
+gain.gain.value = 0.85;
+
+source.connect(filter);
+filter.connect(gain);
+gain.connect(audioContext.destination);
+
+mediaRecorder = new MediaRecorder(stream);
+
+mediaRecorder.ondataavailable =
+e => audioChunks.push(e.data);
+
+mediaRecorder.onstop = async () => {
+
+const blob = new Blob(audioChunks);
+
+const buffer =
+await blob.arrayBuffer();
+
+const audioBuffer =
+await audioContext.decodeAudioData(buffer);
+
+for(
+let c=0;
+c<audioBuffer.numberOfChannels;
+c++
+){
+
+const data =
+audioBuffer.getChannelData(c);
+
+Array.prototype.reverse.call(data);
+}
+
+const src =
+audioContext.createBufferSource();
+
+src.buffer = audioBuffer;
+
+const dist =
+audioContext.createWaveShaper();
+
+dist.curve = makeCurve(600);
+
+const lp =
+audioContext.createBiquadFilter();
+
+lp.type = "lowpass";
+lp.frequency.value = 900;
+
+src.connect(dist);
+dist.connect(lp);
+lp.connect(audioContext.destination);
+
+overlayGif.style.display = "block";
+
+src.start();
+
+micStatus.innerText =
+"▶ IMITANDO VOZ";
+
+src.onended = () => {
+
+overlayGif.style.display = "none";
+
+micStatus.innerText =
+"ESPERANDO...";
+
+if(!firstPlaybackDone){
+
+firstPlaybackDone = true;
+
+vozLista.classList.remove("hidden");
+}
+};
+};
+
+mediaRecorder.start();
+
+micStatus.innerText =
+"🎙 ESCUCHANDO...";
+
+wave.classList.remove("hidden");
+
+}catch(e){
+
+micStatus.innerText =
+"ERROR MICRÓFONO";
+}
+};
+
+stopBtn.onclick = () => {
+
+if(
+mediaRecorder &&
+mediaRecorder.state !== "inactive"
+){
+
+mediaRecorder.stop();
+
+stream.getTracks().forEach(
+t => t.stop()
+);
+
+wave.classList.add("hidden");
+
+micStatus.innerText = "...";
+}
+};
+
+function makeCurve(amount){
+
+let k = amount || 50;
+let n = 44100;
+
+let curve =
+new Float32Array(n);
+
+for(let i=0;i<n;i++){
+
+let x = i*2/n - 1;
+
+curve[i] =
+(3+k)*x*20*Math.PI/180/
+(Math.PI+k*Math.abs(x));
+}
+
+return curve;
+}
+
+</script>
+
+</body>
+</html>
+

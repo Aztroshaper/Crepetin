@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CREPETÍN.ORG</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: black;
+        font-family: "Courier New", monospace;
+    }
+
+    #webgl-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* Contenedor principal de las letras interactivas */
+    #letters-container {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+    }
+
+    /* Capa Externa: Controla la posición física (JS) */
+    .letter-physics {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: auto;
+        cursor: grab;
+        will-change: transform;
+        display: inline-block;
+    }
+    
+    .letter-physics:active {
+        cursor: grabbing;
+    }
+
+    /* Capa Interna: Controla el estilo y animaciones raras (CSS) */
+    .letter-glitch {
+        display: inline-block;
+        font-family: "Courier New", monospace;
+        font-size: 4.5rem;
+        font-weight: 900;
+        letter-spacing: 5px;
+    }
+
+    /* Colores temáticos principales */
+    .yellow-c {
+        color: #FFEF00; /* Amarillo Canario */
+        text-shadow: 4px 4px #00FF00;
+    }
+
+    .lime-c {
+        color: #00FF00; /* Verde Lima */
+        text-shadow: 4px 4px #FFEF00;
+    }
+
+    /* Animaciones de glitch CSS */
+    .glitch-vibrate {
+        animation: vibrate 0.12s linear infinite;
+    }
+
+    .glitch-skew {
+        animation: weirdSkew 0.7s ease-in-out infinite alternate;
+    }
+
+    /* Cuadro de texto para los mensajes de Geolocalización */
+    #geo-message {
+        position: absolute;
+        bottom: 160px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 5;
+        color: #00FF00;
+        font-size: 1.3rem;
+        font-weight: bold;
+        text-align: center;
+        width: 85%;
+        max-width: 650px;
+        text-shadow: 2px 2px #FFEF00;
+        opacity: 0;
+        transition: opacity 0.8s ease, transform 0.8s ease;
+        background: rgba(0, 10, 0, 0.9);
+        padding: 20px;
+        border: 1px dashed #00FF00;
+        pointer-events: none;
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.15);
+    }
+
+    #geo-message.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-5px);
+    }
+
+    /* Rectángulo de Entrada Interactiva */
+    .start {
+        position: absolute;
+        bottom: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 4;
+        color: #FFEF00;
+        text-decoration: none;
+        font-size: 1.1rem;
+        letter-spacing: 4px;
+        opacity: 0;
+        transition: opacity 0.5s, transform 0.2s, border-color 0.2s, background-color 0.2s;
+        animation: flicker 2s infinite;
+        background: rgba(0, 15, 0, 0.85);
+        padding: 15px 30px;
+        border: 2px solid #00FF00;
+        pointer-events: none;
+        cursor: pointer;
+        text-align: center;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+    }
+
+    .start.show {
+        opacity: 0.85;
+        pointer-events: auto;
+    }
+
+    .start.show:hover {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.05);
+        color: #00FF00;
+        border-color: #FFEF00;
+        background: rgba(0, 30, 0, 0.95);
+        box-shadow: 0 0 25px rgba(255, 239, 0, 0.4);
+    }
+
+    @keyframes flicker {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+    }
+
+    @keyframes vibrate {
+        0%, 100% { transform: translate(0, 0); }
+        25% { transform: translate(-3px, 2px) rotate(-1deg); }
+        50% { transform: translate(3px, -2px) rotate(1deg); }
+        75% { transform: translate(-2px, -2px) rotate(0deg); }
+    }
+
+    @keyframes weirdSkew {
+        0% { transform: skewX(-20deg) scaleY(1.2); }
+        100% { transform: skewX(15deg) scaleY(0.8); }
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+
+<body>
+
+<canvas id="webgl-canvas"></canvas>
+<div id="letters-container"></div>
+<div id="geo-message"></div>
+
+<a class="start" id="start">
+    VERIFICAR PRESENCIA EN EL ENTORNO
+</a>
+
+<script>
+// --- LÓGICA DE GEOLOCALIZACIÓN Y FLUJO DE NAVEGACIÓN ---
+const startBtn = document.getElementById("start");
+const geoMessage = document.getElementById("geo-message");
+
+// Estado del botón: 0 = Pedir ubicación, 1 = Cargando, 2 = Listo para ir a stare.html
+let flujoEstado = 0; 
+
+setTimeout(() => {
+    startBtn.classList.add("show");
+}, 3000); // Aparece un poco más rápido para no dilatar la interacción del usuario
+
+// Fórmula de Haversine para calcular distancia exacta en metros entre dos coordenadas geográficas
+function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Radio de la Tierra en metros
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function procesarUbicacion() {
+    if (flujoEstado === 1) return; // Evita clicks repetidos mientras carga
+    
+    if (flujoEstado === 2) {
+        // Fase final: Navegación directa a stare.html
+        window.location.href = "stare.html";
+        return;
+    }
+
+    // Fase inicial: Activar geolocalizador nativo
+    flujoEstado = 1;
+    startBtn.textContent = "RASTREANDO COORDENADAS...";
+    startBtn.style.pointerEvents = "none";
+
+    if (!navigator.geolocation) {
+        // Si el navegador no soporta GPS, procesa por defecto como fuera de rango
+        desplegarResultado(false);
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            
+            // Coordenadas objetivo proporcionadas
+            const targetLat = 25.539118081872427;
+            const targetLon = -103.46268854102604;
+
+            const distanciaObtenida = calcularDistanciaMetros(userLat, userLon, targetLat, targetLon);
+
+            // Condición: Radio estricto de 40 metros
+            if (distanciaObtenida <= 40) {
+                desplegarResultado(true);
+            } else {
+                desplegarResultado(false);
+            }
+        },
+        (error) => {
+            // Si el usuario rechaza el permiso o falla el GPS, se asume el texto de fuera de rango
+            desplegarResultado(false);
+        },
+        { enableHighAccuracy: true, timeout: 9000, maximumAge: 0 }
+    );
+}
+
+function desplegarResultado(estaCerca) {
+    if (estaCerca) {
+        geoMessage.textContent = "Oh, al final si volviste";
+    } else {
+        geoMessage.textContent = "Estás lejos de aquí, aún así, si regresas tendras el panorama completo";
+    }
+    
+    // Mostrar recuadro con el mensaje correspondiente
+    geoMessage.classList.add("show");
+    
+    // Actualizar botón para permitir el acceso a stare.html
+    startBtn.textContent = "ENTRAR";
+    startBtn.style.pointerEvents = "auto";
+    flujoEstado = 2;
+}
+
+// Interacción exclusiva del rectángulo
+startBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    procesarUbicacion();
+});
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && startBtn.classList.contains("show")) {
+        procesarUbicacion();
+    }
+});
+
+
+// --- ENTORNO 3D CONSTANTE (THREE.JS) ---
+const canvas = document.getElementById('webgl-canvas');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x000000, 0.03);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 7;
+
+const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const staticCanvas = document.createElement('canvas');
+staticCanvas.width = 128;
+staticCanvas.height = 128;
+const staticCtx = staticCanvas.getContext('2d');
+const staticTexture = new THREE.CanvasTexture(staticCanvas);
+
+function generarEstatica() {
+    const imgData = staticCtx.createImageData(128, 128);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const val = Math.floor(Math.random() * 255);
+        data[i] = val * 0.7;   
+        data[i+1] = val;       
+        data[i+2] = val * 0.3; 
+        data[i+3] = 255;
+    }
+    staticCtx.putImageData(imgData, 0, 0);
+    staticTexture.needsUpdate = true;
+}
+
+const tvGroup = new THREE.Group();
+const tvMuebleGeo = new THREE.BoxGeometry(2.2, 1.7, 1.5);
+const tvMuebleMat = new THREE.MeshBasicMaterial({ color: 0x081208 });
+const tvPantallaGeo = new THREE.PlaneGeometry(1.9, 1.4);
+const tvPantallaMat = new THREE.MeshBasicMaterial({ map: staticTexture });
+
+for (let x = -16; x <= 16; x += 3.5) {
+    for (let y = -12; y <= 12; y += 2.8) {
+        if (Math.abs(x) < 3 && Math.abs(y) < 3) continue;
+
+        const tv = new THREE.Group();
+        const mueble = new THREE.Mesh(tvMuebleGeo, tvMuebleMat);
+        const pantalla = new THREE.Mesh(tvPantallaGeo, tvPantallaMat);
+        pantalla.position.z = 0.76;
+        tv.add(mueble, pantalla);
+        
+        tv.position.set(x + (Math.random()-0.5)*0.4, y + (Math.random()-0.5)*0.4, -5 - Math.random()*5);
+        tv.lookAt(0, 0, 2);
+        tvGroup.add(tv);
+    }
+}
+scene.add(tvGroup);
+
+const caritaGroup = new THREE.Group();
+const cabezaGeo = new THREE.SphereGeometry(1.8, 64, 64);
+const cabezaMat = new THREE.MeshBasicMaterial({ color: 0xFFEF00 }); 
+const cabeza = new THREE.Mesh(cabezaGeo, cabezaMat);
+caritaGroup.add(cabeza);
+
+const ojoGeo = new THREE.SphereGeometry(0.2, 32, 32);
+const ojoMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const ojoIzquierdo = new THREE.Mesh(ojoGeo, ojoMat);
+ojoIzquierdo.position.set(-0.5, 0.4, 1.6);
+ojoIzquierdo.scale.set(1, 1.5, 0.5);
+const ojoDerecho = ojoIzquierdo.clone();
+ojoDerecho.position.x = 0.5;
+caritaGroup.add(ojoIzquierdo, ojoDerecho);
+
+const bocaGeo = new THREE.TorusGeometry(0.6, 0.1, 8, 34, Math.PI);
+const bocaMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const boca = new THREE.Mesh(bocaGeo, bocaMat);
+boca.position.set(0, -0.1, 1.5);
+boca.rotation.z = Math.PI;
+caritaGroup.add(boca);
+
+scene.add(caritaGroup);
+
+
+// --- MOTOR INTERACTIVO DE LETRAS CON CAPAS DOBLADAS SEPARADAS ---
+const str = "HURRA";
+const lettersContainer = document.getElementById('letters-container');
+const lettersData = [];
+let shakeIntensity = 0;
+
+let centerX = window.innerWidth / 2;
+let centerY = window.innerHeight / 2;
+let caritaRadiusInPixels = Math.min(window.innerWidth, window.innerHeight) * 0.16;
+
+for (let i = 0; i < str.length; i++) {
+    const pSpan = document.createElement('span');
+    pSpan.className = 'letter-physics';
+    
+    const gSpan = document.createElement('span');
+    gSpan.className = `letter-glitch ${i % 2 === 0 ? 'yellow-c' : 'lime-c'}`;
+    gSpan.textContent = str[i];
+    
+    const randEffect = Math.random();
+    if (randEffect < 0.35) {
+        gSpan.classList.add('glitch-vibrate');
+    } else if (randEffect < 0.7) {
+        gSpan.classList.add('glitch-skew');
+    }
+
+    pSpan.appendChild(gSpan);
+    lettersContainer.appendChild(pSpan);
+
+    const initX = Math.random() * window.innerWidth;
+    const initY = Math.random() > 0.5 ? -200 : window.innerHeight + 200;
+
+    lettersData.push({
+        el: pSpan,
+        glitchEl: gSpan,
+        x: initX,
+        y: initY,
+        vx: (Math.random() - 0.5) * 55,
+        vy: (Math.random() - 0.5) * 55,
+        homeX: 0,
+        homeY: 0,
+        w: 50,
+        h: 70,
+        isDragged: false,
+        lastX: initX,
+        lastY: initY,
+        cooldown: 0
+    });
+}
+
+function calibrarPosicionesHome() {
+    centerX = window.innerWidth / 2;
+    centerY = window.innerHeight / 2;
+    caritaRadiusInPixels = Math.min(window.innerWidth, window.innerHeight) * 0.17;
+
+    const molde = document.createElement('h1');
+    molde.style.position = 'absolute';
+    molde.style.top = '65px';
+    molde.style.left = '0';
+    molde.style.width = '100%';
+    molde.style.textAlign = 'center';
+    molde.style.fontFamily = '"Courier New", monospace';
+    molde.style.fontSize = '4.5rem';
+    molde.style.fontWeight = '900';
+    molde.style.letterSpacing = '5px';
+    molde.style.visibility = 'hidden';
+    molde.style.pointerEvents = 'none';
+
+    const moldSpans = [];
+    for (let i = 0; i < str.length; i++) {
+        const s = document.createElement('span');
+        s.textContent = str[i];
+        s.style.display = 'inline-block';
+        molde.appendChild(s);
+        moldSpans.push(s);
+    }
+    document.body.appendChild(molde);
+
+    moldSpans.forEach((s, i) => {
+        const rect = s.getBoundingClientRect();
+        lettersData[i].homeX = rect.left;
+        lettersData[i].homeY = rect.top;
+        lettersData[i].w = rect.width;
+        lettersData[i].h = rect.height;
+        lettersData[i].el.style.width = rect.width + 'px';
+        lettersData[i].el.style.height = rect.height + 'px';
+    });
+
+    document.body.removeChild(molde);
+}
+
+window.addEventListener('load', calibrarPosicionesHome);
+window.addEventListener('resize', calibrarPosicionesHome);
+
+let draggedObj = null;
+
+function detectarLetraBajoCursor(clientX, clientY) {
+    const target = document.elementFromPoint(clientX, clientY);
+    if (target && target.classList.contains('letter-glitch')) {
+        return lettersData.find(l => l.glitchEl === target);
+    }
+    return null;
+}
+
+function iniciarArrastre(obj) {
+    draggedObj = obj;
+    draggedObj.isDragged = true;
+    draggedObj.vx = 0;
+    draggedObj.vy = 0;
+}
+
+window.addEventListener('mousedown', (e) => {
+    const obj = detectarLetraBajoCursor(e.clientX, e.clientY);
+    if (obj) iniciarArrastre(obj);
+});
+
+window.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    const obj = detectarLetraBajoCursor(t.clientX, t.clientY);
+    if (obj) iniciarArrastre(obj);
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (draggedObj) {
+        draggedObj.x = e.clientX - draggedObj.w / 2;
+        draggedObj.y = e.clientY - draggedObj.h / 2;
+    }
+});
+
+window.addEventListener('touchmove', (e) => {
+    if (draggedObj && e.touches.length > 0) {
+        const t = e.touches[0];
+        draggedObj.x = t.clientX - draggedObj.w / 2;
+        draggedObj.y = t.clientY - draggedObj.h / 2;
+    }
+});
+
+function soltarObjeto() {
+    if (draggedObj) {
+        draggedObj.isDragged = false;
+        draggedObj = null;
+    }
+}
+window.addEventListener('mouseup', soltarObjeto);
+window.addEventListener('touchend', soltarObjeto);
+
+function actualizarFisicas() {
+    lettersData.forEach(l => {
+        if (l.isDragged) {
+            l.vx = (l.x - l.lastX) * 0.85;
+            l.vy = (l.y - l.lastY) * 0.85;
+            l.lastX = l.x;
+            l.lastY = l.y;
+        } else {
+            const kSpring = 0.038; 
+            const damping = 0.86;  
+            
+            const forceX = (l.homeX - l.x) * kSpring;
+            const forceY = (l.homeY - l.y) * kSpring;
+            
+            l.vx += forceX;
+            l.vy += forceY;
+            l.vx *= damping;
+            l.vy *= damping;
+            
+            l.x += l.vx;
+            l.y += l.vy;
+            
+            if (l.x < 0) { l.x = 0; l.vx *= -0.8; }
+            if (l.x > window.innerWidth - l.w) { l.x = window.innerWidth - l.w; l.vx *= -0.8; }
+            if (l.y < 0) { l.y = 0; l.vy *= -0.8; }
+            if (l.y > window.innerHeight - l.h) { l.y = window.innerHeight - l.h; l.vy *= -0.8; }
+        }
+
+        l.el.style.transform = `translate3d(${l.x}px, ${l.y}px, 0px)`;
+
+        if (l.cooldown > 0) l.cooldown--;
+
+        const letterCX = l.x + l.w / 2;
+        const letterCY = l.y + l.h / 2;
+        const distanciaCarita = Math.hypot(letterCX - centerX, letterCY - centerY);
+
+        if (distanciaCarita < caritaRadiusInPixels && l.cooldown === 0) {
+            const velocidadImpacto = Math.hypot(l.vx, l.vy);
+            
+            if (velocidadImpacto > 3 || l.isDragged) {
+                shakeIntensity = Math.min(velocidadImpacto * 0.05 + 0.25, 0.95); 
+                l.cooldown = 15;
+
+                const angulo = Math.atan2(letterCY - centerY, letterCX - centerX);
+                const fuerzaRebote = Math.max(velocidadImpacto * 0.9, 12);
+                l.vx = Math.cos(angulo) * fuerzaRebote;
+                l.vy = Math.sin(angulo) * fuerzaRebote;
+
+                l.glitchEl.style.color = Math.random() > 0.5 ? '#00FF00' : '#FFEF00';
+            }
+        }
+    });
+}
+
+let clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    const elapsedTime = clock.getElapsedTime();
+    generarEstatica();
+    actualizarFisicas();
+    
+    caritaGroup.position.y = Math.sin(elapsedTime * 2.2) * 0.1;
+    caritaGroup.rotation.y = Math.sin(elapsedTime * 0.5) * 0.12;
+    
+    if (shakeIntensity > 0) {
+        camera.position.x = (Math.random() - 0.5) * shakeIntensity * 4.5;
+        camera.position.y = (Math.random() - 0.5) * shakeIntensity * 4.5;
+        
+        shakeIntensity *= 0.91;
+        if (shakeIntensity < 0.005) {
+            shakeIntensity = 0;
+            camera.position.set(0, 0, 7);
+        }
+        
+        cabezaMat.color.setHex(Math.random() > 0.5 ? 0x00FF00 : 0xFFEF00);
+        caritaGroup.scale.set(
+            1 + (Math.random()-0.5)*0.9,
+            1 + (Math.random()-0.5)*0.9,
+            1 + (Math.random()-0.5)*0.9
+        );
+    } else {
+        if (Math.random() < 0.08) {
+            caritaGroup.position.x = (Math.random() - 0.5) * 0.4;
+            caritaGroup.scale.set(
+                1 + (Math.random() - 0.5) * 0.3,
+                1 + (Math.random() - 0.5) * 0.5,
+                1 + (Math.random() - 0.5) * 0.3
+            );
+            cabezaMat.color.setHex(Math.random() > 0.6 ? 0x00FF00 : 0xFFEF00);
+        } else {
+            caritaGroup.position.x = 0;
+            caritaGroup.scale.set(1, 1, 1);
+            cabezaMat.color.setHex(0xFFEF00);
+        }
+    }
+    
+    tvGroup.position.z = Math.sin(elapsedTime * 0.1) * 0.15;
+
+    renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+</body>
+</html>
