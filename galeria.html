@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materia Primordial - Laberinto Doble S</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
+        
+        #blocker {
+            position: absolute; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 10; text-align: center;
+        }
+
+        .vhs-text {
+            font-size: 50px; font-weight: bold; color: #fff; text-transform: uppercase;
+            letter-spacing: 5px; text-shadow: 2px 0 0 rgba(255,235,0,0.8), -2px 0 0 rgba(0,255,0,0.5);
+            animation: glitch 1s infinite linear alternate-reverse; margin-bottom: 40px;
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 0 rgba(255,235,0,0.8), -2px 0 0 rgba(0,255,0,0.5); transform: translate(0,0); }
+            50% { text-shadow: -2px 0 0 rgba(255,235,0,0.8), 2px 0 0 rgba(0,255,0,0.5); transform: translate(1px, -1px); }
+            100% { text-shadow: 2px 0 0 rgba(255,235,0,0.8), -2px 0 0 rgba(0,255,0,0.5); transform: translate(-1px, 1px); }
+        }
+
+        #enter-btn {
+            background-color: transparent; color: #fff; border: 2px solid #fff;
+            padding: 15px 40px; font-size: 20px; font-family: 'Courier New', Courier, monospace;
+            cursor: pointer; text-transform: uppercase; transition: all 0.3s ease;
+        }
+        #enter-btn:hover { background-color: #fff; color: #000; box-shadow: 0 0 15px rgba(255,235,0,0.6); }
+        
+        .controls-text { margin-top: 30px; font-size: 13px; color: #666; }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+            background-color: rgba(255, 255, 255, 0.4); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="gal.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="audio-extra">
+        <source src="gal2.wav" type="audio/mpeg">
+    </audio>
+
+    <div id="crosshair"></div>
+    <div id="blocker">
+        <div class="vhs-text">Materia Primordial</div>
+        <button id="enter-btn">Entrar al Recorrido</button>
+        <div class="controls-text">
+            W A S D - Caminar | Ratón - Mirar | ESC - Pausa
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        const listaObras = [
+            "foto1.jpg",  "foto2.jpg",  "foto3.jpg",  "foto4.jpg",  "foto5.jpg",
+            "foto6.jpg",  "foto7.jpg",  "foto8.jpg",  "foto9.jpg",  "foto10.jpg",
+            "foto11.jpg", "foto12.jpg", "foto13.jpg", "foto14.jpg", "foto15.jpg",
+            "foto16.jpg", "foto17.jpg", "foto18.jpg", "foto19.jpg", "foto20.jpg",
+            "foto21.jpg", "foto22.jpg", "foto23.jpg", "foto24.jpg", "foto25.jpg",
+            "foto26.jpg", "foto27.jpg", "foto28.jpg"
+        ];
+
+        let camera, scene, renderer, controls, flashlight;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let prevTime = performance.now();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        
+        const objects = [];
+        let raycaster;
+        let extraAudioInterval;
+
+        const wallHeight = 10;
+        const textureLoader = new THREE.TextureLoader();
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+            scene.fog = new THREE.FogExp2(0x050505, 0.025);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(-12, 1.7, 13); 
+
+            // Linterna del jugador optimizada
+            flashlight = new THREE.PointLight(0xfff5e6, 3000, 35); 
+            flashlight.position.set(0, 0, 0);
+            camera.add(flashlight);
+            scene.add(camera);
+
+            scene.add(new THREE.AmbientLight(0x404040)); 
+
+            controls = new PointerLockControls(camera, document.body);
+            const blocker = document.getElementById('blocker');
+            const enterBtn = document.getElementById('enter-btn');
+            
+            const bgMusic = document.getElementById('bg-music');
+            const audioExtra = document.getElementById('audio-extra');
+
+            enterBtn.addEventListener('click', () => {
+                controls.lock();
+                bgMusic.play().catch(e => console.warn("Audio ignorado por navegador", e));
+                
+                if (!extraAudioInterval) {
+                    extraAudioInterval = setInterval(() => {
+                        audioExtra.currentTime = 0; 
+                        audioExtra.play().catch(e => console.warn(e));
+                    }, 40000);
+                }
+            });
+
+            controls.addEventListener('lock', () => { blocker.style.display = 'none'; });
+            controls.addEventListener('unlock', () => { blocker.style.display = 'flex'; });
+
+            raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 1.5);
+
+            const onKeyDown = (e) => {
+                switch (e.code) {
+                    case 'KeyW': moveForward = true; break;
+                    case 'KeyA': moveLeft = true; break;
+                    case 'KeyS': moveBackward = true; break;
+                    case 'KeyD': moveRight = true; break;
+                }
+            };
+            const onKeyUp = (e) => {
+                switch (e.code) {
+                    case 'KeyW': moveForward = false; break;
+                    case 'KeyA': moveLeft = false; break;
+                    case 'KeyS': moveBackward = false; break;
+                    case 'KeyD': moveRight = false; break;
+                }
+            };
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            buildDoubleSLabyrinth();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true; 
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+            document.body.appendChild(renderer.domElement);
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createWall(x, z, width, depth, height) {
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.95 });
+            const wallGeo = new THREE.BoxGeometry(width, height, depth);
+            const wall = new THREE.Mesh(wallGeo, wallMat);
+            
+            wall.position.set(x, height / 2, z);
+            wall.receiveShadow = true;
+            wall.castShadow = true;
+            scene.add(wall);
+            objects.push(wall); 
+        }
+
+        function createNeonSign() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#010101'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'bold 100px "Courier New"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            ctx.shadowColor = '#ffeb00';
+            ctx.shadowBlur = 35;
+            ctx.fillStyle = '#ffffff'; 
+            
+            ctx.fillText('MATERIA', canvas.width / 2, canvas.height / 2 - 70);
+            ctx.fillText('PRIMORDIAL', canvas.width / 2, canvas.height / 2 + 70);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const signMat = new THREE.MeshStandardMaterial({
+                map: texture,
+                emissive: 0xffeb00,
+                emissiveMap: texture,
+                emissiveIntensity: 1.2,
+                roughness: 0.7
+            });
+            
+            const signGeo = new THREE.PlaneGeometry(7, 3.5);
+            const sign = new THREE.Mesh(signGeo, signMat);
+            
+            sign.position.set(12, 5, -14.3); 
+            scene.add(sign);
+            
+            const signLight = new THREE.PointLight(0xffeb00, 200, 20);
+            signLight.position.set(12, 5, -13);
+            scene.add(signLight);
+        }
+
+        function buildDoubleSLabyrinth() {
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(34, 34), floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(34, 34), floorMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = wallHeight;
+            ceiling.receiveShadow = true;
+            scene.add(ceiling);
+
+            createWall(0, -15, 30, 1, wallHeight);  
+            createWall(0, 15, 30, 1, wallHeight);   
+            createWall(-15, 0, 1, 30, wallHeight);  
+            createWall(15, 0, 1, 30, wallHeight);   
+
+            createWall(-9, -3, 1, 24, wallHeight);
+            createWall(-3, 3, 1, 24, wallHeight);
+            createWall(3, -3, 1, 24, wallHeight);
+            createWall(9, 3, 1, 24, wallHeight);
+
+            createNeonSign();
+
+            const posicionesObras = [];
+
+            // PASILLO 1
+            posicionesObras.push({x: -14.4, z: 10, rotY: Math.PI/2});
+            posicionesObras.push({x: -14.4, z: 6,  rotY: Math.PI/2});
+            posicionesObras.push({x: -14.4, z: 2,  rotY: Math.PI/2});
+            posicionesObras.push({x: -14.4, z: -2, rotY: Math.PI/2});
+            posicionesObras.push({x: -14.4, z: -6, rotY: Math.PI/2});
+            posicionesObras.push({x: -14.4, z: -10,rotY: Math.PI/2});
+
+            // PASILLO 2
+            posicionesObras.push({x: -3.6,  z: -10, rotY: -Math.PI/2});
+            posicionesObras.push({x: -3.6,  z: -5,  rotY: -Math.PI/2});
+            posicionesObras.push({x: -3.6,  z: 0,   rotY: -Math.PI/2});
+            posicionesObras.push({x: -3.6,  z: 5,   rotY: -Math.PI/2});
+            posicionesObras.push({x: -3.6,  z: 10,  rotY: -Math.PI/2});
+
+            // PASILLO 3
+            posicionesObras.push({x: -2.4,  z: 10,  rotY: Math.PI/2});
+            posicionesObras.push({x: -2.4,  z: 6,   rotY: Math.PI/2});
+            posicionesObras.push({x: -2.4,  z: 2,   rotY: Math.PI/2});
+            posicionesObras.push({x: -2.4,  z: -2,  rotY: Math.PI/2});
+            posicionesObras.push({x: -2.4,  z: -6,  rotY: Math.PI/2});
+            posicionesObras.push({x: -2.4,  z: -10, rotY: Math.PI/2});
+
+            // PASILLO 4
+            posicionesObras.push({x: 8.4,   z: -10, rotY: -Math.PI/2});
+            posicionesObras.push({x: 8.4,   z: -5,  rotY: -Math.PI/2});
+            posicionesObras.push({x: 8.4,   z: 0,   rotY: -Math.PI/2});
+            posicionesObras.push({x: 8.4,   z: 5,   rotY: -Math.PI/2});
+            posicionesObras.push({x: 8.4,   z: 10,  rotY: -Math.PI/2});
+
+            // PASILLO 5
+            posicionesObras.push({x: 14.4,  z: 10,  rotY: -Math.PI/2});
+            posicionesObras.push({x: 14.4,  z: 6,   rotY: -Math.PI/2});
+            posicionesObras.push({x: 14.4,  z: 2,   rotY: -Math.PI/2});
+            posicionesObras.push({x: 14.4,  z: -2,  rotY: -Math.PI/2});
+            posicionesObras.push({x: 14.4,  z: -6,  rotY: -Math.PI/2});
+            posicionesObras.push({x: 14.4,  z: -10, rotY: -Math.PI/2});
+
+            for(let i = 0; i < 28; i++) {
+                if(posicionesObras[i] && listaObras[i]) {
+                    colocarCuadroEnmarcado(listaObras[i], posicionesObras[i].x, posicionesObras[i].z, posicionesObras[i].rotY);
+                }
+            }
+        }
+
+        function colocarCuadroEnmarcado(nombreImg, x, z, rotY) {
+            const yAltura = 3.5; 
+            
+            const anchoLienzo = 2.4; 
+            let altoLienzo = 2.0; 
+
+            const materialMarco = new THREE.MeshStandardMaterial({ 
+                color: 0x3d301c, 
+                roughness: 0.3, 
+                metalness: 0.8 
+            });
+
+            const grosorMarco = 0.15;
+            const profundidadMarco = 0.25;
+
+            const grupoCuadro = new THREE.Group();
+
+            const barraTopGeo = new THREE.BoxGeometry(anchoLienzo + (grosorMarco * 2), grosorMarco, profundidadMarco);
+            const barraTop = new THREE.Mesh(barraTopGeo, materialMarco);
+            barraTop.position.y = (altoLienzo / 2) + (grosorMarco / 2);
+            grupoCuadro.add(barraTop);
+
+            const barraBottom = new THREE.Mesh(barraTopGeo, materialMarco);
+            barraBottom.position.y = -(altoLienzo / 2) - (grosorMarco / 2);
+            grupoCuadro.add(barraBottom);
+
+            const barraIzqGeo = new THREE.BoxGeometry(grosorMarco, altoLienzo, depth=profundidadMarco);
+            const barraIzq = new THREE.Mesh(barraIzqGeo, materialMarco);
+            barraIzq.position.x = -(anchoLienzo / 2) - (grosorMarco / 2);
+            grupoCuadro.add(barraIzq);
+
+            const barraDer = new THREE.Mesh(barraIzqGeo, materialMarco);
+            barraDer.position.x = (anchoLienzo / 2) + (grosorMarco / 2);
+            grupoCuadro.add(barraDer);
+
+            const lienzoGeo = new THREE.PlaneGeometry(anchoLienzo, altoLienzo);
+            const lienzoMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.7 });
+            const lienzoMesh = new THREE.Mesh(lienzoGeo, lienzoMat);
+            lienzoMesh.position.z = (profundidadMarco / 2) - 0.02; 
+            grupoCuadro.add(lienzoMesh);
+
+            grupoCuadro.position.set(x, yAltura, z);
+            grupoCuadro.rotation.y = rotY;
+            
+            grupoCuadro.traverse((child) => {
+                if(child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            scene.add(grupoCuadro);
+
+            const luzCuadro = new THREE.PointLight(0xfff6dd, 250, 15);
+            luzCuadro.position.set(
+                x + Math.sin(rotY) * 2.5,
+                yAltura + 1.5,
+                z + Math.cos(rotY) * 2.5
+            );
+            scene.add(luzCuadro);
+
+            textureLoader.load(
+                nombreImg, 
+                (textura) => {
+                    const imgW = textura.image.width;
+                    const imgH = textura.image.height;
+                    const aspecto = imgW / imgH;
+                    const nuevoAltoLienzo = anchoLienzo / aspecto;
+
+                    lienzoMesh.geometry.dispose();
+                    lienzoMesh.geometry = new THREE.PlaneGeometry(anchoLienzo, nuevoAltoLienzo);
+                    
+                    barraIzq.geometry.dispose();
+                    barraDer.geometry.dispose();
+                    const nuevaBarraIzqGeo = new THREE.BoxGeometry(grosorMarco, nuevoAltoLienzo, profundidadMarco);
+                    barraIzq.geometry = nuevaBarraIzqGeo;
+                    barraDer.geometry = nuevaBarraIzqGeo;
+
+                    barraTop.position.y = (nuevoAltoLienzo / 2) + (grosorMarco / 2);
+                    barraBottom.position.y = -(nuevoAltoLienzo / 2) - (grosorMarco / 2);
+
+                    lienzoMesh.material.map = textura;
+                    lienzoMesh.material.color.setHex(0xffffff); 
+                    lienzoMesh.material.needsUpdate = true;
+                }, 
+                undefined, 
+                (err) => {
+                    console.warn(`No se cargó: ${nombreImg}. Lienzo en rojo.`);
+                    lienzoMesh.material.color.setHex(0xaa0000); 
+                }
+            );
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+
+            if (controls.isLocked === true) {
+                const delta = (time - prevTime) / 1000;
+                const playerPos = controls.getObject().position;
+                
+                let collisionDetected = false;
+                let moveDir = new THREE.Vector3();
+                
+                if(moveForward) moveDir.z = -1;
+                if(moveBackward) moveDir.z = 1;
+                if(moveLeft) moveDir.x = -1;
+                if(moveRight) moveDir.x = 1;
+                
+                moveDir.normalize();
+                moveDir.applyQuaternion(camera.quaternion);
+
+                raycaster.set(new THREE.Vector3(playerPos.x, 1.7, playerPos.z), moveDir);
+                const intersections = raycaster.intersectObjects(objects, false);
+                
+                if (intersections.length > 0 && intersections[0].distance < 1.3) {
+                    collisionDetected = true;
+                }
+
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                const speed = 45.0;
+                if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+
+                if(!collisionDetected) {
+                    controls.moveRight(-velocity.x * delta);
+                    controls.moveForward(-velocity.z * delta);
+                } else {
+                    velocity.x = 0;
+                    velocity.z = 0;
+                }
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
