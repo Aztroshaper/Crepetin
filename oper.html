@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXTRACCIÓN DE RECUERDOS</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body {
+    overflow: hidden;
+    background: #020202;
+    font-family: "Courier New", monospace;
+    color: white;
+    cursor: crosshair;
+}
+
+/* VHS & CRT EFFECTS */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.03),
+        rgba(255,255,255,.03) 1px,
+        transparent 2px,
+        transparent 4px
+    );
+    mix-blend-mode: overlay;
+    animation: scan .08s infinite;
+    z-index: 99999;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,.95));
+    z-index: 99998;
+}
+
+@keyframes scan {
+    0% { opacity: .8; }
+    50% { opacity: 1; }
+    100% { opacity: .82; }
+}
+
+/* SHAKE EFFECT */
+#game {
+    position: fixed;
+    inset: 0;
+    --shake: 0px;
+    perspective: 1500px; /* Profundidad 3D aumentada */
+    transform-style: preserve-3d;
+}
+
+.shake {
+    animation: shake .12s infinite;
+}
+
+@keyframes shake {
+    0% { transform: translate(0px,0px); }
+    25% { transform: translate(calc(var(--shake)*-1),calc(var(--shake)*1)); }
+    50% { transform: translate(calc(var(--shake)*1),calc(var(--shake)*-1)); }
+    75% { transform: translate(calc(var(--shake)*-1),calc(var(--shake)*-1)); }
+    100% { transform: translate(0px,0px); }
+}
+
+/* INTRO (ESFERA 3D) */
+#intro {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, #110000 0%, #000 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    perspective: 1000px;
+    overflow: hidden;
+}
+
+/* Anillos Orbitales simulando una esfera giratoria */
+.orbital-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 68, 68, 0.4);
+    box-shadow: 0 0 20px rgba(255,0,0,0.2), inset 0 0 20px rgba(255,0,0,0.2);
+    transform-style: preserve-3d;
+}
+
+.ring1 { width: 850px; height: 850px; animation: orbit 12s linear infinite; }
+.ring2 { width: 900px; height: 900px; animation: orbit 18s linear infinite reverse; border-color: rgba(255, 200, 200, 0.2); }
+.ring3 { width: 800px; height: 800px; animation: orbit 24s linear infinite; transform: rotateX(90deg); }
+
+@keyframes orbit {
+    0% { transform: rotateX(70deg) rotateY(0deg) rotateZ(0deg); }
+    100% { transform: rotateX(70deg) rotateY(360deg) rotateZ(360deg); }
+}
+
+.introBox {
+    width: 900px;
+    max-width: 92%;
+    padding: 45px;
+    background: rgba(5,5,5,.85);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,68,68,.3);
+    box-shadow: 0 0 50px rgba(255,0,0,0.1), inset 0 0 30px rgba(255,68,68,0.1);
+    border-radius: 20px;
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transform: translateZ(50px) rotateX(5deg);
+    animation: floatIntro 6s ease-in-out infinite alternate;
+}
+
+@keyframes floatIntro {
+    0% { transform: translateZ(50px) rotateX(5deg) rotateY(-5deg); }
+    100% { transform: translateZ(50px) rotateX(-5deg) rotateY(5deg); }
+}
+
+.introTitle {
+    font-size: 52px;
+    margin-bottom: 30px;
+    color: #ff4444;
+    text-shadow: 0 0 15px red, 4px 4px 0px rgba(150,0,0,0.5);
+    animation: glitch .08s infinite;
+}
+
+@keyframes glitch {
+    0% { transform: translate(0); }
+    25% { transform: translate(-2px,1px); }
+    50% { transform: translate(2px,-1px); }
+    75% { transform: translate(-2px,-2px); }
+    100% { transform: translate(0); }
+}
+
+#slideText {
+    font-size: 16px;
+    line-height: 2;
+    opacity: .95;
+    white-space: pre-line;
+    min-height: 220px;
+}
+
+.btn {
+    padding: 14px 25px;
+    background: #111;
+    border: 1px solid rgba(255,255,255,.2);
+    color: white;
+    font-family: inherit;
+    cursor: pointer;
+    transition: .3s;
+    margin-right: 10px;
+    margin-top: 25px;
+    box-shadow: 0 4px 0 rgba(255,255,255,0.1);
+}
+
+.btn:hover {
+    background: #ff4444;
+    border-color: #ff4444;
+    transform: scale(1.05) translateZ(20px);
+    box-shadow: 0 10px 25px rgba(255,0,0,0.6);
+}
+
+#startBtn { display: none; }
+
+/* GAME OVER */
+#gameOver {
+    position: fixed;
+    inset: 0;
+    background: black;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100000;
+}
+
+.gameOverBox {
+    width: 650px;
+    padding: 40px;
+    background: rgba(0,0,0,.97);
+    border: 1px solid #ffe600;
+    box-shadow: 0 0 40px rgba(255,230,0,0.2), inset 0 0 20px rgba(255,230,0,0.1);
+    text-align: center;
+}
+
+.gameOverTitle { font-size: 55px; margin-bottom: 20px; color: #ffe600; text-shadow: 0 0 20px yellow; }
+.gameOverText { font-size: 15px; line-height: 1.8; opacity: .9; margin-bottom: 35px; }
+
+/* LEFT PANEL (3D Styled) */
+#leftPanel {
+    position: absolute;
+    left: 30px;
+    top: 30px;
+    width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 200;
+    transform-style: preserve-3d;
+}
+
+.container {
+    background: rgba(10,10,10,.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.12);
+    border-left: 4px solid #ff4444;
+    padding: 18px;
+    transform: rotateY(15deg) rotateX(5deg) translateZ(20px);
+    box-shadow: -15px 20px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,255,255,0.03);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.container:hover {
+    transform: rotateY(0deg) rotateX(0deg) translateZ(40px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,68,68,0.1);
+}
+
+.containerTitle { font-size: 18px; margin-bottom: 10px; color: #ff5c5c; text-shadow: 0 0 5px rgba(255,92,92,0.5); }
+.containerText { font-size: 13px; line-height: 1.7; opacity: .92; }
+#timer { font-size: 15px; margin-top: 5px; color: #ffe46e; text-shadow: 0 0 5px rgba(255,228,110,0.4); }
+#score { font-size: 15px; margin-top: 8px; color: #66ff99; text-shadow: 0 0 5px rgba(102,255,153,0.4); }
+
+#stabilityBar {
+    width: 100%;
+    height: 14px;
+    border: 1px solid #ff4444;
+    margin-top: 12px;
+    background: #220000;
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.9);
+}
+
+#stability {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #aa0000, #ff4444);
+    box-shadow: 0 0 15px rgba(255,68,68,0.6);
+    transition: width .2s;
+}
+
+/* RIGHT AREA */
+#brainArea {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: calc(100% - 400px);
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform-style: preserve-3d;
+}
+
+/* BRAIN 3D SPHERE */
+#brain {
+    width: 530px;
+    height: 530px;
+    border-radius: 50%;
+    position: relative;
+    overflow: visible;
+    background: radial-gradient(circle at 35% 30%, #ff9090 0%, #a11f1f 40%, #3a0000 70%, #050000 100%);
+    box-shadow: 
+        0 40px 80px rgba(0,0,0,0.9),
+        inset -40px -40px 80px rgba(0,0,0,0.9),
+        inset 20px 20px 60px rgba(255,150,150,0.4),
+        0 0 100px rgba(255,0,0,.15);
+    transform: rotateX(20deg) rotateY(-15deg);
+    animation: pulse3D 4s infinite ease-in-out;
+    transition: opacity .5s, filter .5s, box-shadow .3s, transform .3s;
+}
+
+/* Efecto visual de acierto en el cerebro */
+.brainGlow {
+    box-shadow: 
+        0 0 150px #00ff99,
+        inset -40px -40px 80px rgba(0,0,0,0.9),
+        inset 20px 20px 60px #00ff99 !important;
+    filter: brightness(1.3) hue-rotate(90deg) !important;
+    transform: rotateX(20deg) rotateY(-15deg) scale(1.04) translateZ(20px) !important;
+}
+
+@keyframes pulse3D {
+    0% { transform: rotateX(20deg) rotateY(-15deg) scale(1); }
+    50% { transform: rotateX(20deg) rotateY(-15deg) scale(1.03) translateZ(25px); }
+    100% { transform: rotateX(20deg) rotateY(-15deg) scale(1); }
+}
+
+/* MEMORIES 3D BUTTONS */
+.memory {
+    position: absolute;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 9px;
+    line-height: 1.2;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), rgba(0,0,0,0.6));
+    border: 1px solid rgba(255,255,255,.4);
+    border-top: 2px solid rgba(255,255,255,0.8);
+    box-shadow: 0 15px 20px rgba(0,0,0,0.7), inset 0 0 15px rgba(255,255,255,0.2);
+    cursor: grab;
+    transition: transform .2s, box-shadow .2s;
+}
+
+.memory:hover {
+    transform: scale(1.15) translateZ(40px);
+    box-shadow: 0 20px 30px rgba(0,0,0,0.8), 0 0 25px rgba(255,255,255,.4);
+    border-color: #fff;
+}
+
+.memory.dragging {
+    z-index: 9999;
+    cursor: grabbing;
+    transform: scale(1.3) translateZ(80px);
+    box-shadow: 0 35px 50px rgba(0,0,0,0.9), 0 0 40px rgba(255,255,255,.5);
+}
+
+.infected {
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,100,0.6), rgba(150,150,0,0.9));
+    border: 1px solid yellow;
+    box-shadow: 0 15px 20px rgba(0,0,0,0.7), 0 0 35px rgba(255,255,0,0.7), inset 0 0 20px yellow;
+    color: black;
+    text-shadow: none;
+    animation: infect .35s infinite alternate;
+}
+
+@keyframes infect {
+    0% { transform: scale(1) translateZ(20px); }
+    100% { transform: scale(1.18) translateZ(40px); }
+}
+
+/* 3D STAR (EXTRACT ZONE) */
+#extractZone {
+    position: absolute;
+    width: 95px;
+    height: 95px;
+    top: 50%;
+    left: 82%;
+    z-index: 50;
+    transition: left .6s linear, top .6s linear;
+    transform-style: preserve-3d;
+    /* La estrella ahora rota constantemente en 3D */
+    animation: rotateStar 4s infinite linear;
+}
+
+/* Capa visual de la estrella para lograr el efecto 3D con clip-path */
+.star-visual {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 11px;
+    font-weight: bold;
+    clip-path: polygon(
+        50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%,
+        50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%
+    );
+    animation: zoneColor .8s infinite alternate;
+}
+
+/* Pseudo-elemento para dar grosor/profundidad a la estrella */
+.star-visual::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: inherit;
+    transform: translateZ(-10px) scale(0.9);
+    filter: brightness(0.4);
+    z-index: -1;
+}
+
+@keyframes rotateStar {
+    0% { transform: translate(-50%,-50%) translateZ(60px) rotateY(0deg) rotateZ(0deg); }
+    100% { transform: translate(-50%,-50%) translateZ(60px) rotateY(360deg) rotateZ(20deg); }
+}
+
+@keyframes zoneColor {
+    0% { background: #ff4d4d; box-shadow: 0 0 40px #ff4d4d; color: white; }
+    25% { background: #ffe600; box-shadow: 0 0 40px #ffe600; color: black; }
+    50% { background: #00ff99; box-shadow: 0 0 40px #00ff99; color: black; }
+    75% { background: #00d9ff; box-shadow: 0 0 40px #00d9ff; color: black; }
+    100% { background: #ff77ff; box-shadow: 0 0 40px #ff77ff; color: white; }
+}
+
+.zoneCorrupt .star-visual {
+    animation: zoneColor .08s infinite alternate, zoneShake .03s infinite;
+}
+
+@keyframes zoneShake {
+    0% { transform: translate(0px,0px); }
+    25% { transform: translate(-4px,2px); }
+    50% { transform: translate(4px,-2px); }
+    75% { transform: translate(-2px,-2px); }
+    100% { transform: translate(2px,2px); }
+}
+
+/* CONSOLE */
+#console {
+    height: 240px;
+    overflow: hidden;
+    position: relative;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 10px;
+}
+
+.logLine {
+    font-size: 13px;
+    line-height: 1.7;
+    animation: fadeout 6s forwards;
+    text-shadow: 0 0 2px rgba(255,255,255,0.3);
+}
+
+@keyframes fadeout {
+    0% { opacity: 1; transform: translateX(-5px); }
+    10% { transform: translateX(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* BLOOD */
+#blood {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, transparent 20%, rgba(200,0,0,0.8) 100%);
+    mix-blend-mode: multiply;
+    opacity: 0;
+    pointer-events: none;
+    transition: .2s;
+    z-index: 10000;
+}
+</style>
+</head>
+
+<body>
+
+<audio id="bgm" loop>
+    <source src="oper.mp3" type="audio/mpeg">
+</audio>
+
+<div id="intro">
+    <div class="orbital-ring ring1"></div>
+    <div class="orbital-ring ring2"></div>
+    <div class="orbital-ring ring3"></div>
+
+    <div class="introBox">
+        <div>
+            <div class="introTitle">EXTRACCIÓN DE RECUERDOS</div>
+            <div id="slideText"></div>
+        </div>
+        <div>
+            <button class="btn" id="startBtn" onclick="startGame()">
+                INICIAR PROCEDIMIENTO
+            </button>
+            <button class="btn" onclick="window.close()">
+                VOLVER
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="gameOver">
+    <div class="gameOverBox">
+        <div class="gameOverTitle">MUY TARDE</div>
+        <div class="gameOverText">
+            El paciente ya no puede distinguir entre memoria y deterioro.<br><br>
+            La infección amarilla consumió demasiados residuos humanos.<br><br>
+            La operación fue un fracaso.
+        </div>
+        <button class="btn" onclick="location.reload()">
+            REINTENTAR OPERACIÓN
+        </button>
+    </div>
+</div>
+
+<div id="game">
+    <div id="blood"></div>
+    
+    <div id="leftPanel">
+        <div class="container">
+            <div class="containerTitle">ESTADO</div>
+            <div id="timer">TIEMPO RESTANTE: 90</div>
+            <div id="score">RECUERDOS PRESERVADOS: 0</div>
+            <div id="stabilityBar">
+                <div id="stability"></div>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="containerTitle">SISTEMA</div>
+            <div class="containerText">
+                Dr. Victor Mestresé v8.5<br>
+                Reconstrucción emocional activa.
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="containerTitle">REGISTROS</div>
+            <div id="console"></div>
+        </div>
+    </div>
+
+    <div id="brainArea">
+        <div id="brain"></div>
+        <div id="extractZone">
+            <div class="star-visual">M.A</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const slides = [
+    `La doctora abandonó la operación hace 3 horas.\n\nVictor Mestresé permanece en la sala junto a los residuos emocionales encontrados en el paciente.`,
+    `Las zonas de recuerdo continúan deteriorándose y la infección amarilla ya alcanzó múltiples áreas de la memoria.`,
+    `Tu trabajo consiste en extraer recuerdos desde el núcleo y colocarlos dentro de la estrella de preservación.`,
+    `Los recuerdos amarillos están infectados.\n\nNO DEJES ENTRAR RECUERDOS INFECTADOS A LA ESTRELLA.`,
+    `Presiona ESPACIO para estabilizar recuerdos infectados antes de que desaparezcan.\n\nCada recuerdo perdido dañará permanentemente al paciente.`,
+    `La memoria ya está fallando, entre más recuerdos pierdas, será más complicado salvarlo.`
+];
+
+const slideText = document.getElementById("slideText");
+const startBtn = document.getElementById("startBtn");
+
+let slideIndex = 0;
+
+function typeSlide(text, callback) {
+    slideText.innerHTML = "";
+    let i = 0;
+
+    const interval = setInterval(() => {
+        slideText.innerHTML += text.charAt(i);
+        i++;
+
+        if(i >= text.length){
+            clearInterval(interval);
+            setTimeout(callback, 4000); // Mantiene el texto 4 segundos en pantalla
+        }
+    }, 35);
+}
+
+function nextSlide() {
+    if(slideIndex >= slides.length){
+        startBtn.style.display = "inline-block";
+        return;
+    }
+    typeSlide(slides[slideIndex], () => {
+        slideIndex++;
+        nextSlide();
+    });
+}
+
+nextSlide();
+
+const brain = document.getElementById("brain");
+const timerText = document.getElementById("timer");
+const scoreText = document.getElementById("score");
+const stability = document.getElementById("stability");
+const extractZone = document.getElementById("extractZone");
+const consoleBox = document.getElementById("console");
+const blood = document.getElementById("blood");
+const game = document.getElementById("game");
+
+let time = 90;
+let score = 0;
+let brainHealth = 100;
+let corruptionLevel = 0;
+let gameStarted = false;
+
+// Configuración del sonido por Web Audio API (Sin archivos externos)
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function playSuccessSound() {
+    try {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+        osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.1); 
+        
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    } catch(e) {
+        console.log("Audio de acierto no disponible.");
+    }
+}
+
+const memories = [
+"olor a frituras","miedo a presentar","un cd rayado","calor insoportable",
+"dibujar pupitres","un perro ladrando","llorar en un baño","una estrella falsa",
+"un cine vacío","una playera vieja","una voz perdida","estar enamorado",
+"una tv prendida","una llamada","una radio nocturna","caminar solo",
+"un museo abandonado","un sueño repetido","la secundaria","una libreta rota",
+"tierra caliente","un foco rojo","un cassette","un dibujo viejo",
+"una soda tibia","la feria","un pasillo escolar","una cámara rota",
+"la última clase","música quemada","una mano sudando","una fotografía",
+"la madrugada","un parque vacío","una discusión","un abrazo",
+"estar perdido","la vergüenza","una ventana","un secreto",
+"la lluvia falsa","un videojuego viejo","una exposición","una luz amarilla",
+"una sombra","el teatro","una noche rara","un olor extraño",
+"una despedida","Arrancarte la piel"
+];
+
+const victorLines = [
+"No entiendo por qué esto duele.",
+"Estoy intentando recordar.",
+"Esto parece importante.",
+"Creo que alguien amó aquí.",
+"La nostalgia parece mortal.",
+"Esto estaba vivo.",
+"Hay demasiada tristeza aquí.", 
+"¿Qué hice qué?.",
+"Estoy intentando ser más.",
+"Esto no existe.",
+"Así no pasó.",
+"Yo sé donde está su piel.",
+"Esto estaba muerto.",
+"Hay demasiada tristeza allá."
+];
+
+function startGame() {
+    document.getElementById("intro").style.display = "none";
+    document.getElementById("bgm").play().catch(e=>{});
+    gameStarted = true;
+
+    for(let i=0; i<10; i++){
+        createMemory();
+    }
+
+    startTimer();
+    startInfection();
+    startBrainPull();
+    moveZone();
+    driftingMemories();
+}
+
+function createMemory() {
+    const memory = document.createElement("div");
+    memory.classList.add("memory");
+    memory.innerText = memories[Math.floor(Math.random()*memories.length)];
+    
+    memory.style.left = Math.random() * 420 + "px";
+    memory.style.top = Math.random() * 420 + "px";
+
+    memory.dataset.driftX = (Math.random() - 0.5) * 1.8;
+    memory.dataset.driftY = (Math.random() - 0.5) * 1.8;
+
+    brain.appendChild(memory);
+
+    let dragging = false;
+
+    memory.addEventListener("mousedown", () => {
+        dragging = true;
+        memory.classList.add("dragging");
+    });
+
+    document.addEventListener("mouseup", () => {
+        if(!dragging) return;
+        dragging = false;
+        memory.classList.remove("dragging");
+
+        const zone = extractZone.getBoundingClientRect();
+        const mem = memory.getBoundingClientRect();
+        
+        const centerX = mem.left + mem.width/2;
+        const centerY = mem.top + mem.height/2;
+
+        if(
+            centerX > zone.left - 25 &&
+            centerX < zone.right + 25 &&
+            centerY > zone.top - 25 &&
+            centerY < zone.bottom + 25
+        ){
+            if(memory.classList.contains("infected")){
+                extractZone.classList.add("zoneCorrupt");
+                setTimeout(()=>{ extractZone.classList.remove("zoneCorrupt"); },2500);
+                damageBrain();
+                log("> ERROR: contaminación detectada");
+            } else {
+                score++;
+                scoreText.innerHTML = "RECUERDOS PRESERVADOS: " + score;
+                logVictor();
+                
+                // Efecto de Acierto Visual y Auditivo
+                playSuccessSound();
+                brain.classList.add("brainGlow");
+                setTimeout(() => brain.classList.remove("brainGlow"), 350);
+            }
+            memory.remove();
+            createMemory();
+        }
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if(!dragging) return;
+        const rect = brain.getBoundingClientRect();
+        memory.style.left = (e.clientX - rect.left - 38) + "px";
+        memory.style.top = (e.clientY - rect.top - 38) + "px";
+    });
+}
+
+function driftingMemories() {
+    setInterval(() => {
+        if(!gameStarted) return;
+        document.querySelectorAll(".memory").forEach(mem => {
+            if(mem.classList.contains("dragging")) return;
+            
+            let x = parseFloat(mem.style.left);
+            let y = parseFloat(mem.style.top);
+            let dx = parseFloat(mem.dataset.driftX);
+            let dy = parseFloat(mem.dataset.driftY);
+
+            x += dx;
+            y += dy;
+
+            if(x < 10 || x > 440) mem.dataset.driftX = dx * -1;
+            if(y < 10 || y > 440) mem.dataset.driftY = dy * -1;
+
+            mem.style.left = x + "px";
+            mem.style.top = y + "px";
+        });
+    }, 40);
+}
+
+function moveZone() {
+    setInterval(() => {
+        extractZone.style.left = (55 + Math.random() * 40) + "%";
+        extractZone.style.top = (15 + Math.random() * 70) + "%";
+    }, 700); 
+}
+
+function startTimer() {
+    const interval = setInterval(() => {
+        if(!gameStarted) return;
+        time--;
+        timerText.innerHTML = "TIEMPO RESTANTE: " + time;
+        if(time <= 0){
+            gameOver();
+            clearInterval(interval);
+        }
+    }, 1000);
+}
+
+function startInfection() {
+    setInterval(() => {
+        const all = document.querySelectorAll(".memory");
+        if(all.length === 0) return;
+        
+        const target = all[Math.floor(Math.random() * all.length)];
+        if(!target.classList.contains("infected")) {
+            target.classList.add("infected");
+            log("> infección amarilla detectada");
+
+            setTimeout(() => {
+                if(target.classList.contains("infected")){
+                    corruptionLevel += 1;
+                    game.style.setProperty("--shake", corruptionLevel + "px");
+                    game.classList.add("shake");
+                    damageBrain();
+                    target.remove();
+                    createMemory();
+                    log("> recuerdo deteriorado");
+                }
+            }, 3000); 
+        }
+    }, 3500); 
+}
+
+document.addEventListener("keydown", (e) => {
+    if(e.code === "Space"){
+        const infected = document.querySelector(".infected");
+        if(infected){
+            infected.classList.remove("infected");
+            log("> recuerdo estabilizado");
+        }
+    }
+});
+
+function startBrainPull() {
+    setInterval(() => {
+        const all = document.querySelectorAll(".memory");
+        if(all.length === 0) return;
+        
+        const target = all[Math.floor(Math.random() * all.length)];
+        if(target.classList.contains("dragging")) return;
+
+        let x = parseFloat(target.style.left);
+        let y = parseFloat(target.style.top);
+
+        const centerX = 227; 
+        const centerY = 227;
+
+        const interval = setInterval(() => {
+            if(target.classList.contains("dragging")){
+                clearInterval(interval);
+                return;
+            }
+            x += (centerX - x) * .12; 
+            y += (centerY - y) * .12;
+            
+            target.style.left = x + "px";
+            target.style.top = y + "px";
+
+            if(Math.abs(centerX - x) < 5){
+                clearInterval(interval);
+            }
+        }, 30);
+    }, 4000); 
+}
+
+function damageBrain() {
+    brainHealth -= 12; 
+    if(brainHealth < 0) brainHealth = 0;
+    
+    stability.style.width = brainHealth + "%";
+    
+    const opacity = brainHealth / 100;
+    const yellow = 100 - brainHealth;
+    
+    brain.style.opacity = 0.45 + opacity * 0.55;
+    brain.style.filter = `sepia(${yellow}%) saturate(${1 + yellow/50})`;
+    
+    blood.style.opacity = .6;
+    setTimeout(() => { blood.style.opacity = 0; }, 250);
+
+    if(brainHealth <= 0){
+        gameOver();
+    }
+}
+
+function gameOver() {
+    gameStarted = false;
+    document.getElementById("gameOver").style.display = "flex";
+}
+
+function log(text) {
+    const line = document.createElement("div");
+    line.classList.add("logLine");
+    line.innerHTML = text;
+    consoleBox.appendChild(line);
+    
+    consoleBox.scrollTop = consoleBox.scrollHeight;
+
+    setTimeout(() => { line.remove(); }, 6000);
+}
+
+function logVictor() {
+    const line = victorLines[Math.floor(Math.random() * victorLines.length)];
+    log("> Victor: " + line);
+}
+</script>
+
+</body>
+</html>
