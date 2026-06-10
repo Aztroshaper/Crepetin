@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Río y el Observador</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas {
+            display: block;
+        }
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #eee;
+            text-align: center;
+            background: rgba(20, 15, 10, 0.85);
+            padding: 30px;
+            border: 1px solid #553311;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #end-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #050505;
+            color: #aaaaaa;
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            z-index: 100;
+            letter-spacing: 3px;
+            text-align: center;
+            font-style: italic;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="instructions">
+        <h2>HAZ CLIC PARA ACERCARTE AL RÍO</h2>
+        <p>Usa W, A, S, D para caminar por la orilla.</p>
+        <p>Usa el ratón para mirar a tu alrededor.</p>
+    </div>
+
+    <div id="end-screen">
+        ¿Si le viste?
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 1. Escena y Niebla (Atardecer desértico)
+        const scene = new THREE.Scene();
+        const fogColor = new THREE.Color(0x8a6a4a); // Tono sepia/arena oscuro
+        scene.background = fogColor;
+        scene.fog = new THREE.FogExp2(fogColor, 0.025); // Niebla que se espesa con la distancia
+
+        // Iluminación melancólica
+        const ambientLight = new THREE.AmbientLight(0xffeedd, 0.4);
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffaa55, 0.8);
+        dirLight.position.set(-20, 15, 10);
+        scene.add(dirLight);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 1.6, 0); // Empezamos en la orilla derecha
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Terreno (Arena/Tierra)
+        const groundGeo = new THREE.PlaneGeometry(200, 200);
+        const groundMat = new THREE.MeshStandardMaterial({ 
+            color: 0x5c4a3d, 
+            roughness: 1.0 
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = 0;
+        scene.add(ground);
+
+        // 3. El Río (Agua turbia fluyendo en el centro)
+        const riverGeo = new THREE.PlaneGeometry(12, 200);
+        const riverMat = new THREE.MeshStandardMaterial({ 
+            color: 0x2b3d30, // Agua verdosa/oscura
+            roughness: 0.1,  // Reflejante
+            metalness: 0.2,
+            transparent: true,
+            opacity: 0.9
+        });
+        const river = new THREE.Mesh(riverGeo, riverMat);
+        river.rotation.x = -Math.PI / 2;
+        river.position.y = 0.05; // Ligeramente por encima de la arena
+        river.position.z = -50;
+        scene.add(river);
+
+        // 4. Decoración: Rocas y Árboles Secos
+        const rockGeo = new THREE.DodecahedronGeometry(0.6);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
+
+        // Función para crear un árbol seco retorcido
+        function createDeadTree(x, z) {
+            const treeGroup = new THREE.Group();
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x2b201a, roughness: 1 }); // Madera muy oscura
+
+            // Tronco principal
+            const trunkGeo = new THREE.CylinderGeometry(0.15, 0.3, 3);
+            const trunk = new THREE.Mesh(trunkGeo, woodMat);
+            trunk.position.y = 1.5;
+            trunk.rotation.z = (Math.random() - 0.5) * 0.2;
+            treeGroup.add(trunk);
+
+            // Rama 1
+            const branch1Geo = new THREE.CylinderGeometry(0.05, 0.12, 2);
+            const branch1 = new THREE.Mesh(branch1Geo, woodMat);
+            branch1.position.set(0.5, 2, 0);
+            branch1.rotation.z = -Math.PI / 4;
+            treeGroup.add(branch1);
+
+            // Rama 2
+            const branch2Geo = new THREE.CylinderGeometry(0.02, 0.08, 1.5);
+            const branch2 = new THREE.Mesh(branch2Geo, woodMat);
+            branch2.position.set(-0.4, 1.5, 0.3);
+            branch2.rotation.z = Math.PI / 3;
+            branch2.rotation.x = Math.PI / 4;
+            treeGroup.add(branch2);
+
+            treeGroup.position.set(x, 0, z);
+            treeGroup.rotation.y = Math.random() * Math.PI * 2;
+            scene.add(treeGroup);
+        }
+
+        // Esparcir rocas y árboles por las orillas
+        for (let i = 0; i < 60; i++) {
+            // Decidir si va a la orilla izquierda o derecha del río
+            let side = Math.random() > 0.5 ? 1 : -1;
+            let x = side * (Math.random() * 30 + 8); // Lejos del centro (río)
+            let z = -(Math.random() * 150) + 20;
+
+            if (Math.random() > 0.4) {
+                // Roca
+                const rock = new THREE.Mesh(rockGeo, rockMat);
+                rock.position.set(x, 0.2, z);
+                rock.rotation.set(Math.random(), Math.random(), Math.random());
+                rock.scale.setScalar(Math.random() * 2 + 0.5);
+                scene.add(rock);
+            } else {
+                // Árbol seco
+                createDeadTree(x, z);
+            }
+        }
+
+        // 5. El Hombre de la silueta (A lo lejos, mirando hacia otro lado)
+        const manGroup = new THREE.Group();
+        const silhouetteMat = new THREE.MeshBasicMaterial({ color: 0x050505 }); // Completamente negro (silueta)
+
+        // Cuerpo
+        const bodyGeo = new THREE.CylinderGeometry(0.3, 0.2, 1.4);
+        const body = new THREE.Mesh(bodyGeo, silhouetteMat);
+        body.position.y = 0.7;
+        manGroup.add(body);
+
+        // Cabeza
+        const headGeo = new THREE.SphereGeometry(0.2);
+        const head = new THREE.Mesh(headGeo, silhouetteMat);
+        head.position.y = 1.6;
+        manGroup.add(head);
+
+        // Ubicamos al hombre a lo lejos, en la orilla izquierda
+        manGroup.position.set(-6, 0, -45); 
+        // Ligeramente inclinado como si estuviera viendo el agua
+        manGroup.rotation.y = Math.PI / 4; 
+        scene.add(manGroup);
+
+        // 6. Controles First Person
+        let isLocked = false;
+        const instructions = document.getElementById('instructions');
+
+        document.body.addEventListener('click', () => {
+            if (!isLocked) document.body.requestPointerLock();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = document.pointerLockElement === document.body;
+            instructions.style.display = isLocked ? 'none' : 'block';
+        });
+
+        let pitch = 0, yaw = 0;
+        document.addEventListener('mousemove', (e) => {
+            if (isLocked) {
+                yaw -= e.movementX * 0.002;
+                pitch -= e.movementY * 0.002;
+                pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+                camera.rotation.set(pitch, yaw, 0, 'YXZ');
+            }
+        });
+
+        const keys = { w: false, a: false, s: false, d: false };
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false;
+        });
+
+        // 7. Evento de cierre a los 60 segundos
+        setTimeout(() => {
+            const endScreen = document.getElementById('end-screen');
+            endScreen.style.display = 'flex';
+            document.exitPointerLock();
+            
+            setTimeout(() => {
+                window.close();
+                document.body.innerHTML = '<div style="background:#050505;height:100vh;width:100vw;color:#aaaaaa;display:flex;justify-content:center;align-items:center;font-size:5rem;font-family:monospace;text-align:center;font-style:italic;">¿Si le viste?</div>';
+            }, 2000);
+        }, 60000);
+
+        // 8. Bucle de Renderizado y Animación
+        const speed = 0.1;
+        const direction = new THREE.Vector3();
+        const right = new THREE.Vector3();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Efecto sutil en el río (movimiento hacia adelante)
+            river.position.z += 0.05;
+            if (river.position.z > -40) river.position.z = -50;
+
+            if (isLocked) {
+                camera.getWorldDirection(direction);
+                direction.y = 0; 
+                direction.normalize();
+                right.crossVectors(camera.up, direction).normalize();
+
+                if (keys.w) camera.position.addScaledVector(direction, speed);
+                if (keys.s) camera.position.addScaledVector(direction, -speed);
+                if (keys.a) camera.position.addScaledVector(right, speed);
+                if (keys.d) camera.position.addScaledVector(right, -speed);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

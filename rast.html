@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Rastro bajo la Lluvia</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas {
+            display: block;
+        }
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            text-align: center;
+            background: rgba(10, 10, 15, 0.85);
+            padding: 30px;
+            border: 1px solid #333;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #end-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000;
+            color: #8b0000; /* Rojo sangre oscuro */
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            z-index: 100;
+            letter-spacing: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="instructions">
+        <h2>HAZ CLIC PARA INVESTIGAR</h2>
+        <p>Usa W, A, S, D para caminar bajo la lluvia.</p>
+        <p>Usa el ratón para mirar el rastro.</p>
+    </div>
+
+    <div id="end-screen">
+        TENÍA 13
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 1. Escena, Niebla y Clima (Noche de lluvia oscura)
+        const scene = new THREE.Scene();
+        const fogColor = new THREE.Color(0x0a0a0c); // Gris muy oscuro, casi negro
+        scene.background = fogColor;
+        scene.fog = new THREE.FogExp2(fogColor, 0.025); // Niebla espesa
+
+        const ambientLight = new THREE.AmbientLight(0x222233, 0.8); // Luz lunar tenue
+        scene.add(ambientLight);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 10); // Posición inicial en la carretera
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Terreno (Carretera principal y concreto)
+        const groundGeo = new THREE.PlaneGeometry(300, 300);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.1 }); // Asfalto mojado
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        const roadLineGeo = new THREE.PlaneGeometry(0.5, 300);
+        const roadLineMat = new THREE.MeshBasicMaterial({ color: 0x444400 }); // Línea amarilla desgastada
+        const roadLine = new THREE.Mesh(roadLineGeo, roadLineMat);
+        roadLine.rotation.x = -Math.PI / 2;
+        roadLine.position.set(0, 0.01, 0);
+        scene.add(roadLine);
+
+        // 3. Sistema de Lluvia
+        const rainCount = 10000;
+        const rainGeo = new THREE.BufferGeometry();
+        const rainPos = new Float32Array(rainCount * 3);
+        const rainVel = [];
+
+        for(let i=0; i<rainCount; i++) {
+            rainPos[i*3] = (Math.random() - 0.5) * 100; // X
+            rainPos[i*3+1] = Math.random() * 50;        // Y (Altura)
+            rainPos[i*3+2] = (Math.random() - 0.5) * 100; // Z
+            rainVel.push(Math.random() * 0.2 + 0.5);    // Velocidad de caída
+        }
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+        const rainMat = new THREE.PointsMaterial({
+            color: 0xaaaaaa,
+            size: 0.1,
+            transparent: true,
+            opacity: 0.6
+        });
+        const rain = new THREE.Points(rainGeo, rainMat);
+        scene.add(rain);
+
+        // 4. Edificio 1: Gasolinera
+        const gasStationGroup = new THREE.Group();
+        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 });
+        
+        // Techo de la gasolinera
+        const canopyGeo = new THREE.BoxGeometry(20, 1, 15);
+        const canopy = new THREE.Mesh(canopyGeo, concreteMat);
+        canopy.position.y = 5;
+        gasStationGroup.add(canopy);
+
+        // Pilares
+        for (let x of [-8, 8]) {
+            for (let z of [-5, 5]) {
+                const pillarGeo = new THREE.BoxGeometry(0.8, 5, 0.8);
+                const pillar = new THREE.Mesh(pillarGeo, concreteMat);
+                pillar.position.set(x, 2.5, z);
+                gasStationGroup.add(pillar);
+            }
+        }
+
+        // Bombas de gasolina
+        const pumpMat = new THREE.MeshStandardMaterial({ color: 0xaa2222, roughness: 0.4 });
+        for (let x of [-4, 0, 4]) {
+            const pumpGeo = new THREE.BoxGeometry(1.2, 2, 0.8);
+            const pump = new THREE.Mesh(pumpGeo, pumpMat);
+            pump.position.set(x, 1, 0);
+            gasStationGroup.add(pump);
+        }
+
+        // Luces parpadeantes de la gasolinera
+        const gasLight = new THREE.PointLight(0xffffee, 2, 30);
+        gasLight.position.set(0, 4.5, 0);
+        gasStationGroup.add(gasLight);
+
+        gasStationGroup.position.set(-15, 0, -20);
+        scene.add(gasStationGroup);
+
+        // 5. Edificio 2: Tortillería (A un lado)
+        const tortilleriaGroup = new THREE.Group();
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, roughness: 1 });
+        
+        const buildingGeo = new THREE.BoxGeometry(12, 6, 10);
+        const building = new THREE.Mesh(buildingGeo, wallMat);
+        building.position.y = 3;
+        tortilleriaGroup.add(building);
+
+        // Letrero
+        function createSignTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#eeee22'; // Fondo amarillo viejo
+            ctx.fillRect(0, 0, 512, 128);
+            ctx.fillStyle = '#000000'; // Texto negro
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('TORTILLERÍA', 256, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const signGeo = new THREE.PlaneGeometry(8, 2);
+        const signMat = new THREE.MeshBasicMaterial({ map: createSignTexture() });
+        const sign = new THREE.Mesh(signGeo, signMat);
+        sign.position.set(0, 5, 5.01); // En la pared frontal
+        tortilleriaGroup.add(sign);
+
+        tortilleriaGroup.position.set(12, 0, -20); // Al otro lado de la carretera
+        scene.add(tortilleriaGroup);
+
+        // 6. Camión estacionado frente a la tortillería
+        const truckGroup = new THREE.Group();
+        const cabMat = new THREE.MeshStandardMaterial({ color: 0x111155, roughness: 0.5 }); // Cabina azul oscuro
+        const trailerMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.8 }); // Caja blanca sucia
+        
+        // Cabina
+        const cabGeo = new THREE.BoxGeometry(3, 3, 2.5);
+        const cab = new THREE.Mesh(cabGeo, cabMat);
+        cab.position.set(0, 2, 3);
+        truckGroup.add(cab);
+
+        // Caja / Tráiler
+        const trailerGeo = new THREE.BoxGeometry(3.2, 4, 8);
+        const trailer = new THREE.Mesh(trailerGeo, trailerMat);
+        trailer.position.set(0, 2.5, -2);
+        truckGroup.add(trailer);
+
+        truckGroup.position.set(12, 0, -8); // Estacionado frente a la tortillería
+        truckGroup.rotation.y = Math.PI / 8; // Ligeramente chueco
+        scene.add(truckGroup);
+
+        // 7. El Rastro Rojo y la Mancha
+        const bloodMat = new THREE.MeshBasicMaterial({ color: 0x660000, transparent: true, opacity: 0.8 });
+        
+        // Gran mancha principal frente al camión
+        const bigStainGeo = new THREE.CircleGeometry(3, 16);
+        const bigStain = new THREE.Mesh(bigStainGeo, bloodMat);
+        bigStain.rotation.x = -Math.PI / 2;
+        bigStain.position.set(10, 0.02, -2);
+        // Deformar la mancha principal para que sea irregular
+        const posAttribute = bigStain.geometry.attributes.position;
+        for (let i = 0; i < posAttribute.count; i++) {
+            if (i === 0) continue; // El centro
+            const offset = (Math.random() - 0.5) * 1.5;
+            posAttribute.setX(i, posAttribute.getX(i) + offset);
+            posAttribute.setY(i, posAttribute.getY(i) + offset);
+        }
+        scene.add(bigStain);
+
+        // Rastro sangriento hacia lo desconocido (hacia la niebla, Z negativo)
+        let currentX = 10;
+        let currentZ = -4;
+        for (let i = 0; i < 40; i++) {
+            const dropSize = Math.random() * 0.8 + 0.2;
+            const dropGeo = new THREE.CircleGeometry(dropSize, 8);
+            const drop = new THREE.Mesh(dropGeo, bloodMat);
+            drop.rotation.x = -Math.PI / 2;
+            
+            // Avanzar el rastro hacia atrás y cruzando la calle
+            currentX -= Math.random() * 0.5 + 0.2; // Se mueve a la izquierda
+            currentZ -= Math.random() * 2 + 1;     // Profundiza en la carretera
+            
+            drop.position.set(currentX, 0.02, currentZ);
+            scene.add(drop);
+        }
+
+        // 8. Controles First Person
+        let isLocked = false;
+        const instructions = document.getElementById('instructions');
+
+        document.body.addEventListener('click', () => {
+            if (!isLocked) document.body.requestPointerLock();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = document.pointerLockElement === document.body;
+            instructions.style.display = isLocked ? 'none' : 'block';
+        });
+
+        let pitch = 0, yaw = 0;
+        document.addEventListener('mousemove', (e) => {
+            if (isLocked) {
+                yaw -= e.movementX * 0.002;
+                pitch -= e.movementY * 0.002;
+                pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+                camera.rotation.set(pitch, yaw, 0, 'YXZ');
+            }
+        });
+
+        const keys = { w: false, a: false, s: false, d: false };
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false;
+        });
+
+        // 9. Evento de cierre a los 60 segundos
+        setTimeout(() => {
+            const endScreen = document.getElementById('end-screen');
+            endScreen.style.display = 'flex';
+            document.exitPointerLock();
+            
+            setTimeout(() => {
+                window.close();
+                // Por si el navegador bloquea el cierre automático:
+                document.body.innerHTML = '<div style="background:#000;height:100vh;width:100vw;color:#8b0000;display:flex;justify-content:center;align-items:center;font-size:5rem;font-family:monospace;text-align:center;font-weight:bold;letter-spacing:5px;">SÍGUELO</div>';
+            }, 2000);
+        }, 60000);
+
+        // 10. Bucle de Renderizado y Animaciones
+        const speed = 0.12;
+        const direction = new THREE.Vector3();
+        const right = new THREE.Vector3();
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Animar la lluvia cayendo
+            const positions = rainGeo.attributes.position.array;
+            for(let i = 0; i < rainCount; i++) {
+                positions[i*3+1] -= rainVel[i]; // Bajar Y
+                if (positions[i*3+1] < 0) {     // Si toca el suelo, reiniciar arriba
+                    positions[i*3+1] = 50;
+                }
+            }
+            rainGeo.attributes.position.needsUpdate = true;
+
+            // Parpadeo sutil de la luz de la gasolinera
+            const time = clock.getElapsedTime();
+            if (Math.random() > 0.95) {
+                gasLight.intensity = Math.random() * 2 + 1;
+            }
+
+            // Movimiento del jugador
+            if (isLocked) {
+                camera.getWorldDirection(direction);
+                direction.y = 0; 
+                direction.normalize();
+                right.crossVectors(camera.up, direction).normalize();
+
+                if (keys.w) camera.position.addScaledVector(direction, speed);
+                if (keys.s) camera.position.addScaledVector(direction, -speed);
+                if (keys.a) camera.position.addScaledVector(right, speed);
+                if (keys.d) camera.position.addScaledVector(right, -speed);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
