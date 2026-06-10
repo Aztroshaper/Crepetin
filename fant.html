@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Terraza Oculta</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #020202;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas {
+            display: block;
+        }
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #8b0000;
+            text-align: center;
+            background: rgba(5, 5, 5, 0.9);
+            padding: 30px;
+            border: 1px solid #4a0000;
+            pointer-events: none;
+            z-index: 10;
+            letter-spacing: 2px;
+        }
+        #end-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000;
+            color: #8b0000;
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            z-index: 100;
+            letter-spacing: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="instructions">
+        <h2>NO DEBERÍAS MIRAR</h2>
+        <p>Usa W, A, S, D para moverte en la oscuridad.</p>
+        <p>Usa el ratón para observar la silueta.</p>
+    </div>
+
+    <div id="end-screen">
+        SÍGUELO
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 1. Escena, Niebla e Iluminación Siniestra
+        const scene = new THREE.Scene();
+        const fogColor = new THREE.Color(0x050806); // Niebla verdosa/negra muy densa
+        scene.background = fogColor;
+        scene.fog = new THREE.FogExp2(fogColor, 0.04); 
+
+        // Luz ambiental debilísima (Luna oculta)
+        const ambientLight = new THREE.AmbientLight(0x0a110d, 0.5); 
+        scene.add(ambientLight);
+        
+        // Luz direccional azulada muy tenue desde atrás
+        const moonLight = new THREE.DirectionalLight(0x1a2a3a, 0.4);
+        moonLight.position.set(-10, 20, -10);
+        scene.add(moonLight);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 25); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Generación de Texturas Desgastadas Nocturnas
+        function createDarkTexture(color, size = 512, pattern = null) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, size, size);
+            
+            if (pattern === 'terracota') {
+                ctx.strokeStyle = '#2d1111'; // Suciedad oscura
+                ctx.lineWidth = 1;
+                for (let x = 0; x < size; x += 15) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+                }
+                for (let y = 0; y < size; y += 15) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+                }
+            } else if (pattern === 'ocre-sucio') {
+                ctx.fillStyle = '#4a3f1a'; // Ocre podrido/oscuro
+                ctx.fillRect(0, 0, size, size);
+                for (let i = 0; i < 2000; i++) {
+                    ctx.fillStyle = Math.random() > 0.5 ? '#2d2610' : '#574a1e';
+                    ctx.fillRect(Math.random() * size, Math.random() * size, 3, 3);
+                }
+            } else if (pattern === 'ladrillo-oscuro') {
+                ctx.fillStyle = '#3a1a1a';
+                ctx.fillRect(0, 0, size, size);
+                ctx.strokeStyle = '#1a1a1a';
+                for (let y = 0; y < size; y += 12) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+                }
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const sueloTex = createDarkTexture('#3a1818', 512, 'terracota');
+        const fachadaTex = createDarkTexture('#4a3f1a', 512, 'ocre-sucio');
+        const ladrilloTex = createDarkTexture('#3a1a1a', 512, 'ladrillo-oscuro');
+        
+        sueloTex.wrapS = THREE.RepeatWrapping; sueloTex.wrapT = THREE.RepeatWrapping;
+        sueloTex.repeat.set(15, 15);
+
+        // 3. Suelo y Paredes de la Terraza
+        const groundGeo = new THREE.PlaneGeometry(100, 100);
+        const groundMat = new THREE.MeshStandardMaterial({ map: sueloTex, roughness: 0.6 }); // Refleja un poco la luz flotante
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Muro bajo frontal
+        const frontWallGeo = new THREE.BoxGeometry(100, 1.5, 1);
+        const frontWallMat = new THREE.MeshStandardMaterial({ map: sueloTex, roughness: 0.8 });
+        const frontWall = new THREE.Mesh(frontWallGeo, frontWallMat);
+        frontWall.position.set(0, 0.75, 49.5);
+        scene.add(frontWall);
+
+        // Muro lateral izquierdo (Piedra podrida)
+        const leftWallGeo = new THREE.BoxGeometry(1, 12, 100);
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 1 });
+        const leftWall = new THREE.Mesh(leftWallGeo, stoneMat);
+        leftWall.position.set(-49.5, 6, 0);
+        scene.add(leftWall);
+
+        // 4. Edificio Principal (Casa La Morelos - Versión Abandonada)
+        const mainBuildingGroup = new THREE.Group();
+        const facadeMat = new THREE.MeshStandardMaterial({ map: fachadaTex, roughness: 1 });
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0x2d1111, roughness: 0.9 });
+
+        const buildingBodyGeo = new THREE.BoxGeometry(40, 6, 10);
+        const buildingBody = new THREE.Mesh(buildingBodyGeo, facadeMat);
+        buildingBody.position.y = 3;
+        mainBuildingGroup.add(buildingBody);
+
+        // Arcos y ventanas tapiadas
+        for (let i = 0; i < 5; i++) {
+            const x = (i - 2) * 8;
+            
+            // Fachada con arco
+            const archShape = new THREE.Shape();
+            const archWidth = 4; const archHeight = 3.5;
+            archShape.moveTo(-archWidth/2, 0); archShape.lineTo(archWidth/2, 0);
+            archShape.lineTo(archWidth/2, archHeight-1); archShape.absarc(0, archHeight-1, archWidth/2, 0, Math.PI, false); archShape.lineTo(-archWidth/2, archHeight-1);
+            archShape.lineTo(-archWidth/2, 0);
+            const archGeometry = new THREE.ExtrudeGeometry(archShape, { depth: 0.1, bevelEnabled: false });
+            const archFacade = new THREE.Mesh(archGeometry, facadeMat);
+            archFacade.position.set(x, 0, 5.01);
+            mainBuildingGroup.add(archFacade);
+
+            // Moldura de arco oscura
+            const brickArchShape = new THREE.Shape();
+            brickArchShape.moveTo(-archWidth/2 - 0.2, -0.2); brickArchShape.lineTo(archWidth/2 + 0.2, -0.2);
+            brickArchShape.lineTo(archWidth/2 + 0.2, archHeight-1 - 0.1); brickArchShape.absarc(0, archHeight-1 - 0.1, archWidth/2 + 0.2, 0, Math.PI, false); brickArchShape.lineTo(-archWidth/2 - 0.2, archHeight-1 - 0.1);
+            brickArchShape.lineTo(-archWidth/2 - 0.2, -0.2);
+            const brickArchGeometry = new THREE.ExtrudeGeometry(brickArchShape, { depth: 0.15, bevelEnabled: false });
+            const brickArch = new THREE.Mesh(brickArchGeometry, new THREE.MeshStandardMaterial({ map: ladrilloTex }));
+            brickArch.position.set(x, 0, 5.1);
+            mainBuildingGroup.add(brickArch);
+
+            // Huecos negros tras las ventanas/puertas
+            const darkInteriorGeo = new THREE.PlaneGeometry(3.5, 3.2);
+            const darkInteriorMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const darkInterior = new THREE.Mesh(darkInteriorGeo, darkInteriorMat);
+            darkInterior.position.set(x, 1.6, 5);
+            mainBuildingGroup.add(darkInterior);
+        }
+
+        // Estructura superior y crestas rotas
+        const centralRoofGeo = new THREE.BoxGeometry(40, 1, 10);
+        const centralRoof = new THREE.Mesh(centralRoofGeo, roofMat);
+        centralRoof.position.y = 6.5;
+        mainBuildingGroup.add(centralRoof);
+
+        const crestGroup = new THREE.Group();
+        const festoonMat = new THREE.MeshStandardMaterial({ color: 0x230c0c, roughness: 1 });
+        const crestCylinderGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.2);
+
+        for (let i = 0; i < 4; i++) {
+            const x = (i - 1.5) * 8;
+            // Parapeto dañado
+            const festoonShape = new THREE.Shape();
+            festoonShape.moveTo(-4, 0); festoonShape.lineTo(4, 0);
+            for (let j = 0; j < 5; j++) {
+                festoonShape.absarc(-4 + (j + 0.5) * 1.6, 0, 0.7, Math.PI, 0, true);
+            }
+            festoonShape.lineTo(4, 0.6); festoonShape.lineTo(-4, 0.6); festoonShape.lineTo(-4, 0);
+            const festoon = new THREE.Mesh(new THREE.ExtrudeGeometry(festoonShape, { depth: 0.2, bevelEnabled: false }), festoonMat);
+            festoon.position.set(x, 0, 0);
+            crestGroup.add(festoon);
+
+            // Remates picudos (en lugar de dorados, ahora son de piedra negra desgastada)
+            const spike = new THREE.Mesh(crestCylinderGeo, festoonMat);
+            spike.position.set(x, 1.2, 0);
+            crestGroup.add(spike);
+        }
+        crestGroup.position.set(0, 7, 5);
+        mainBuildingGroup.add(crestGroup);
+
+        mainBuildingGroup.position.set(0, 0, -35);
+        scene.add(mainBuildingGroup);
+
+        // 5. Edificio Alto de Ladrillo (Derecha - Apagado y masivo)
+        const tallBuildingGroup = new THREE.Group();
+        const tallBuildingMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 1 });
+        const tallBuildingRedMat = new THREE.MeshStandardMaterial({ color: 0x3a1515, roughness: 1 });
+
+        const tallBuildingBody = new THREE.Mesh(new THREE.BoxGeometry(15, 35, 20), tallBuildingMat);
+        tallBuildingBody.position.set(7.5, 15, -20);
+        tallBuildingGroup.add(tallBuildingBody);
+
+        const tallBuildingRedBody = new THREE.Mesh(new THREE.BoxGeometry(5, 35, 10), tallBuildingRedMat);
+        tallBuildingRedBody.position.set(0, 15, -15);
+        tallBuildingGroup.add(tallBuildingRedBody);
+
+        // Ventanas vacías y oscuras
+        for (let i = 0; i < 10; i++) {
+            const y = (i - 4.5) * 3 + 15;
+            for (let side of [-1, 1]) {
+                const tallWindow = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2, 0.2), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                tallWindow.position.set(side * 1.5, y, -10.1);
+                tallBuildingGroup.add(tallWindow);
+            }
+        }
+        tallBuildingGroup.position.set(27, 0, -20);
+        tallBuildingGroup.rotation.y = Math.PI / 16;
+        scene.add(tallBuildingGroup);
+
+        // 6. LA LUZ FLOTANTE (Esfera espectral con anomalía parpadeante)
+        const floatingLightGroup = new THREE.Group();
+        
+        // Esfera física pequeña de donde emana la luz
+        const lightOrbGeo = new THREE.SphereGeometry(0.15, 8, 8);
+        const lightOrbMat = new THREE.MeshBasicMaterial({ color: 0x73fff3 }); // Color cian/espectral vibrante
+        const lightOrb = new THREE.Mesh(lightOrbGeo, lightOrbMat);
+        floatingLightGroup.add(lightOrb);
+
+        // Luz puntual vinculada
+        const spookyLight = new THREE.PointLight(0x00ffcc, 4, 18); // Luz verde/azul intensa pero de corto alcance
+        floatingLightGroup.add(spookyLight);
+
+        floatingLightGroup.position.set(0, 2.5, 10); // Altura de la cabeza flotando en la terraza
+        scene.add(floatingLightGroup);
+
+        // 7. El Observador Inmóvil (Silueta en el techo)
+        const stalkerGroup = new THREE.Group();
+        const stalkerMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Sombra pura
+
+        const stalkerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.7, 8), stalkerMat);
+        stalkerBody.position.y = 0.85;
+        stalkerGroup.add(stalkerBody);
+
+        const stalkerHead = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), stalkerMat);
+        stalkerHead.position.y = 1.8;
+        stalkerGroup.add(stalkerHead);
+
+        stalkerGroup.position.set(8, 8.5, -30); // Parado en lo alto del techo festoneado, observándote
+        scene.add(stalkerGroup);
+
+        // 8. Controles First Person
+        let isLocked = false;
+        const instructions = document.getElementById('instructions');
+
+        document.body.addEventListener('click', () => {
+            if (!isLocked) document.body.requestPointerLock();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = document.pointerLockElement === document.body;
+            instructions.style.display = isLocked ? 'none' : 'block';
+        });
+
+        let pitch = 0, yaw = 0;
+        document.addEventListener('mousemove', (e) => {
+            if (isLocked) {
+                yaw -= e.movementX * 0.002;
+                pitch -= e.movementY * 0.002;
+                pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+                camera.rotation.set(pitch, yaw, 0, 'YXZ');
+            }
+        });
+
+        const keys = { w: false, a: false, s: false, d: false };
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false;
+        });
+
+        // 9. Cierre a los 60 segundos
+        setTimeout(() => {
+            const endScreen = document.getElementById('end-screen');
+            endScreen.style.display = 'flex';
+            document.exitPointerLock();
+            
+            setTimeout(() => {
+                window.close();
+                document.body.innerHTML = '<div style="background:#000;height:100vh;width:100vw;color:#8b0000;display:flex;justify-content:center;align-items:center;font-size:5rem;font-family:monospace;text-align:center;font-weight:bold;letter-spacing:5px;">SÍGUELO</div>';
+            }, 2000);
+        }, 60000);
+
+        // 10. Bucle de Renderizado y Animación de la Luz
+        const speed = 0.09; // Movimiento ligeramente más lento e incómodo
+        const direction = new THREE.Vector3();
+        const right = new THREE.Vector3();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now() * 0.001;
+
+            // Animación de la luz flotante (moviéndose en círculos erráticos e inclinándose)
+            floatingLightGroup.position.x = Math.sin(time * 0.8) * 15 + Math.cos(time * 0.3) * 5;
+            floatingLightGroup.position.z = Math.cos(time * 0.6) * 12 + 10;
+            floatingLightGroup.position.y = 2.2 + Math.sin(time * 2.5) * 0.4; // Flota arriba y abajo rápido
+
+            // Parpadeo de intensidad de la luz flotante (Inestable)
+            if (Math.random() > 0.85) {
+                spookyLight.intensity = Math.random() * 5 + 1;
+            }
+
+            // Movimiento del usuario
+            if (isLocked) {
+                camera.getWorldDirection(direction);
+                direction.y = 0; 
+                direction.normalize();
+                right.crossVectors(camera.up, direction).normalize();
+
+                if (keys.w) camera.position.addScaledVector(direction, speed);
+                if (keys.s) camera.position.addScaledVector(direction, -speed);
+                if (keys.a) camera.position.addScaledVector(right, speed);
+                if (keys.d) camera.position.addScaledVector(right, -speed);
+                
+                // Límites de la terraza para no caer al vacío
+                camera.position.x = Math.max(-45, Math.min(45, camera.position.x));
+                camera.position.z = Math.max(-25, Math.min(45, camera.position.z));
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
