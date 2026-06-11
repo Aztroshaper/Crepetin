@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Velas</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+        
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 1);
+            z-index: 10;
+        }
+        
+        #btn-entrar {
+            padding: 20px 40px;
+            font-size: 28px;
+            color: #00ff44; /* Verde fantasmal para combinar con las velas */
+            background-color: transparent;
+            border: 2px solid #00ff44;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px #00ff44;
+            transition: all 0.3s;
+            font-family: inherit;
+            letter-spacing: 2px;
+        }
+        
+        #btn-entrar:hover {
+            background-color: #00ff44;
+            color: black;
+            box-shadow: 0 0 30px #00ff44;
+        }
+
+        #texto-instruccion {
+            position: absolute;
+            top: 30px;
+            width: 100vw;
+            text-align: center;
+            color: #ffffff;
+            font-size: 20px;
+            letter-spacing: 3px;
+            opacity: 0; 
+            z-index: 5;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            animation: parpadeo 3s infinite alternate;
+        }
+
+        @keyframes parpadeo {
+            0% { opacity: 0.2; }
+            100% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <button id="btn-entrar">¿Entrar al pasillo?</button>
+    </div>
+
+    <div id="texto-instruccion">Avanza hacia la luz...</div>
+
+    <!-- Audios actualizados -->
+    <audio id="musicaFondo" loop>
+        <source src="vel.wav" type="audio/wav">
+    </audio>
+    <audio id="sonidoPasos" loop>
+        <source src="vela.wav" type="audio/wav">
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    
+    <script>
+        // 1. ESCENA Y NIEBLA TÉTRICA
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020a02, 0.05); // Niebla con un tono verde muy oscuro
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. CREACIÓN DEL PASILLO DE MADERA
+        // Dimensiones más grandes para simular un pasillo donde se camina de pie
+        const hallGeometry = new THREE.BoxGeometry(7, 6, 60); 
+        const hallMaterial = new THREE.MeshPhongMaterial({
+            color: 0x2b1704, // Color café muy oscuro (madera vieja)
+            side: THREE.BackSide,
+            shininess: 5, // Poca luz reflejada, como madera desgastada
+            roughness: 1
+        });
+        const pasillo = new THREE.Mesh(hallGeometry, hallMaterial);
+        scene.add(pasillo);
+
+        // 3. VELAS DE LLAMAS VERDES
+        const lucesVelas = []; // Guardamos las luces para hacerlas parpadear
+        const velaGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.3);
+        const velaMaterial = new THREE.MeshBasicMaterial({ color: 0xdddddd });
+
+        // Colocamos velas a lo largo del pasillo en ambos lados
+        for (let z = 25; z > -28; z -= 4) {
+            // Vela izquierda
+            let velaIzq = new THREE.Mesh(velaGeometry, velaMaterial);
+            velaIzq.position.set(-3.2, -2.85, z); // En el suelo, pegada a la pared
+            scene.add(velaIzq);
+            
+            let luzVerdeIzq = new THREE.PointLight(0x00ff00, 1, 8); // Luz verde
+            luzVerdeIzq.position.set(-3.2, -2.6, z);
+            scene.add(luzVerdeIzq);
+            lucesVelas.push(luzVerdeIzq);
+
+            // Vela derecha
+            let velaDer = new THREE.Mesh(velaGeometry, velaMaterial);
+            velaDer.position.set(3.2, -2.85, z);
+            scene.add(velaDer);
+            
+            let luzVerdeDer = new THREE.PointLight(0x00ff00, 1, 8); // Luz verde
+            luzVerdeDer.position.set(3.2, -2.6, z);
+            scene.add(luzVerdeDer);
+            lucesVelas.push(luzVerdeDer);
+        }
+
+        // 4. LUZ FINAL Y SALIDA
+        const luzFinal = new THREE.PointLight(0xffffff, 2, 20);
+        luzFinal.position.set(0, 0, -29);
+        scene.add(luzFinal);
+
+        const geometrySalida = new THREE.PlaneGeometry(7, 6);
+        const materialSalida = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+        const salida = new THREE.Mesh(geometrySalida, materialSalida);
+        salida.position.set(0, 0, -29.9);
+        scene.add(salida);
+
+        // 5. CONTROLES Y CÁMARA
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+        
+        // Posición a la altura de los ojos (el suelo está en -3, la cámara en 0)
+        controls.getObject().position.set(0, 0, 28);
+
+        // 6. VARIABLES
+        let moviendose = false;
+        const velocidad = 0.07; 
+        let tiempoPasos = 0;
+
+        const btnEntrar = document.getElementById('btn-entrar');
+        const uiContainer = document.getElementById('ui-container');
+        const textoInstruccion = document.getElementById('texto-instruccion');
+        const musicaFondo = document.getElementById('musicaFondo');
+        const sonidoPasos = document.getElementById('sonidoPasos');
+
+        musicaFondo.volume = 0.5;
+        sonidoPasos.volume = 0.9;
+
+        // 7. EVENTOS
+        btnEntrar.addEventListener('click', () => {
+            uiContainer.style.display = 'none'; 
+            textoInstruccion.style.display = 'block'; 
+            
+            controls.lock();
+
+            let playMusica = musicaFondo.play();
+            if (playMusica !== undefined) {
+                playMusica.catch(e => console.warn("Esperando audio vel.wav..."));
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') {
+                moviendose = true;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') {
+                moviendose = false;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // 8. BUCLE DE ANIMACIÓN
+        function iniciarJuego() {
+            requestAnimationFrame(iniciarJuego);
+
+            // Efecto de parpadeo de las velas (flame flicker)
+            lucesVelas.forEach(luz => {
+                // Modifica aleatoriamente la intensidad de la luz para que parezca fuego real
+                luz.intensity = 0.8 + Math.random() * 0.4;
+            });
+
+            if (controls.isLocked === true) {
+                if (moviendose) {
+                    controls.getObject().position.z -= velocidad;
+                    
+                    tiempoPasos += 0.18;
+                    
+                    // Efecto de caminar (balanceo suave y rebote)
+                    const caminarY = Math.abs(Math.sin(tiempoPasos)) * 0.08;
+                    const caminarX = Math.cos(tiempoPasos * 0.5) * 0.05;
+                    
+                    // Efecto Shake (temblor nervioso de la cámara)
+                    const shakeY = (Math.random() - 0.5) * 0.015;
+                    const shakeX = (Math.random() - 0.5) * 0.015;
+
+                    controls.getObject().position.y = 0 + caminarY + shakeY;
+                    controls.getObject().position.x = caminarX + shakeX;
+
+                    if (sonidoPasos.paused) {
+                        let playPasos = sonidoPasos.play();
+                        if (playPasos !== undefined) {
+                            playPasos.catch(e => console.warn("Esperando vela.wav..."));
+                        }
+                    }
+                } else {
+                    // Estabilizar cámara suavemente al detenerse
+                    controls.getObject().position.y = 0;
+                    controls.getObject().position.x = 0;
+                    
+                    if (!sonidoPasos.paused) {
+                        sonidoPasos.pause();
+                    }
+                }
+            }
+
+            // Transición a la Ouija al llegar a la luz
+            if (controls.getObject().position.z <= -28) {
+                window.location.href = 'ouija.html'; 
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        iniciarJuego();
+    </script>
+</body>
+</html>
