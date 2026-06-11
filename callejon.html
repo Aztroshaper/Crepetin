@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Callejón - CAN</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050508; /* Cielo oscuro de tormenta */
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+        
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(5, 5, 8, 1);
+            z-index: 10;
+        }
+        
+        #btn-entrar {
+            padding: 20px 40px;
+            font-size: 28px;
+            color: #8fa3b0; /* Azul grisáceo pálido */
+            background-color: transparent;
+            border: 2px solid #8fa3b0;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(143, 163, 176, 0.5);
+            transition: all 0.3s;
+            font-family: inherit;
+            letter-spacing: 2px;
+        }
+        
+        #btn-entrar:hover {
+            background-color: #8fa3b0;
+            color: black;
+            box-shadow: 0 0 30px #8fa3b0;
+        }
+
+        #texto-instruccion {
+            position: absolute;
+            top: 30px;
+            width: 100vw;
+            text-align: center;
+            color: #ffffff;
+            font-size: 20px;
+            letter-spacing: 3px;
+            opacity: 0; 
+            z-index: 5;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: parpadeo 3s infinite alternate;
+        }
+
+        @keyframes parpadeo {
+            0% { opacity: 0.2; }
+            100% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <button id="btn-entrar">¿Entrar al callejón?</button>
+    </div>
+
+    <div id="texto-instruccion">camina bajo la lluvia...</div>
+
+    <!-- Audios -->
+    <!-- Lluvia ambiental de fondo -->
+    <audio id="musicaFondo" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_3d1a3ebdd3.mp3?filename=rain-and-thunder-16705.mp3" type="audio/mpeg">
+    </audio>
+    <!-- Tus pisadas de agua -->
+    <audio id="sonidoPasos" loop>
+        <source src="agua.wav" type="audio/wav">
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    
+    <script>
+        // 1. ESCENA, CIELO NUBLADO Y NIEBLA
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050508); // Noche cerrada sin techo
+        scene.fog = new THREE.FogExp2(0x0a0a10, 0.06); // Niebla densa por la lluvia
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. CONSTRUCCIÓN DEL CALLEJÓN
+        // Suelo (Cemento húmedo que brilla un poco)
+        const sueloGeo = new THREE.PlaneGeometry(10, 60);
+        const sueloMat = new THREE.MeshPhongMaterial({ 
+            color: 0x222222, 
+            shininess: 80 // Hace que parezca mojado
+        });
+        const suelo = new THREE.Mesh(sueloGeo, sueloMat);
+        suelo.rotation.x = -Math.PI / 2;
+        suelo.position.y = -3;
+        scene.add(suelo);
+
+        // Paredes (Color ladrillo oscuro)
+        const paredGeo = new THREE.PlaneGeometry(60, 20);
+        const paredMat = new THREE.MeshStandardMaterial({ color: 0x3d231b, roughness: 0.9 });
+        
+        const paredIzq = new THREE.Mesh(paredGeo, paredMat);
+        paredIzq.position.set(-4, 2, 0);
+        paredIzq.rotation.y = Math.PI / 2;
+        scene.add(paredIzq);
+
+        const paredDer = new THREE.Mesh(paredGeo, paredMat);
+        paredDer.position.set(4, 2, 0);
+        paredDer.rotation.y = -Math.PI / 2;
+        scene.add(paredDer);
+
+        // 3. OBJETOS DEL CALLEJÓN (Generación Aleatoria)
+        for (let z = 20; z > -25; z -= 3) {
+            
+            // BOTES DE BASURA (Metálicos)
+            if (Math.random() > 0.7) {
+                const bote = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.4, 0.3, 1.2, 16), 
+                    new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.5 })
+                );
+                const ladoX = Math.random() > 0.5 ? -3.3 : 3.3;
+                bote.position.set(ladoX, -2.4, z + Math.random());
+                scene.add(bote);
+            }
+
+            // BOLSAS DE BASURA (Bultos irregulares oscuros)
+            if (Math.random() > 0.6) {
+                const bolsa = new THREE.Mesh(
+                    new THREE.DodecahedronGeometry(0.4, 1), 
+                    new THREE.MeshStandardMaterial({ color: 0x111611, roughness: 0.4 })
+                );
+                const ladoX = Math.random() > 0.5 ? -3.0 : 3.0;
+                bolsa.position.set(ladoX, -2.7, z + Math.random() * 2);
+                bolsa.scale.set(1, 0.7, 1); // Aplastadas en el suelo
+                scene.add(bolsa);
+            }
+
+            // MANCHAS ROJAS RARAS (En el suelo)
+            if (Math.random() > 0.75) {
+                const mancha = new THREE.Mesh(
+                    new THREE.PlaneGeometry(Math.random() * 2 + 1, Math.random() * 2 + 1),
+                    new THREE.MeshBasicMaterial({ color: 0x4a0000, transparent: true, opacity: 0.8 })
+                );
+                mancha.rotation.x = -Math.PI / 2;
+                mancha.rotation.z = Math.random() * Math.PI; // Rotación al azar
+                mancha.position.set((Math.random() - 0.5) * 5, -2.99, z); // Apenas por encima del suelo
+                scene.add(mancha);
+            }
+
+            // ESCALERAS DE TUBO (En las paredes)
+            if (z % 12 === 0) {
+                const ladoX = Math.random() > 0.5 ? -3.9 : 3.9; // Pegadas a izq o der
+                const materialTubo = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
+                
+                // Tubos verticales
+                const tuboVert1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 10), materialTubo);
+                tuboVert1.position.set(ladoX, 2, z - 0.4);
+                scene.add(tuboVert1);
+                
+                const tuboVert2 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 10), materialTubo);
+                tuboVert2.position.set(ladoX, 2, z + 0.4);
+                scene.add(tuboVert2);
+
+                // Peldaños horizontales
+                for (let y = -2; y < 7; y += 0.8) {
+                    const peldaño = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8), materialTubo);
+                    peldaño.rotation.x = Math.PI / 2;
+                    peldaño.position.set(ladoX, y, z);
+                    scene.add(peldaño);
+                }
+            }
+        }
+
+        // 4. SISTEMA DE LLUVIA
+        const cantidadGotas = 3000;
+        const lluviaGeo = new THREE.BufferGeometry();
+        const lluviaPos = new Float32Array(cantidadGotas * 3);
+        const lluviaVel = [];
+
+        for(let i = 0; i < cantidadGotas; i++) {
+            lluviaPos[i*3] = (Math.random() - 0.5) * 15;     // Ancho (X)
+            lluviaPos[i*3+1] = Math.random() * 20 - 3;       // Altura (Y)
+            lluviaPos[i*3+2] = (Math.random() - 0.5) * 60;   // Profundidad (Z)
+            lluviaVel.push(0.3 + Math.random() * 0.2);       // Velocidad de caída
+        }
+
+        lluviaGeo.setAttribute('position', new THREE.BufferAttribute(lluviaPos, 3));
+        const lluviaMat = new THREE.PointsMaterial({
+            color: 0xaaaaaa, 
+            size: 0.05, 
+            transparent: true, 
+            opacity: 0.6
+        });
+        const lluvia = new THREE.Points(lluviaGeo, lluviaMat);
+        scene.add(lluvia);
+
+        // 5. LUCES
+        const linterna = new THREE.PointLight(0xaaccff, 0.8, 15); // Linterna tono azul/frío
+        scene.add(linterna);
+
+        // Luz tenue general de ciudad nublada
+        const luzAmbiente = new THREE.AmbientLight(0x101015, 1);
+        scene.add(luzAmbiente);
+
+        const luzFinal = new THREE.PointLight(0xffffff, 2, 20);
+        luzFinal.position.set(0, 0, -29);
+        scene.add(luzFinal);
+
+        const geometrySalida = new THREE.PlaneGeometry(8, 10);
+        const materialSalida = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+        const salida = new THREE.Mesh(geometrySalida, materialSalida);
+        salida.position.set(0, -1, -29.9);
+        scene.add(salida);
+
+        // 6. CONTROLES Y CÁMARA
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+        controls.getObject().position.set(0, -1, 28); // Altura de la persona
+
+        // 7. VARIABLES Y EVENTOS
+        let moviendose = false;
+        const velocidad = 0.08; 
+        let tiempoPasos = 0;
+
+        const btnEntrar = document.getElementById('btn-entrar');
+        const uiContainer = document.getElementById('ui-container');
+        const textoInstruccion = document.getElementById('texto-instruccion');
+        const musicaFondo = document.getElementById('musicaFondo');
+        const sonidoPasos = document.getElementById('sonidoPasos');
+
+        musicaFondo.volume = 0.6;
+        sonidoPasos.volume = 0.9;
+
+        btnEntrar.addEventListener('click', () => {
+            uiContainer.style.display = 'none'; 
+            textoInstruccion.style.display = 'block'; 
+            
+            controls.lock();
+
+            let playLluvia = musicaFondo.play();
+            if (playLluvia !== undefined) {
+                playLluvia.catch(e => console.warn("Cargando ambiente..."));
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') {
+                moviendose = true;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') {
+                moviendose = false;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // 8. BUCLE DE ANIMACIÓN
+        function iniciarJuego() {
+            requestAnimationFrame(iniciarJuego);
+
+            // Animar caída de la lluvia
+            const posicionesGotas = lluvia.geometry.attributes.position.array;
+            for(let i = 0; i < cantidadGotas; i++) {
+                posicionesGotas[i*3+1] -= lluviaVel[i]; // Bajar en el eje Y
+                // Si choca con el suelo (-3), vuelve arriba al cielo
+                if(posicionesGotas[i*3+1] < -3) {
+                    posicionesGotas[i*3+1] = 15;
+                }
+            }
+            lluvia.geometry.attributes.position.needsUpdate = true;
+
+            if (controls.isLocked === true) {
+                if (moviendose) {
+                    controls.getObject().position.z -= velocidad;
+                    
+                    tiempoPasos += 0.2;
+                    
+                    // Pisadas de agua (movimiento de cámara y shake)
+                    const caminarY = Math.abs(Math.sin(tiempoPasos)) * 0.1;
+                    const caminarX = Math.cos(tiempoPasos * 0.5) * 0.05;
+                    const shakeY = (Math.random() - 0.5) * 0.015;
+
+                    controls.getObject().position.y = -1 + caminarY + shakeY;
+                    controls.getObject().position.x = caminarX;
+
+                    if (sonidoPasos.paused) {
+                        let playPasos = sonidoPasos.play();
+                        if (playPasos !== undefined) {
+                            playPasos.catch(e => console.warn("Esperando agua.wav..."));
+                        }
+                    }
+                } else {
+                    controls.getObject().position.y = -1;
+                    controls.getObject().position.x = 0;
+                    
+                    if (!sonidoPasos.paused) {
+                        sonidoPasos.pause();
+                    }
+                }
+            }
+
+            // La linterna te sigue
+            linterna.position.copy(controls.getObject().position);
+
+            // Redirección al llegar al final
+            if (controls.getObject().position.z <= -28) {
+                window.location.href = 'libro.html'; 
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        iniciarJuego();
+    </script>
+</body>
+</html>
