@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ouija</title>
+<style>
+/* FUENTE Y BASE LIMINAL VHS */
+body{
+  margin:0;
+  background:#020202;
+  color:#a3a89e;
+  font-family:'Courier New', monospace;
+  overflow:hidden;
+  position:relative;
+  text-shadow: 0 0 2px rgba(0,255,100,0.1);
+  height: 100vh;
+}
+
+/* FILTRO CRT / ENTRALAZADO ANALÓGICO OPTIMIZADO PARA LEGIBILIDAD */
+body:before {
+  content:"";
+  position:fixed;
+  inset:0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35) 2px, transparent 3px, transparent 6px);
+  pointer-events:none; 
+  z-index:99;
+}
+body:after {
+  content:"";
+  position:fixed;
+  inset:0;
+  background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.85) 100%), rgba(18,16,16,0.15);
+  opacity:1;
+  pointer-events:none; 
+  animation: vhs-flicker 0.2s infinite;
+  z-index:98;
+}
+
+@keyframes vhs-flicker {
+  0% { opacity: 0.12; } 30% { opacity: 0.18; } 70% { opacity: 0.10; } 100% { opacity: 0.15; }
+}
+
+/* ANIMACIÓN DE IMPACTO CRT FÓSFORO EXTREMO */
+@keyframes popEffect {
+  0% { 
+    transform: scale(1) translateZ(0px); 
+    box-shadow: 0 8px 0 #050604, 0 15px 25px rgba(0,0,0,0.9);
+  }
+  30% { 
+    transform: scale(0.90) translateZ(-20px); 
+    background:#1f3d29; 
+    border-color:#5effad; 
+    box-shadow: 0 2px 0 #050604, 0 0 40px rgba(94, 255, 173, 0.8);
+  }
+  100% { 
+    transform: scale(1.02) translateZ(10px);
+    background:#182b1f; 
+    border-color:#3dfca2; 
+    box-shadow: 0 8px 0 #090e0b, 0 0 25px rgba(61, 252, 162, 0.5);
+  }
+}
+
+/* BRILLO CONSTANTE QUE SUBE Y BAJA EN LAS LETRAS */
+@keyframes pulseGlow {
+  0% {
+    color: #9cb08d;
+    text-shadow: 0 0 4px rgba(156, 176, 141, 0.4);
+  }
+  100% {
+    color: #ffffff;
+    text-shadow: 0 0 16px rgba(166, 255, 210, 0.9);
+  }
+}
+
+.wrap {
+  display:flex;
+  height:100vh;
+  padding:30px;
+  gap:30px;
+  box-sizing:border-box;
+  perspective: 1600px;
+}
+
+/* PANEL LATERAL DE TEXTO */
+.panel {
+  width:300px;
+  padding:25px;
+  overflow:auto;
+  border:2px solid #20241c;
+  background: linear-gradient(180deg, #050605 0%, #0a0c09 100%);
+  box-shadow: inset 0 0 30px rgba(0,0,0,1), 0 15px 35px rgba(0,0,0,0.9);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* DIÁLOGO ESTILO RPG EN LA PARTE CENTRAL SUPERIOR */
+.rpg-dialog {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateZ(50px);
+  width: 550px;
+  background: #080a07;
+  border: 3px double #3e4736;
+  border-radius: 4px;
+  padding: 15px 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.95), inset 0 0 15px rgba(0,0,0,0.8);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  font-family: 'Courier New', monospace;
+}
+.rpg-dialog.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateZ(100px);
+}
+.rpg-title {
+  color: #3dfca2;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+.rpg-text {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/* VELAS ANIMADAS A LOS COSTADOS */
+.candle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 60px;
+  height: 100%;
+  padding-bottom: 40px;
+  box-sizing: border-box;
+}
+.candle {
+  width: 24px;
+  height: 140px;
+  background: linear-gradient(90deg, #161c13 0%, #252f20 50%, #0b0e09 100%);
+  border: 2px solid #323a2b;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+}
+.candle-wick {
+  width: 2px;
+  height: 12px;
+  background: #111;
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.candle-flame {
+  width: 16px;
+  height: 35px;
+  background: radial-gradient(ellipse at bottom, #ffffff 0%, #5effad 30%, rgba(33,70,44,0.8) 70%, transparent 100%);
+  border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+  position: absolute;
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  filter: blur(1px);
+  animation: flame-burn 0.15s infinite alternate;
+  box-shadow: 0 0 20px rgba(94, 255, 173, 0.6);
+}
+@keyframes flame-burn {
+  0% { transform: translateX(-50%) scaleX(0.9) rotate(-1deg); }
+  100% { transform: translateX(-50%) scaleX(1.1) rotate(1deg) brightness(1.2); }
+}
+
+/* TABLERO OUIJA HIPER-3D PROFUNDO */
+.board {
+  flex:1;
+  padding:20px 40px;
+  position:relative;
+  transform-style: preserve-3d;
+  transform: rotateX(15deg) rotateY(-4deg) translateZ(0px);
+  background: radial-gradient(circle at center, #151a12 0%, #050605 100%);
+  border: 4px double #373e31;
+  border-radius: 16px;
+  box-sizing: border-box;
+  box-shadow: 
+    -20px 25px 50px rgba(0,0,0,0.95),
+    inset 0 0 60px rgba(0,0,0,0.95),
+    -10px 24px 0px #090b08;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.board:hover {
+  transform: rotateX(12deg) rotateY(-2deg) translateZ(10px);
+}
+
+#close {
+  position:fixed;
+  right:20px;
+  top:20px;
+  width:42px;
+  height:42px;
+  background:#2b0808;
+  color:#b83232;
+  border:2px solid #6e2020;
+  cursor:pointer;
+  z-index:100;
+  font-weight:bold;
+  font-family: monospace;
+  text-shadow:0 0 8px red;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.8);
+  transition: 0.2s;
+  border-radius: 6px;
+}
+#close:hover { background:#5c0f0f; color:#ff6666; box-shadow: 0 0 20px #ff0000; transform: scale(1.05); }
+
+/* FILA CELESTIAL SUPERIOR */
+.top-board-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  transform-style: preserve-3d;
+  transform: translateZ(10px);
+}
+.top-meta-btn {
+  font-size: 22px;
+  font-weight: 900;
+  background: #040504;
+  border: 2px solid #3d4736;
+  padding: 10px 24px;
+  border-radius: 6px;
+  box-shadow: 0 6px 0 #020302;
+  animation: pulseGlow 2.5s infinite alternate ease-in-out;
+  letter-spacing: 2px;
+}
+.celestial-svg {
+  width: 55px;
+  height: 55px;
+  fill: none;
+  stroke: #9cb394;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px rgba(156,179,148,0.4));
+}
+
+/* GRID BRUTALISTA CON PERSPECTIVA */
+.grid {
+  display:grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+/* CELDAS MECÁNICAS DE ALTA LEGIBILIDAD */
+.cell {
+  text-align:center;
+  padding: 18px 5px;
+  background: #040504;
+  border: 2px solid #3d4736;
+  border-radius: 8px;
+  position: relative;
+  transform-style: preserve-3d;
+  box-shadow: 
+    0 6px 0 #020302, 
+    0 10px 15px rgba(0,0,0,0.9);
+  transition: transform 0.15s, background 0.3s;
+  user-select: none;
+  animation: pulseGlow 2s infinite alternate ease-in-out;
+  font-weight: 900;
+  font-size: 26px;
+}
+
+/* ACTIVACIÓN DE FÓSFORO Y BRILLO */
+.cell.active, .top-meta-btn.active, #cESTRELLA.active {
+  color: #a6ffd2 !important;
+  animation: popEffect 0.4s ease-out forwards !important;
+  text-shadow: 0 0 15px #3dfca2, 0 0 30px #00ff73 !important;
+  z-index: 10;
+}
+.top-meta-btn.active .celestial-svg, #cESTRELLA.active .celestial-svg {
+  stroke: #a6ffd2 !important;
+  filter: drop-shadow(0 0 15px #3dfca2);
+}
+
+/* EFECTO PILAR DE LUZ VOLUMÉTRICO */
+.cell::after, .top-meta-btn::after, .bottom-board-row::after {
+  content: "";
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 80%;
+  height: 0px;
+  transform: translateX(-50%) rotateX(-90deg);
+  transform-origin: bottom center;
+  background: linear-gradient(to top, rgba(61, 252, 162, 0.7) 0%, rgba(0, 255, 100, 0.12) 40%, transparent 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 50%;
+}
+.cell.active::after, .top-meta-btn.active::after, .bottom-board-row.active-pilar::after {
+  opacity: 1;
+  height: 480px;
+  animation: pilar-flicker 0.4s infinite alternate;
+}
+
+@keyframes pilar-flicker {
+  0% { filter: blur(4px) brightness(0.9); opacity: 0.6; }
+  100% { filter: blur(6px) brightness(1.3); opacity: 0.85; }
+}
+
+/* FILA INFERIOR */
+.bottom-board-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateZ(10px);
+}
+#cESTRELLA {
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+/* PLANCHETA GHOST CURSOR */
+.planchette {
+  position:absolute;
+  width: 85px;
+  height: 100px;
+  border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+  background: linear-gradient(135deg, rgba(28, 36, 25, 0.8) 0%, rgba(12, 15, 11, 0.9) 100%);
+  border: 2px solid #9bb088;
+  pointer-events:none;
+  z-index: 90;
+  box-shadow: 0 35px 45px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.08);
+  transform: translate(-50%, -50%) translateZ(25px);
+  transition: left .55s cubic-bezier(0.19, 1, 0.22, 1), top .55s cubic-bezier(0.19, 1, 0.22, 1);
+  filter: drop-shadow(0 0 10px rgba(0,0,0,0.7));
+}
+.planchette:after {
+  content:"";
+  position:absolute;
+  width: 26px;
+  height: 26px;
+  background: rgba(0, 255, 120, 0.05);
+  border: 2px dashed rgba(94, 255, 173, 0.6);
+  border-radius: 50%;
+  left: 50%;
+  top: 35%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 15px rgba(0,255,100,0.4), inset 0 0 8px rgba(0,0,0,0.9);
+}
+
+/* ACCIONES DE INTERFAZ - FIX DE CLIC Y FOCO */
+.row {
+  display:flex;
+  gap:15px;
+  margin-top: 25px;
+  position: relative;
+  z-index: 9999; 
+  /* FIX: Se eleva fuertemente en el eje Z para sobresalir del tablero tridimensional */
+  transform: translateZ(60px); 
+}
+input, button {
+  background: #0b0d09;
+  color: #9cb394;
+  border: 2px solid #323a2b;
+  padding: 14px;
+  font-family: 'Courier New', monospace;
+  outline: none;
+  font-size: 16px;
+  border-radius: 6px;
+}
+input { 
+  flex: 1; 
+  box-shadow: inset 0 4px 10px rgba(0,0,0,0.95);
+  pointer-events: auto !important;
+  z-index: 10000;
+  position: relative;
+}
+input:focus { border-color: #55634a; color: #e3ebd9; }
+button { 
+  cursor: pointer; 
+  background: #20261b; 
+  font-weight: bold; 
+  box-shadow: 0 5px 0 #0d120a; 
+  position: relative;
+  z-index: 10000;
+}
+button:hover { background: #2d3626; color:#fff; }
+button:active { transform: translateY(5px); box-shadow: none; }
+
+/* OPTIMIZACIÓN EXTREMA DEL TEXTO INFERIOR PARA QUE NO SE CORTE */
+#response {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+  margin-top: 15px;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: #e3ebd9;
+  text-align: center;
+  min-height: 50px;
+  max-height: 90px;
+  overflow-y: auto;
+  font-weight: bold;
+}
+
+/* PANTALLA ESTÁTICA SIN SEÑAL */
+.static {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#050505;
+  color:#444;
+  font-size:60px;
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+  animation: noise-anim 0.15s infinite;
+}
+@keyframes noise-anim {
+  0% { background-color: #060606; color: #222; }
+  50% { background-color: #0a0a0a; color: #111; }
+  100% { background-color: #030303; color: #333; }
+}
+
+h3, h2 { margin-top:0; letter-spacing:8px; color: #626e58; }
+h2 { border-bottom: 1px dashed #2d3327; padding-bottom: 5px; font-size: 26px; }
+hr { border:0; border-top: 1px solid #2d3327; margin: 15px 0; }
+
+/* PANTALLA DE INICIO (OK / NO HAGAS RUIDO) */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  background: #020202;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+#start-screen h1 {
+  color: #b83232;
+  letter-spacing: 5px;
+  margin-bottom: 30px;
+  text-shadow: 0 0 15px rgba(184, 50, 50, 0.8);
+  font-size: 32px;
+  font-family: 'Courier New', monospace;
+}
+#start-screen button {
+  font-size: 22px;
+  padding: 15px 50px;
+  background: #0b0d09;
+  color: #9cb394;
+  border: 2px solid #3d4736;
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: bold;
+}
+#start-screen button:hover {
+  background: #20261b;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(94, 255, 173, 0.3);
+}
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <h1>NO HAGAS RUIDO</h1>
+  <button id="btn-ok">OK</button>
+</div>
+
+<audio id="bg-audio" loop>
+  <source src="o.wav" type="audio/wav">
+</audio>
+
+<button id="close">X</button>
+
+<div class="rpg-dialog" id="rpgBox">
+  <div class="rpg-title">SIXTO REY</div>
+  <div class="rpg-text" id="rpgText">...</div>
+</div>
+
+<div class="wrap">
+  <div class="candle-container">
+    <div class="candle">
+      <div class="candle-wick"></div>
+      <div class="candle-flame"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>REGISTRO</h3>
+    <div id="intro"></div>
+    <hr>
+    <p style="font-size: 13px; color: #535c4b;">La estática del ambiente resuena en sincronía con los impulsos de la terminal.</p>
+  </div>
+  
+  <div class="board" id="board">
+    <div>
+      <div class="top-board-row">
+        <svg class="celestial-svg" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        
+        <div class="top-meta-btn" id="cHOLA">HOLA</div>
+        <div class="top-meta-btn" id="cADIOS">ADIÓS</div>
+        
+        <svg class="celestial-svg" viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </div>
+
+      <h2 style="text-align:center; margin: 5px 0;">O U I J A</h2>
+      
+      <div class="grid" id="grid"></div>
+      
+      <div class="bottom-board-row" id="pilarEstrellaContainer">
+        <div id="cESTRELLA">
+          <svg class="celestial-svg" viewBox="0 0 24 24" style="width:50px; height:50px;">
+            <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="planchette" id="p"></div>
+    
+    <div>
+      <div class="row">
+        <input id="q" placeholder="Haz una pregunta al espíritu..." autocomplete="off">
+        <button onclick="ask()">INOCULAR</button>
+      </div>
+      
+      <div id="response"></div>
+    </div>
+  </div>
+
+  <div class="candle-container">
+    <div class="candle">
+      <div class="candle-wick"></div>
+      <div class="candle-flame"></div>
+    </div>
+  </div>
+</div>
+
+<div class="static" id="static">NO SIGNAL</div>
+
+<script>
+// LÓGICA DE PANTALLA DE INICIO Y AUDIO
+document.getElementById('btn-ok').addEventListener('click', function() {
+  document.getElementById('start-screen').style.display = 'none';
+  const bgAudio = document.getElementById('bg-audio');
+  bgAudio.volume = 0.6; // Ajusta el volumen si lo necesitas
+  bgAudio.play().catch(e => console.log("El navegador bloqueó el audio:", e));
+  
+  // Iniciar el contexto de audio y la animación de inicio
+  initAudio();
+  mapPos(); // Mapeamos las coordenadas de las letras después de revelar el tablero
+});
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+}
+
+function playSpookyClick() {
+  initAudio();
+  if (!audioCtx) return;
+  let osc = audioCtx.createOscillator();
+  let gain = audioCtx.createGain();
+  let filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(110, audioCtx.currentTime);
+  filter.Q.setValueAtTime(4, audioCtx.currentTime);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.12);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.14);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playLocalClick() {
+  const audio = new Audio('click.mp3');
+  audio.volume = 0.8;
+  audio.play().catch(err => {});
+}
+
+// TEXTO INTRODUCTORIO
+const introTxt = `Conexión establecida con el plano sutil.\n\nFiltros de ruido ajustados.\n\nSixto Rey está en sintonía...`;
+let ii = 0; const intro = document.getElementById("intro");
+(function type(){ if(ii < introTxt.length){ intro.textContent += introTxt[ii++]; setTimeout(type, 25); } })();
+
+// GENERACIÓN DE LETRAS ORGANIZADAS
+const letters = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ".split("");
+const grid = document.getElementById("grid");
+const pos = {};
+
+letters.forEach(l => {
+  let d = document.createElement("div");
+  d.className = "cell";
+  d.id = "c" + l;
+  d.textContent = l;
+  grid.appendChild(d);
+});
+
+function mapPos() {
+  const b = document.getElementById("board").getBoundingClientRect();
+  letters.forEach(l => {
+    const r = document.getElementById("c" + l).getBoundingClientRect();
+    pos[l] = { x: r.left - b.left + r.width / 2, y: r.top - b.top + r.height * 0.35 };
+  });
+  ["HOLA", "ADIOS", "ESTRELLA"].forEach(id => {
+    const el = document.getElementById("c" + id);
+    if(el) {
+      const r = el.getBoundingClientRect();
+      pos[id] = { x: r.left - b.left + r.width / 2, y: r.top - b.top + r.height * 0.5 };
+    }
+  });
+}
+setTimeout(mapPos, 600);
+window.onresize = mapPos;
+
+// DIÁLOGOS GENERALES DE SIXTO REY (SISTEMA RPG)
+const sixtoComments = [
+  "Algo me dice que miente.",
+  "Es extraño. Siempre evita ciertos recuerdos.",
+  "No sé por qué, pero esa respuesta me eriza la piel.",
+  "Siento un cambio drástico de temperatura en la habitación...",
+  "No me gusta como habla de esa forma.",
+  "Tal vez recuerda más de lo que admite.",
+  "La energía fluctúa mucho con este tema."
+];
+
+let activeDialogTimeout = null;
+function showRpgDialog(text) {
+  const box = document.getElementById("rpgBox");
+  const textBox = document.getElementById("rpgText");
+  
+  clearTimeout(activeDialogTimeout);
+  textBox.textContent = text;
+  box.classList.add("show");
+  
+  activeDialogTimeout = setTimeout(() => {
+    box.classList.remove("show");
+  }, 6000);
+}
+
+function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function chooseResponse(q){
+  q = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // CASO: HOLA / ADIOS
+  if(q === "hola" || q.includes("buenos dias") || q.includes("saludos")) {
+    showRpgDialog("Sixto: ¡Vaya! Ha respondido al saludo...");
+    return "HOLA";
+  }
+  if(q === "adios" || q.includes("chau") || q.includes("terminar")) {
+    showRpgDialog("Sixto suspira con un alivio evidente: Bien... corta la sesión de inmediato antes de que decida quedarse.");
+    return "ADIOS";
+  }
+
+  // IDENTIDAD (Quién eres / Tu nombre / Qué eres)
+  if(q.includes("quien eres") || q.includes("tu nombre") || q.includes("como te llamas") || q.includes("que eres")) {
+    showRpgDialog("Sixto: Siempre es evasivo sobre su identidad directa...");
+    const identidades = ["UN REFLEJO ROTO", "ALGUIEN QUE OLVIDO SU ROSTRO", "LO QUE QUEDA DE UN ALUMNO", "UN FRAGMENTO DEL CAN", "SOLO UNA SOMBRA", "EL QUE VIGILA DESDE EL REVELADO", "UN ARTISTA SIN MANOS"];
+    const adjetivos = [" PERDIDO", " EN LA OSCURIDAD", " ATRAPADO AQUI", " QUE NO PUEDE SALIR", " CANSADO"];
+    return rand(identidades) + rand(adjetivos);
+  }
+
+  // INTENCIONES (Qué quieres / Qué buscas / Por qué estás aquí)
+  if(q.includes("que quieres") || q.includes("buscas") || q.includes("proposito") || q.includes("por que estas aqui")) {
+    showRpgDialog("Sixto: Siento una angustia palpable...");
+    const verbos = ["QUIERO SALIR", "BUSCO MI OBRA", "NECESITO RECORDAR", "QUIERO DESCANSAR", "BUSCO A QUIEN ME ENCERRO"];
+    const complementos = [" PERO LA PUERTA ESTA CERRADA", " AYUDAME", " ENCUENTRA MI CUADRO", " DILES QUE SIGO AQUI", " NO ME IGNOREN"];
+    return rand(verbos) + rand(complementos);
+  }
+
+  // ACCIONES (Qué haces / Qué hacías / A qué te dedicas)
+  if(q.includes("que haces") || q.includes("a que te dedicas") || q.includes("tu trabajo")) {
+    showRpgDialog("Sixto: El plano de los espíritus no tiene 'tiempo', pero repiten rutinas.");
+    return rand(["DIBUJO EN LA OSCURIDAD", "REVELO FOTOS QUE NADIE VE", "MEZCLO COLORES QUE NO EXISTEN", "OBSERVO A LOS QUE PASAN", "ESPERO EN EL PASILLO", "PINTO CON POLVO"]);
+  }
+
+  // MANIFESTACIÓN (Manifiéstate / Te puedes manifestar / Haz un ruido)
+  if(q.includes("manifiestate") || q.includes("manifestar") || q.includes("ruido") || q.includes("mueve algo")) {
+    showRpgDialog("Sixto: ¡No! No le des permiso para alterar el entorno físico...");
+    const lugares = ["MIRA DETRAS DE TI", "ESCUCHA LA PUERTA", "APAGA LA LUZ Y VERAS", "ESTOY EN LA ESQUINA", "REVISA TUS FOTOS", "SIENTE EL FRIO EN TU CUELLO"];
+    return rand(lugares);
+  }
+
+  // VISIÓN (Nos ves / Me ves / Te vemos)
+  if(q.includes("nos ves") || q.includes("me ves") || q.includes("te vemos") || q.includes("nos observas")) {
+    showRpgDialog("Sixto: Escuché un crujido justo detrás de nosotros.");
+    return rand(["LOS VEO DESDE EL AQUI", "SIEMPRE LOS MIRO", "ESTOY MAS CERCA DE LO QUE CREES", "VEO COMO RESPIRAN", "SI LOS VEO NO DEJEN DE MIRAR"]);
+  }
+
+  // PASADO / MUERTE (Quién lo mató / Cómo moriste / Pasado)
+  if(q.includes("quien te mato") || q.includes("como moriste") || q.includes("asesino") || q.includes("muerte") || q.includes("pasado")) {
+    showRpgDialog("Sixto: La plancha vibra con resentimiento...");
+    const muertes = ["NO FUE UN ASESINATO FUE EL ARTE", "ME CONSUMIO LA OBRA", "CAI EN EL SILENCIO", "FUE UN ACCIDENTE EN EL CUARTO OSCURO", "ME OLVIDARON Y DESAPARECI", "EL CAN ME ABSORBIO"];
+    return rand(muertes);
+  }
+
+  // FUTURO (Qué va a pasar / Futuro / Predicción)
+  if(q.includes("futuro") || q.includes("va a pasar") || q.includes("manana") || q.includes("prediccion") || q.includes("que sucedera")) {
+    showRpgDialog("Sixto: No deberías indagar en lo que aún no ha ocurrido...");
+    const futuros = ["EL EDIFICIO SE DERRUMBARA EN SILENCIO", "ALGUIEN MAS QUEDARA ATRAPADO", "TU OBRA SERA DESTRUIDA", "LA LUZ ROJA SE APAGARA PARA SIEMPRE", "VERAS UNA SOMBRA MANANA"];
+    return rand(futuros);
+  }
+
+  // BUENO O MALO (Eres bueno / Eres malo / Demonio / Intenciones)
+  if(q.includes("eres bueno") || q.includes("eres malo") || q.includes("intenciones") || q.includes("demonio") || q.includes("espiritu maligno")) {
+    showRpgDialog("Sixto: Los conceptos morales de los vivos no aplican aquí.");
+    return rand(["NO SOY MALO SOLO TENGO FRIO", "SOY LO QUE TU MENTE QUIERE VER", "LA MALDAD ES HUMANA YO SOY OTRA COSA", "NO HAY BUENOS AQUI", "JUZGALO TU MISMO"]);
+  }
+
+  // RELACIÓN (Me conoces / Te conocemos / Quién soy)
+  if(q.includes("me conoces") || q.includes("sabes quien soy") || q.includes("quien soy yo") || q.includes("te conocemos")) {
+    showRpgDialog("Sixto se estremece: Espera... ¿te conoce? ¿De dónde?");
+    return rand(["SE QUE ERES CREADOR", "TE HE VISTO EN LOS PASILLOS", "TU LUZ ES DIFERENTE", "SE TU SECRETO", "CONOZCO TU CARA PERO NO TU NOMBRE"]);
+  }
+
+  // CAN Y TORREÓN (Centro de Artes / Torreón)
+  if(q.includes("can ") || q.includes("centro de artes") || q.includes("escuela de arte")) {
+    showRpgDialog("Sixto: El CAN... muchos dejan pedazos de su alma en ese lugar.");
+    return rand(["EL CAN ES MI VERDADERA TUMBA", "LAS PAREDES DEL CAN ESCUCHAN", "EXTRAÑO LOS TALLERES", "MUCHOS ESPIRITUS HABITAN EL CAN"]);
+  }
+  if(q.includes("torreon") || q.includes("coahuila") || q.includes("la laguna")) {
+    showRpgDialog("Sixto: Torreón... el calor allá contrasta con el frío de este plano.");
+    return rand(["EL CALOR DE TORREON NO LLEGA AQUI", "HAY ARENA INCLUSO EN EL MAS ALLA", "LA CIUDAD ES UN HORNO PERO YO ME CONGELO", "CONOZCO ESE DESIERTO"]);
+  }
+
+  // CONOCIMIENTOS DE ARTISTA VISUAL
+  if(q.includes("arte") || q.includes("pintar") || q.includes("dibujar") || q.includes("tecnica") || q.includes("artista visual") || q.includes("obra") || q.includes("color") || q.includes("compo")) {
+    showRpgDialog("Sixto: Tiene la mente de un creador... o lo que queda de ella.");
+    const tecnicas = ["EL CLAROSCURO", "EL PUNTO DE FUGA", "LA VELADURA", "LA SATURACION", "EL REVELADO QUIMICO"];
+    const verbosArte = [" REVELA LA VERDAD", " OCULTA LOS DEFECTOS", " ES UNA MENTIRA VISUAL", " ME VOLVIO LOCO", " FUE MI PERDICION"];
+    return rand(tecnicas) + rand(verbosArte);
+  }
+
+  // BASE DE DATOS ESPECÍFICA (Lore previo)
+  if (q.includes("edison")) return "FOTOGRAFO EL ESTA BUSCANDO A ALGUIEN";
+  if (q.includes("iris")) return "LA REAL TRABAJA EN EL CAN ALGUIEN ATRAPO UNA COPIA DE ELLA";
+  if (q.includes("susana")) return "FOTOGRAFA Y DIRIGE LA QUE ESTA ENCERRADA AQUI NO ES LA REAL";
+  if (q.includes("goio")) return "NO QUIERO HABLAR DE EL";
+  if (q.includes("vanessa") || q.includes("vanesa")) return "ARTISTA LE GUSTA EL COLLAGE";
+  if (q.includes("adrian")) return "PINTA MEJOR AMIGO DE CRISTOPHER";
+  if (q.includes("cristopher")) return "PINTA NOVIO DE CRISTINA";
+  if (q.includes("cristina")) return "ARTISTA LE GUSTA TEJER";
+  if (q.includes("brenda")) return "ARTISTA CREO QUE LE DA MIEDO EL ESPIRITU";
+  if (q.includes("alfredo esparza") || q.includes("alfredo")) return "DICEN QUE ES FOTOGRAFO PERO LA VERSION ATRAPADA AQUI ES PERIODISTA";
+  if (q.includes("isaac")) return "FOTOGRAFO GRAN CORAZON POCO TIEMPO";
+  if (q.includes("perlinka")) return "ANIMADORA LA REPRESENTACION DE LA GENTILEZA";
+  if (q.includes("andrea")) return "NO LE GUSTAN LOS FURROS ESO LO SE ";
+  if (q.includes("chacho")) return "GRAN FANZINERO";
+  if (q.includes("mario")) return "GRAN ARTISTA";
+  if (q.includes("mariana zertuche") || q.includes("mariana")) return "GRAN FOTOGRAFA";
+  if (q.includes("cucho")) return "HACE ARTE";
+  if (q.includes("paty")) return "HACE GRABADO";
+  if (q.includes("marcela")) return "HACE MURALISMO";
+  if (q.includes("jimenez") || q.includes("jose")) return "EL ME DA MIEDO ES ARTISTA CONCEPTUAL";
+
+  
+  if(Math.random() < 0.35){
+    setTimeout(() => { showRpgDialog("Sixto: " + rand(sixtoComments)); }, 1500);
+  }
+  
+  const sujeto = ["YO", "LA SOMBRA", "EL SILENCIO", "LA ESTRELLA", "EL ARTE", "EL MIEDO"];
+  const verboObj = [" SE ACERCA", " NOS OBSERVA", " NO ENTIENDE", " ESTA ROTO", " TE BUSCA", " DUELE"];
+  const tiempo = [" AHORA", " SIEMPRE", " EN LA OSCURIDAD", " DESDE AYER", " SIN DESCANSO"];
+  
+  const randomCombo = rand(sujeto) + rand(verboObj) + rand(tiempo);
+  
+  const fallbacks = [
+    "LO SIENTO TANTO NO SE QUE DECIR", 
+    "NUNCA ME FUI PERO AUN NO ENTIENDO", 
+    "PREGUNTALE A LA ESTRELLA", 
+    "ME CUESTA RESPONDER ESO", 
+    "NO QUIERO RECORDARLO",
+    randomCombo
+  ];
+  return rand(fallbacks);
+}
+
+async function spell(text){
+  initAudio(); 
+  const p = document.getElementById("p");
+  const out = document.getElementById("response");
+  out.textContent = "";
+
+  let tokens = [];
+  if (text === "HOLA" || text === "ADIOS" || text === "ESTRELLA") {
+    tokens.push(text);
+  } else {
+    tokens = text.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split("");
+  }
+
+  for(const token of tokens){
+    if(pos[token]){
+      const targetCell = document.getElementById("c"+token);
+      const pilarContainer = document.getElementById("pilarEstrellaContainer");
+      
+      document.querySelectorAll(".active, .active-pilar").forEach(x => x.classList.remove("active", "active-pilar"));
+      
+      p.style.left = pos[token].x + "px";
+      p.style.top = pos[token].y + "px";
+
+      await new Promise(r => setTimeout(r, 450));
+      
+      playLocalClick();
+      playSpookyClick();
+      
+      if(targetCell) targetCell.classList.add("active");
+      if(token === "ESTRELLA" && pilarContainer) pilarContainer.classList.add("active-pilar");
+
+      await new Promise(r => setTimeout(r, 550));
+    } else {
+      await new Promise(r => setTimeout(r, 250));
+    }
+    out.textContent += token;
+  }
+
+  setTimeout(() => {
+    document.querySelectorAll(".active, .active-pilar").forEach(x => x.classList.remove("active", "active-pilar"));
+  }, 1200);
+}
+
+function ask(){
+  const q = document.getElementById("q").value.trim();
+  if(!q) return;
+  document.getElementById("q").value = "";
+  
+  playLocalClick();
+  spell(chooseResponse(q));
+}
+
+document.getElementById("q").addEventListener("keydown", e => {
+  if(e.key === "Enter") ask();
+});
+
+document.getElementById("close").onclick = () => {
+  document.querySelector(".wrap").style.display = "none";
+  document.getElementById("static").style.display = "flex";
+  setTimeout(() => { window.close(); }, 500);
+};
+</script>
+</body>
+</html>
