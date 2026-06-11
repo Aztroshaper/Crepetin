@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turno nocturno</title>
+
+<style>
+/* VARIABLES ESTILO INDUSTRIAL / ALERTA CREEPY */
+:root {
+  --fnaf-color: #ff5500; /* Naranja de alerta */
+  --fnaf-red: #ff2222;   /* Rojo carmesí */
+  --fnaf-glow: rgba(255, 85, 0, 0.5);
+  --sl-metallic: linear-gradient(135deg, #2b2b2b 0%, #1a1a1a 50%, #0a0a0a 100%);
+}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body{
+background:black;
+overflow:hidden;
+color:white;
+}
+
+/* VHS SUPER MARCADO */
+body::before{
+content:"";
+position:fixed;
+width:100%;
+height:100%;
+background:
+repeating-linear-gradient(
+to bottom,
+rgba(255,255,255,.05) 0px,
+rgba(255,255,255,.05) 2px,
+transparent 2px,
+transparent 5px
+);
+mix-blend-mode:overlay;
+pointer-events:none;
+z-index:9999;
+animation:vhsLines .12s infinite;
+}
+
+body::after{
+content:"";
+position:fixed;
+width:100%;
+height:100%;
+background:rgba(255, 85, 0, 0.02);
+pointer-events:none;
+z-index:9998;
+animation:vhsFlicker .2s infinite;
+}
+
+#vhsNoise{
+position:fixed;
+width:100%;
+height:100%;
+background:url('static.gif');
+opacity:.08;
+mix-blend-mode:screen;
+pointer-events:none;
+z-index:9997;
+}
+
+/* MENU MEJORADO - GIF AHORA ES VISIBLE */
+#menu{
+position:absolute;
+width:100%;
+height:100%;
+background:radial-gradient(circle, rgba(15,5,0,0.4) 0%, rgba(0,0,0,0.85) 100%), url('cana.gif') center/cover;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+gap:25px;
+z-index:100;
+filter:contrast(1.1) saturate(0.9);
+box-shadow:inset 0 0 150px rgba(0,0,0,1);
+}
+
+.title{
+font-size:75px;
+letter-spacing:14px;
+font-weight:900;
+text-transform:uppercase;
+color: #e6e6e6;
+text-shadow:
+3px 0 var(--fnaf-color),
+-3px 0 var(--fnaf-red),
+0 0 25px rgba(255,255,255,0.2);
+animation:fnafIntro 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards, flicker 3s infinite;
+}
+
+.subtitle{
+opacity:.8;
+font-size:14px;
+letter-spacing:6px;
+text-transform:uppercase;
+max-width:600px;
+text-align:center;
+line-height:1.6;
+color: var(--fnaf-color);
+text-shadow:0 0 10px var(--fnaf-glow);
+}
+
+button{
+padding:15px 40px;
+background: rgba(15, 5, 0, 0.8);
+border: 1px solid var(--fnaf-color);
+color: var(--fnaf-color);
+cursor:pointer;
+font-size:14px;
+letter-spacing:3px;
+font-weight:bold;
+text-transform:uppercase;
+transition:.3s ease;
+backdrop-filter: blur(5px);
+box-shadow: inset 0 0 10px rgba(255, 85, 0, 0.1), 0 4px 15px rgba(0,0,0,0.8);
+}
+
+button:hover{
+background: var(--fnaf-color);
+color: black;
+border-color: white;
+box-shadow: 0 0 20px var(--fnaf-glow);
+transform: scale(1.03);
+}
+
+/* PANTALLA DEL PERIÓDICO (ZOOM MODERADO) */
+#introImageScreen{
+position:absolute;
+width:100%;
+height:100%;
+background:radial-gradient(circle, #120805 0%, #000000 100%);
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:150;
+overflow:hidden;
+box-shadow:inset 0 0 150px rgba(0,0,0,1);
+}
+
+#signalText{
+position:absolute;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+font-size:14px;
+letter-spacing:4px;
+opacity:.9;
+color: var(--fnaf-color);
+font-weight:bold;
+text-align:center;
+width:90%;
+z-index:160;
+background: rgba(0,0,0,0.7);
+padding: 10px;
+border: 1px solid var(--fnaf-color);
+animation: signalGlitch 3s infinite;
+text-shadow:0 0 10px var(--fnaf-glow);
+}
+
+#zoomContainer{
+width:100%;
+height:100%;
+overflow:hidden;
+position:relative;
+cursor:grab;
+display:flex;
+justify-content:center;
+align-items:center;
+background:#050505;
+}
+
+#zoomImage{
+max-width:none;
+width:100%;
+height:100%;
+object-fit:contain; /* Se adapta mejor sin deformar ni recortar exagerado */
+transform:translate(0px,0px) scale(1.3); /* Zoom inicial más cómodo y legible */
+transition:transform .05s linear;
+filter:contrast(1.2) brightness(.75) sepia(0.1);
+}
+
+#continueBtn{
+position:absolute;
+bottom:40px;
+z-index:170;
+background: rgba(0,0,0,0.8);
+border-color: var(--fnaf-color);
+color: var(--fnaf-color);
+font-size: 16px;
+padding: 20px 50px;
+letter-spacing: 5px;
+}
+
+#continueBtn:hover{
+background: var(--fnaf-color);
+color: black;
+box-shadow:0 0 25px var(--fnaf-glow);
+}
+
+/* JUEGO */
+#game{
+display:none;
+width:100vw;
+height:100vh;
+position:relative;
+overflow:hidden;
+background:black;
+filter:contrast(1.15) saturate(.85);
+}
+
+#office{
+position:absolute;
+width:100%;
+height:100%;
+background:url('of.gif') center/cover;
+filter:brightness(.25);
+transition:filter 0.3s ease;
+}
+
+.darkness{
+position:absolute;
+width:100%;
+height:100%;
+background:radial-gradient(circle, transparent 20%, rgba(10,3,0,0.9) 100%);
+pointer-events:none;
+}
+
+#topbar{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+padding:20px 30px;
+display:flex;
+justify-content:space-between;
+font-size:24px;
+font-family: 'Courier New', Courier, monospace;
+font-weight:bold;
+letter-spacing:3px;
+z-index:10;
+text-shadow:2px 2px 5px black, 0 0 10px rgba(255,255,255,0.2);
+}
+
+#hour{
+color:#fff;
+}
+
+#power{
+color: var(--fnaf-color);
+text-shadow:0 0 10px var(--fnaf-glow);
+}
+
+#cameraBtn, #closeCamBtn{
+position:absolute;
+bottom:30px;
+right:30px;
+z-index:35;
+border-radius: 0;
+}
+
+#cameraBtn{
+background:rgba(15,5,0,0.9);
+border: 1px solid var(--fnaf-color);
+color: var(--fnaf-color);
+box-shadow:0 0 15px rgba(255, 85, 0, 0.2);
+}
+
+#closeCamBtn{
+display:none;
+background:rgba(20,5,5,0.9);
+border:1px solid var(--fnaf-red);
+color:var(--fnaf-red);
+box-shadow:0 0 15px rgba(204, 51, 51, 0.2);
+}
+
+#closeCamBtn:hover{
+background:var(--fnaf-red);
+color:white;
+box-shadow:0 0 20px rgba(204, 51, 51, 0.6);
+}
+
+#cameraSystem{
+position:absolute;
+width:100%;
+height:100%;
+background:#020202;
+display:none;
+z-index:20;
+}
+
+#cameraFeed{
+position:absolute;
+width:100%;
+height:100%;
+object-fit:cover;
+filter:grayscale(0.8) contrast(1.4) brightness(0.65);
+transition: filter 0.2s ease;
+}
+
+/* ESTÁTICA INTENSA CAMBIO DE CÁMARA */
+#heavyStatic{
+position:absolute;
+width:100%;
+height:100%;
+background:url('static.gif');
+opacity:0;
+pointer-events:none;
+mix-blend-mode:screen;
+z-index:22;
+transition: opacity 0.05s linear;
+}
+
+#static{
+position:absolute;
+width:100%;
+height:100%;
+background:url('static.gif');
+opacity:.15;
+pointer-events:none;
+mix-blend-mode:overlay;
+z-index:21;
+}
+
+/* MINIMAPA INDUSTRIAL */
+#map{
+position:absolute;
+right:30px;
+bottom:100px;
+width:320px;
+height:260px;
+background:rgba(15,5,0,0.85);
+padding:15px;
+border: 1px solid var(--fnaf-color);
+z-index:25;
+box-shadow:0 0 30px rgba(255, 85, 0, 0.15);
+backdrop-filter: blur(4px);
+}
+
+#map::before{
+content:"";
+position:absolute;
+top:40px;
+left:40px;
+right:40px;
+bottom:60px;
+border: 1px solid rgba(255, 85, 0, 0.2);
+pointer-events:none;
+background: repeating-linear-gradient(
+  0deg,
+  transparent,
+  transparent 10px,
+  rgba(255, 85, 0, 0.03) 10px,
+  rgba(255, 85, 0, 0.03) 11px
+), repeating-linear-gradient(
+  90deg,
+  transparent,
+  transparent 10px,
+  rgba(255, 85, 0, 0.03) 10px,
+  rgba(255, 85, 0, 0.03) 11px
+);
+}
+
+.camButton{
+position:absolute;
+padding:6px 10px;
+background:rgba(15,5,0,0.9);
+border: 1px solid var(--fnaf-color);
+color: var(--fnaf-color);
+cursor:pointer;
+font-size:9px;
+font-family: 'Courier New', Courier, monospace;
+font-weight:bold;
+text-align:center;
+letter-spacing:1px;
+transition:all 0.1s ease;
+box-shadow:0 2px 5px rgba(0,0,0,0.8);
+width:85px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+
+.camButton:hover{
+background: var(--fnaf-color);
+color: black;
+box-shadow: 0 0 15px var(--fnaf-glow);
+}
+
+/* Posiciones de cámaras */
+.camButton:nth-child(1) { top: 20px; left: 20px; }
+.camButton:nth-child(2) { top: 20px; left: 215px; }
+.camButton:nth-child(3) { top: 85px; left: 20px; }
+.camButton:nth-child(4) { top: 85px; left: 118px; }
+.camButton:nth-child(5) { top: 85px; left: 215px; }
+.camButton:nth-child(6) { top: 150px; left: 20px; }
+.camButton:nth-child(7) { top: 150px; left: 118px; }
+.camButton:nth-child(8) { top: 215px; left: 118px; }
+
+/* PANELES DE CONTROL */
+.controlPanel{
+position:absolute;
+bottom:120px;
+width:100px;
+height:160px;
+background: var(--sl-metallic);
+border: 1px solid #333;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:12;
+box-shadow:0 10px 25px rgba(0,0,0,0.9), inset 0 0 10px rgba(255,255,255,0.05);
+border-radius: 5px;
+}
+
+#leftPanel{ left:20px; }
+#rightPanel{ right:20px; }
+
+.controlPanel button {
+padding: 15px 15px;
+font-size: 11px;
+border: 1px solid var(--fnaf-color);
+color: var(--fnaf-color);
+background: #050505;
+border-radius: 50%;
+width: 70px;
+height: 70px;
+display: flex;
+justify-content: center;
+align-items: center;
+box-shadow: inset 0 0 5px rgba(255, 85, 0, 0.2);
+}
+
+.controlPanel button:hover {
+background: var(--fnaf-color);
+color: black;
+box-shadow: 0 0 15px var(--fnaf-glow);
+}
+
+/* PUERTAS ESTILO COMPUERTA BLINDADA */
+#doorLeft,
+#doorRight{
+position:absolute;
+top:0;
+width:150px;
+height:100%;
+background: 
+  linear-gradient(90deg, rgba(0,0,0,0.8) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.8) 100%),
+  repeating-linear-gradient(0deg, #1a1a1a 0px, #1a1a1a 40px, #111 40px, #111 45px),
+  #222;
+border-left: 8px solid #0a0a0a;
+border-right: 8px solid #0a0a0a;
+box-shadow:inset 0 0 40px rgba(0,0,0,0.9), 5px 0 20px rgba(0,0,0,0.8);
+transition:transform .4s cubic-bezier(0.17, 0.84, 0.44, 1);
+z-index:11;
+}
+
+#doorLeft{ left:-150px; }
+#doorRight{ right:-150px; }
+
+.closedLeft{ transform:translateX(150px); }
+.closedRight{ transform:translateX(-150px); }
+
+/* LLAMADA */
+#callOverlay{
+position:absolute;
+width:100%;
+height:100%;
+background:transparent;
+display:flex;
+justify-content:flex-start;
+align-items:center;
+flex-direction:column;
+z-index:50;
+gap:20px;
+padding:40px;
+text-align:center;
+pointer-events:none;
+}
+
+#callOverlay h1 {
+font-size: 20px;
+letter-spacing: 6px;
+color: white;
+background: rgba(25, 10, 0, 0.9);
+padding: 10px 25px;
+border: 1px solid var(--fnaf-color);
+box-shadow: 0 0 15px rgba(255, 85, 0, 0.3);
+font-family: 'Courier New', Courier, monospace;
+}
+
+#answerBtn{
+pointer-events:auto;
+background: var(--fnaf-color);
+color:black;
+border-color: var(--fnaf-color);
+font-weight:900;
+margin-top: 10px;
+}
+
+#answerBtn:hover{
+background:white;
+border-color:white;
+box-shadow:0 0 20px white;
+}
+
+#callText{
+pointer-events:auto;
+max-width:700px;
+font-size:16px;
+line-height:1.6;
+min-height:90px;
+background:rgba(10, 3, 0, 0.9);
+border:1px solid rgba(255,255,255,0.15);
+border-left: 3px solid var(--fnaf-color);
+padding:20px 30px;
+box-shadow:0 10px 30px rgba(0,0,0,0.9);
+color:#ccc;
+font-family: 'Courier New', Courier, monospace;
+}
+
+#safeText{
+position:absolute;
+bottom:120px;
+left:40px;
+font-size:12px;
+color: var(--fnaf-color);
+opacity:.7;
+letter-spacing:3px;
+background:rgba(0,0,0,0.8);
+padding:8px 15px;
+border: 1px solid var(--fnaf-color);
+}
+
+/* JUMPSCARE & GAME OVER */
+#jumpscare{
+position:absolute;
+width:100%;
+height:100%;
+display:none;
+justify-content:center;
+align-items:center;
+background:black;
+z-index:200;
+}
+
+#jumpscare img{
+width:100%;
+height:100%;
+object-fit:cover;
+animation:shake .05s infinite;
+}
+
+#gameOver{
+position:absolute;
+width:100%;
+height:100%;
+background:radial-gradient(circle, #250505 0%, #000000 100%);
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:300;
+gap:30px;
+}
+
+#gameOver h1{
+font-size:100px;
+letter-spacing:15px;
+color:var(--fnaf-red);
+text-shadow:0 0 40px rgba(255,0,0,0.8);
+font-weight:900;
+font-family: 'Courier New', Courier, monospace;
+}
+
+#winScreen{
+position:absolute;
+width:100%;
+height:100%;
+background:black;
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:250;
+}
+
+#winScreen h1{
+font-size:130px;
+letter-spacing:8px;
+color: var(--fnaf-color);
+text-shadow:0 0 30px var(--fnaf-glow);
+}
+
+#winScreen p{
+font-size:20px;
+color: #aaa;
+letter-spacing:5px;
+margin-top:15px;
+margin-bottom:40px;
+text-transform:uppercase;
+}
+
+/* ANIMACIONES */
+@keyframes flicker{
+0%{opacity:1;}
+50%{opacity:.7;}
+100%{opacity:1;}
+}
+
+@keyframes shake{
+0%{transform:translate(5px, 3px) rotate(0deg);}
+25%{transform:translate(-4px, -3px) rotate(-1deg);}
+50%{transform:translate(3px, -4px) rotate(1deg);}
+75%{transform:translate(-3px, 4px) rotate(0deg);}
+100%{transform:translate(5px, 3px) rotate(0deg);}
+}
+
+/* Temblor de cámara cuando está el perro */
+@keyframes camShake{
+0% { transform: translate(1px, 1px) scale(1.02); filter: grayscale(0.8) contrast(1.8) brightness(0.7); }
+25% { transform: translate(-1px, -2px) scale(1.02); filter: grayscale(0.8) contrast(1.4) brightness(1.0); }
+50% { transform: translate(-2px, 1px) scale(1.02); filter: grayscale(0.8) contrast(2.0) brightness(0.8); }
+75% { transform: translate(2px, 2px) scale(1.02); filter: grayscale(0.8) contrast(1.2) brightness(0.9); }
+100% { transform: translate(1px, -1px) scale(1.02); filter: grayscale(0.8) contrast(1.6) brightness(0.6); }
+}
+
+.camera-danger {
+animation: camShake 0.15s infinite !important;
+}
+
+@keyframes vhsLines{
+0%{transform:translateY(0px);}
+100%{transform:translateY(6px);}
+}
+
+@keyframes vhsFlicker{
+0%{opacity:.02;}
+50%{opacity:.06;}
+100%{opacity:.02;}
+}
+
+@keyframes fnafIntro{
+0% { transform: scale(0.85); filter: blur(20px); opacity: 0; letter-spacing: 2px; }
+50% { opacity: 0.6; filter: blur(5px); }
+100% { transform: scale(1); filter: blur(0); opacity: 1; }
+}
+
+@keyframes signalGlitch{
+0%, 90%, 100%{ transform:translateX(-50%) translate(0px); opacity:.9; filter:skewX(0deg); }
+92%{ transform:translateX(-50%) translate(-5px,2px); opacity:1; filter:skewX(-15deg); }
+94%{ transform:translateX(-50%) translate(5px,-2px); opacity:.5; filter:skewX(10deg); }
+96%{ transform:translateX(-50%) translate(-2px,1px); opacity:.8; filter:skewX(-5deg); }
+}
+
+</style>
+</head>
+<body>
+
+<div id="vhsNoise"></div>
+
+<div id="menu">
+<div class="title">EL CAN ABANDONADO</div>
+<div class="subtitle">SOBREVIVE ESTA NOCHE</div>
+<button onclick="startGame()">ENTRAR A OFICINA</button>
+<button onclick="location.reload()">SALIR</button>
+</div>
+
+<div id="introImageScreen">
+<div id="signalText">ENCONTRASTE UNA PÁGINA EN EL PISO, USA EL ZOOM PARA INSPECCIONAR.</div>
+<div id="zoomContainer">
+<img id="zoomImage" src="peri.png">
+</div>
+<button id="continueBtn" onclick="continueToGame()">CERRAR DOCUMENTO</button>
+</div>
+
+<div id="game">
+
+<div id="office"></div>
+<div class="darkness"></div>
+
+<div id="topbar">
+<div id="hour">12 AM</div>
+<div id="power">100%</div>
+</div>
+
+<div id="doorLeft"></div>
+<div id="doorRight"></div>
+
+<div class="controlPanel" id="leftPanel">
+<button onclick="toggleLeftDoor()">DOOR</button>
+</div>
+
+<div class="controlPanel" id="rightPanel">
+<button onclick="toggleRightDoor()">DOOR</button>
+</div>
+
+<button id="cameraBtn" onclick="toggleCameras()">MONITOR</button>
+<button id="closeCamBtn" onclick="toggleCameras()">CERRAR MONITOR</button>
+
+<div id="cameraSystem">
+<img id="cameraFeed" src="cam1_empty.gif">
+<div id="heavyStatic"></div>
+<div id="static"></div>
+
+<div id="map">
+<div class="camButton" onclick="changeCam(0)">Terraza 1</div>
+<div class="camButton" onclick="changeCam(1)">Escalera</div>
+<div class="camButton" onclick="changeCam(2)">Cuarto 1</div>
+<div class="camButton" onclick="changeCam(3)">Cuarto 2</div>
+<div class="camButton" onclick="changeCam(4)">Cuarto 3</div>
+<div class="camButton" onclick="changeCam(5)">Cuarto 4</div>
+<div class="camButton" onclick="changeCam(6)">Recepción</div>
+<div class="camButton" onclick="changeCam(7)">Oficina</div>
+</div>
+
+</div>
+
+<div id="callOverlay">
+<h1>LLAMADA ENTRANTE</h1>
+<button id="answerBtn" onclick="answerCall()">RESPONDER</button>
+<div id="callText"></div>
+<div id="safeText">EL PERRO NO PUEDE MOVERSE DURANTE LA LLAMADA</div>
+</div>
+
+<div id="jumpscare">
+<img src="jump.gif">
+</div>
+
+<div id="gameOver">
+<h1>GAME OVER</h1>
+<button onclick="location.reload()">REINICIAR SISTEMA</button>
+<button onclick="backToMenu()">SALIR</button>
+</div>
+
+<div id="winScreen">
+<h1>6 AM</h1>
+<p>Turno finalizado.</p>
+<button onclick="location.reload()">VOLVER AL MENÚ</button>
+</div>
+
+</div>
+
+<audio id="ambient" src="enelcan.mp3" loop></audio>
+<audio id="phoneAudio" src="123.mp3"></audio>
+<audio id="staticSound" src="wav.mp3"></audio>
+<audio id="doorSound" src="door.mp3"></audio>
+<audio id="jumpscareSound" src="scream.m4a"></audio>
+
+<script>
+let gameStarted=false;
+let currentCam=0;
+let power=100;
+let hour=12;
+let leftDoor=false;
+let rightDoor=false;
+let dogPosition=0;
+let aiLevel=1;
+let safeMode=true;
+
+// ZOOM INICIAL SUAVIZADO A 1.3
+let scale=1.3; 
+let pointX=0;
+let pointY=0;
+let isDragging=false;
+let startX,startY;
+
+const zoomImage=document.getElementById("zoomImage");
+const feed=document.getElementById("cameraFeed");
+const heavyStatic=document.getElementById("heavyStatic");
+
+const cams=[
+["c1.gif","c2.gif"],
+["c3.gif","c4.gif"],
+["c5.gif","c6.gif"],
+["c1.gif","c2.gif"],
+["c3.gif","c4.gif"],
+["c5.gif","c6.gif"],
+["c1.gif","c2.gif"],
+["c4.gif","cam8_dog.jpg"]
+];
+
+function startGame(){
+document.getElementById("menu").style.display="none";
+document.getElementById("introImageScreen").style.display="flex";
+setTransform();
+}
+
+function continueToGame(){
+document.getElementById("introImageScreen").style.display="none";
+document.getElementById("game").style.display="block";
+gameStarted=true;
+document.getElementById("ambient").play();
+startClock();
+startAI();
+powerDrain();
+}
+
+function setTransform(){
+zoomImage.style.transform=`translate(${pointX}px, ${pointY}px) scale(${scale})`;
+}
+
+const container=document.getElementById("zoomContainer");
+
+container.addEventListener("wheel",(e)=>{
+e.preventDefault();
+const xs=(e.clientX-pointX)/scale;
+const ys=(e.clientY-pointY)/scale;
+const delta=(e.deltaY*-0.0015);
+scale+=delta;
+
+// Limites cómodos de zoom manual
+if(scale<1.0) scale=1.0; 
+if(scale>4.0) scale=4.0;
+
+pointX=e.clientX-xs*scale;
+pointY=e.clientY-ys*scale;
+setTransform();
+});
+
+container.addEventListener("mousedown",(e)=>{
+isDragging=true;
+startX=e.clientX-pointX;
+startY=e.clientY-pointY;
+container.style.cursor="grabbing";
+});
+
+container.addEventListener("mouseup",()=>{
+isDragging=false;
+container.style.cursor="grab";
+});
+
+container.addEventListener("mouseleave",()=>{
+isDragging=false;
+container.style.cursor="grab";
+});
+
+container.addEventListener("mousemove",(e)=>{
+if(!isDragging) return;
+pointX=e.clientX-startX;
+pointY=e.clientY-startY;
+setTransform();
+});
+
+function answerCall(){
+document.getElementById("answerBtn").style.display="none";
+const audio=document.getElementById("phoneAudio");
+audio.play();
+
+const messages=[
+"Ah, ¿hola?... tú eres el nuevo ¿no?... el guardia temporal.",
+"Bueno... no esperaba que alguien aceptara este turno tan rápido.",
+"Bien, tu trabajo es cuidar el establecimiento por esta noche",
+"Últimamente se meten sujetos de un colectivo raro.",
+"Se hacen llamar colectivo Chanate. Entran a grabar cosas, intervenir paredes y llevarse piezas.No nos pagan lo suficiente para intervenir... pero bueno.",
+"Supongo que ya viste cómo quedó el CAN después de...ya sabes, lo que pasó hace un año...es triste...Más porque solo cerraron todo y dejaron el lugar abandonado.",
+"Entiendo que fue algo muy duro pero, ¿dejar todo su tabrajo botado así como si nada?, bah...",
+"Sobre el perro, era la mascota principal del lugar y una obra enorme, todos aquí lo adoraban, después del cierre lo usaron como una manera de espantar a los rateros, pero ahorita esta medio defectuoso.",
+"Aún no sabemos porque, pero las cámaras fallan cuando aparece. Y si llega a la oficina...cierra las puertas inmediatamente, últimamente sus movimientos son algo erraticos y no nos gustaría que te lastimaras, más porque no tenemos presupuesto para tu seguro. Ah... y trata de no quedarte sin energía.",
+"Buena suerte."
+];
+
+typeMessage(messages,0);
+}
+
+function typeMessage(messages,index){
+if(index>=messages.length){
+document.getElementById("callText").innerHTML="...";
+setTimeout(()=>{
+document.getElementById("callOverlay").style.display="none";
+document.getElementById("safeText").style.display="none";
+setTimeout(()=>{ safeMode=false; },30000);
+},3000);
+return;
+}
+
+const text=document.getElementById("callText");
+text.innerHTML="";
+let sentence=messages[index];
+let char=0;
+
+const typing=setInterval(()=>{
+text.innerHTML += sentence.charAt(char);
+char++;
+if(char>=sentence.length){
+clearInterval(typing);
+setTimeout(()=>{ eraseMessage(messages,index); },2500);
+}
+},40);
+}
+
+function eraseMessage(messages,index){
+const text=document.getElementById("callText");
+let erase=setInterval(()=>{
+text.innerHTML=text.innerHTML.slice(0,-1);
+if(text.innerHTML.length<=0){
+clearInterval(erase);
+typeMessage(messages,index+1);
+}
+},15);
+}
+
+function toggleCameras(){
+const camsys=document.getElementById("cameraSystem");
+if(camsys.style.display=="block"){
+camsys.style.display="none";
+document.getElementById("closeCamBtn").style.display="none";
+}else{
+camsys.style.display="block";
+document.getElementById("closeCamBtn").style.display="block";
+document.getElementById("staticSound").play();
+updateCamera();
+}
+}
+
+function changeCam(num){
+heavyStatic.style.opacity = "0.9";
+setTimeout(() => { heavyStatic.style.opacity = "0"; }, 150);
+
+currentCam=num;
+updateCamera();
+}
+
+function updateCamera(){
+if(currentCam===dogPosition){
+feed.src=cams[currentCam][1];
+feed.classList.add("camera-danger");
+}else{
+feed.src=cams[currentCam][0];
+feed.classList.remove("camera-danger");
+}
+
+const buttons = document.querySelectorAll('.camButton');
+buttons.forEach((btn, index) => {
+if(index === currentCam) {
+btn.style.background = 'var(--fnaf-color)';
+btn.style.color = 'black';
+btn.style.boxShadow = '0 0 15px var(--fnaf-glow)';
+} else {
+btn.style.background = 'rgba(15,5,0,0.9)';
+btn.style.color = 'var(--fnaf-color)';
+btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.8)';
+}
+});
+}
+
+function startAI(){
+setInterval(()=>{
+if(!gameStarted || safeMode) return;
+
+let moveChance=Math.random()*10;
+
+if(hour>=2) aiLevel=3;
+if(hour>=3) aiLevel=5;
+if(hour>=4) aiLevel=7;
+if(hour>=5) aiLevel=9;
+
+if(moveChance<aiLevel){
+let jumpChance=Math.random();
+if(jumpChance>.75 && dogPosition<6){
+dogPosition+=2;
+}else{
+dogPosition+=1;
+}
+}
+
+if(dogPosition>7){ dogPosition=7; }
+
+if(dogPosition>=7){
+attackOffice();
+}
+
+updateCamera();
+
+},4500);
+}
+
+function attackOffice(){
+if(safeMode) return;
+
+let attackChance=Math.random();
+if(attackChance>.25){
+if(!leftDoor || !rightDoor){
+jumpscare();
+}else{
+document.getElementById("doorSound").play();
+dogPosition = Math.floor(Math.random() * 3); 
+updateCamera();
+}
+}
+}
+
+function jumpscare(){
+if(safeMode) return;
+document.getElementById("jumpscare").style.display="flex";
+document.getElementById("jumpscareSound").play();
+gameStarted=false;
+
+setTimeout(()=>{
+document.getElementById("jumpscare").style.display="none";
+document.getElementById("gameOver").style.display="flex";
+},3500);
+}
+
+function toggleLeftDoor(){
+leftDoor=!leftDoor;
+document.getElementById("doorSound").play();
+document.getElementById("doorLeft").classList.toggle("closedLeft");
+}
+
+function toggleRightDoor(){
+rightDoor=!rightDoor;
+document.getElementById("doorSound").play();
+document.getElementById("doorRight").classList.toggle("closedRight");
+}
+
+function startClock(){
+setInterval(()=>{
+if(!gameStarted) return;
+hour++;
+if(hour===13) document.getElementById("hour").innerHTML="1 AM";
+if(hour===14) document.getElementById("hour").innerHTML="2 AM";
+if(hour===15) document.getElementById("hour").innerHTML="3 AM";
+if(hour===16) document.getElementById("hour").innerHTML="4 AM";
+if(hour===17) document.getElementById("hour").innerHTML="5 AM";
+if(hour===18){
+document.getElementById("hour").innerHTML="6 AM";
+winGame();
+}
+},60000);
+}
+
+function powerDrain(){
+setInterval(()=>{
+if(!gameStarted) return;
+
+if(leftDoor) power-=0.035;
+if(rightDoor) power-=0.035;
+
+if(document.getElementById("cameraSystem").style.display=="block"){
+power-=0.025;
+}
+
+power-=0.006;
+
+if(power<0) power=0;
+
+document.getElementById("power").innerHTML=Math.floor(power)+"%";
+
+if(power<=0){
+blackout();
+}
+},100);
+}
+
+function blackout(){
+gameStarted=false;
+document.getElementById("office").style.filter="brightness(.03)";
+document.getElementById("cameraBtn").style.display="none";
+document.getElementById("closeCamBtn").style.display="none";
+
+setTimeout(()=>{
+safeMode=false;
+jumpscare();
+},10000);
+}
+
+function winGame(){
+gameStarted=false;
+document.getElementById("winScreen").style.display="flex";
+}
+
+function backToMenu(){
+location.reload();
+}
+</script>
+
+</body>
+</html>

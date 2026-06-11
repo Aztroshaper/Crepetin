@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ventilación - CAN</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+        
+        /* Interfaz inicial */
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 1);
+            z-index: 10;
+        }
+        
+        #btn-entrar {
+            padding: 20px 40px;
+            font-size: 28px;
+            color: #ff0000;
+            background-color: transparent;
+            border: 2px solid #ff0000;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px #ff0000;
+            transition: all 0.3s;
+            font-family: inherit;
+            letter-spacing: 2px;
+        }
+        
+        #btn-entrar:hover {
+            background-color: #ff0000;
+            color: black;
+            box-shadow: 0 0 30px #ff0000;
+        }
+
+        /* Texto que aparece después de entrar */
+        #texto-instruccion {
+            position: absolute;
+            top: 30px;
+            width: 100vw;
+            text-align: center;
+            color: #ffffff;
+            font-size: 20px;
+            letter-spacing: 3px;
+            opacity: 0; /* Oculto por defecto */
+            z-index: 5;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            /* Animación de parpadeo suave */
+            animation: parpadeo 3s infinite alternate;
+        }
+
+        @keyframes parpadeo {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <button id="btn-entrar">¿entrar al CAN?</button>
+    </div>
+
+    <div id="texto-instruccion" style="display: none;">arrástrate para entrar, sólo presiona W...</div>
+
+    <audio id="musicaFondo" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_24a2dc122b.mp3?filename=creepy-ambient-113543.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonidoGateo" loop>
+        <source src="vent.wav" type="audio/wav">
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    
+    <script>
+        // 1. ESCENA BÁSICA
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.08); // Niebla más realista y densa
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. CREACIÓN DEL CONDUCTO
+        const ventGeometry = new THREE.BoxGeometry(3, 2, 60);
+        const ventMaterial = new THREE.MeshPhongMaterial({
+            color: 0x1a1a1a,
+            side: THREE.BackSide,
+            shininess: 50
+        });
+        const ventilacion = new THREE.Mesh(ventGeometry, ventMaterial);
+        scene.add(ventilacion);
+
+        // 3. LUCES
+        const linterna = new THREE.PointLight(0xdddddd, 0.8, 15);
+        scene.add(linterna);
+
+        const luzFinal = new THREE.PointLight(0xffffff, 2, 15);
+        luzFinal.position.set(0, 0, -29);
+        scene.add(luzFinal);
+
+        const geometrySalida = new THREE.PlaneGeometry(3, 2);
+        const materialSalida = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+        const salida = new THREE.Mesh(geometrySalida, materialSalida);
+        salida.position.set(0, 0, -29.9);
+        scene.add(salida);
+
+        // 4. CONTROLES DE CÁMARA CON EL RATÓN
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+        
+        // Posición inicial
+        controls.getObject().position.set(0, -0.4, 28);
+
+        // 5. VARIABLES DE MOVIMIENTO
+        let moviendose = false;
+        const velocidad = 0.05; 
+        let tiempoGateo = 0;
+
+        const btnEntrar = document.getElementById('btn-entrar');
+        const uiContainer = document.getElementById('ui-container');
+        const textoInstruccion = document.getElementById('texto-instruccion');
+        const musicaFondo = document.getElementById('musicaFondo');
+        const sonidoGateo = document.getElementById('sonidoGateo');
+
+        musicaFondo.volume = 0.4;
+        sonidoGateo.volume = 0.8;
+
+        // 6. EVENTOS DE INTERFAZ Y CONTROLES
+        btnEntrar.addEventListener('click', () => {
+            uiContainer.style.display = 'none'; 
+            textoInstruccion.style.display = 'block'; // Muestra el texto
+            
+            // Bloquea el cursor del ratón en la pantalla para poder girar la cabeza
+            controls.lock();
+
+            let playMusica = musicaFondo.play();
+            if (playMusica !== undefined) {
+                playMusica.catch(e => console.warn("Música de fondo cargando..."));
+            }
+        });
+
+        // Capturar cuando presionan 'W' o Flecha Arriba
+        document.addEventListener('keydown', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') {
+                moviendose = true;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') {
+                moviendose = false;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // 7. BUCLE DE ANIMACIÓN
+        function iniciarJuego() {
+            requestAnimationFrame(iniciarJuego);
+
+            // Solo te mueves si el ratón está bloqueado en la pantalla (juego activo)
+            if (controls.isLocked === true) {
+                if (moviendose) {
+                    // Avanzar estrictamente hacia la salida (eje Z global)
+                    controls.getObject().position.z -= velocidad;
+                    
+                    // Lógica del SHAKE y el GATEO
+                    tiempoGateo += 0.15;
+                    
+                    // Movimiento suave arriba/abajo y a los lados (gateo)
+                    const gateoY = Math.sin(tiempoGateo * 1.5) * 0.05;
+                    const gateoX = Math.cos(tiempoGateo) * 0.04;
+                    
+                    // Temblor caótico (Shake)
+                    const shakeY = (Math.random() - 0.5) * 0.02;
+                    const shakeX = (Math.random() - 0.5) * 0.02;
+
+                    controls.getObject().position.y = -0.4 + gateoY + shakeY;
+                    controls.getObject().position.x = gateoX + shakeX;
+
+                    // Reproducir audio de pasos (vent.wav)
+                    if (sonidoGateo.paused) {
+                        let playPasos = sonidoGateo.play();
+                        if (playPasos !== undefined) {
+                            playPasos.catch(e => console.warn("Cargando vent.wav..."));
+                        }
+                    }
+                } else {
+                    // Si te detienes, estabilizar la cámara suavemente
+                    controls.getObject().position.y = -0.4;
+                    controls.getObject().position.x = 0;
+                    
+                    if (!sonidoGateo.paused) {
+                        sonidoGateo.pause();
+                    }
+                }
+            }
+
+            // La linterna sigue a la cámara en su posición exacta
+            linterna.position.copy(controls.getObject().position);
+
+            // Condición de victoria: Llegar a la luz
+            if (controls.getObject().position.z <= -28) {
+                window.location.href = 'noche.html'; 
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Arrancar el bucle (aunque se esté quieto)
+        iniciarJuego();
+    </script>
+</body>
+</html>
