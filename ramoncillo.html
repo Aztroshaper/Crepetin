@@ -6,7 +6,7 @@
     <style>
         body { margin: 0; overflow: hidden; background: #050505; }
         
-        /* Nuevo estilo para el GIF centrado */
+    
         #ramoncilo {
             position: absolute;
             top: 50%;
@@ -50,7 +50,7 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Iluminación
+
     const light = new THREE.DirectionalLight(0x444444, 1);
     light.position.set(0, 5, 5);
     scene.add(light, new THREE.AmbientLight(0x222222));
@@ -61,7 +61,7 @@
     spotLight.penumbra = 0.5;
     scene.add(spotLight);
 
-    // Ternero 3D
+ 
     const calf = new THREE.Group();
     const body = new THREE.Mesh(new THREE.BoxGeometry(1, 0.8, 1.5), new THREE.MeshPhongMaterial({color: 0x000000}));
     const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshPhongMaterial({color: 0x111111}));
@@ -86,7 +86,7 @@
     const rain = new THREE.Points(rainGeo, rainMat);
     scene.add(rain);
 
-    // Logica RPG
+ 
     const texto = "??? : Míralo. Cada gota de lluvia que lo golpea es una oportunidad que ignoraste. Sigue ahí, esperando que lo alimentes con tu culpa. ¿Realmente crees que si lo matas, el suelo dejará de estar mojado?";
     let i = 0;
     function typeWriter() {
@@ -101,7 +101,7 @@
     window.decidir = (matar) => {
         if (matar) {
             calf.scale.set(0.1, 0.1, 0.1);
-            setTimeout(() => window.location.href = 'h4.html', 1000);
+            setTimeout(() => window.location.href = 'ere.html', 1000);
         } else {
             alert("La inacción es también una decisión.");
         }
