@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Elegiste bien</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+        
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(10, 0, 20, 0.8);
+            z-index: 10;
+        }
+        
+        #btn-entrar {
+            padding: 20px 40px;
+            font-size: 28px;
+            color: #ff0055;
+            background-color: transparent;
+            border: 2px solid #ff0055;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
+            transition: all 0.1s;
+            font-family: inherit;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px #00ffff;
+        }
+        
+        #btn-entrar:hover {
+            background-color: #ff0055;
+            color: white;
+            box-shadow: 0 0 50px #ff0055, inset 0 0 20px #00ffff;
+            transform: scale(1.1) rotate(-1deg);
+        }
+
+        #texto-instruccion {
+            position: absolute;
+            top: 30px;
+            width: 100vw;
+            text-align: center;
+            color: #00ffff;
+            font-size: 20px;
+            letter-spacing: 3px;
+            opacity: 0; 
+            z-index: 5;
+            text-shadow: 2px -2px 0px #ff0055;
+            animation: parpadeo 0.5s infinite alternate;
+        }
+
+        @keyframes parpadeo {
+            0% { opacity: 0.1; transform: translate(2px, -2px); }
+            50% { opacity: 1; transform: translate(-2px, 2px); }
+            100% { opacity: 0.5; transform: translate(0, 0); }
+        }
+
+        /* EFECTO GLITCH EN LA PANTALLA (CSS) */
+        .glitch-overlay {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0.2;
+            background: linear-gradient(rgba(255, 0, 85, 0.2) 50%, rgba(0, 255, 255, 0.2) 50%);
+            background-size: 100% 4px;
+            mix-blend-mode: overlay;
+            animation: glitchAnim 0.1s infinite;
+        }
+
+        @keyframes glitchAnim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-5px, 2px); filter: hue-rotate(90deg); }
+            40% { transform: translate(-5px, -2px); }
+            60% { transform: translate(5px, 2px); filter: hue-rotate(-90deg); }
+            80% { transform: translate(5px, -2px); }
+            100% { transform: translate(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glitch-overlay"></div>
+
+    <div id="ui-container">
+        <button id="btn-entrar">Adiós</button>
+    </div>
+
+    <div id="texto-instruccion">Encuentra la salida...</div>
+
+    <!-- NUEVO AUDIO: caos.mp3 -->
+    <audio id="musicaFondo" loop>
+        <source src="caos.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    
+    <script>
+        // 1. ESCENA WACKY Y NIEBLA TÓXICA
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a002a); 
+        scene.fog = new THREE.FogExp2(0x3a004a, 0.04); 
+
+        const camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: false }); 
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. SUELO (Concreto oscuro)
+        const sueloGeo = new THREE.PlaneGeometry(100, 180);
+        const sueloMat = new THREE.MeshPhongMaterial({ 
+            color: 0x111111, 
+            shininess: 100,
+            roughness: 0.2
+        });
+        const suelo = new THREE.Mesh(sueloGeo, sueloMat);
+        suelo.rotation.x = -Math.PI / 2;
+        suelo.position.y = -3;
+        scene.add(suelo);
+
+        // 3. EDIFICIOS DESTRUIDOS (Generación procedural)
+        const matEdificio = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+        const matEdificio2 = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 1 });
+
+        for (let z = 30; z > -90; z -= 8) {
+            // Edificios izquierda
+            if(Math.random() > 0.2) {
+                const altura = 10 + Math.random() * 20;
+                const edificio = new THREE.Mesh(new THREE.BoxGeometry(6, altura, 6), Math.random() > 0.5 ? matEdificio : matEdificio2);
+                edificio.position.set(-8 - Math.random() * 4, -3 + altura/2, z);
+                edificio.rotation.z = (Math.random() - 0.5) * 0.3; 
+                edificio.rotation.y = (Math.random() - 0.5) * 0.5;
+                scene.add(edificio);
+            }
+            // Edificios derecha
+            if(Math.random() > 0.2) {
+                const altura = 10 + Math.random() * 20;
+                const edificio = new THREE.Mesh(new THREE.BoxGeometry(6, altura, 6), Math.random() > 0.5 ? matEdificio : matEdificio2);
+                edificio.position.set(8 + Math.random() * 4, -3 + altura/2, z);
+                edificio.rotation.z = (Math.random() - 0.5) * 0.3; 
+                edificio.rotation.y = (Math.random() - 0.5) * 0.5;
+                scene.add(edificio);
+            }
+        }
+
+        // 4. COCHES CHOCADOS CON DETALLES
+        function crearCoche(colorCarroceria) {
+            const grupoCoche = new THREE.Group();
+
+            // Chasis
+            const chasis = new THREE.Mesh(
+                new THREE.BoxGeometry(2.2, 0.8, 4.5), 
+                new THREE.MeshStandardMaterial({ color: colorCarroceria, metalness: 0.7, roughness: 0.3 })
+            );
+            chasis.position.y = 0.6;
+            grupoCoche.add(chasis);
+
+            // Cabina
+            const cabina = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 0.7, 2.5), 
+                new THREE.MeshStandardMaterial({ color: 0x050505, transparent: true, opacity: 0.8, roughness: 0.1, metalness: 1 })
+            );
+            cabina.position.set(0, 1.35, -0.3);
+            grupoCoche.add(cabina);
+
+            // Llantas
+            const geoLlanta = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+            geoLlanta.rotateZ(Math.PI / 2);
+            const matLlanta = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
+            
+            const posLlantas = [
+                [-1.1, 0.4, 1.5], [1.1, 0.4, 1.5], 
+                [-1.1, 0.4, -1.5], [1.1, 0.4, -1.5]
+            ];
+
+            posLlantas.forEach(pos => {
+                const llanta = new THREE.Mesh(geoLlanta, matLlanta);
+                llanta.position.set(...pos);
+                grupoCoche.add(llanta);
+            });
+
+            return grupoCoche;
+        }
+
+        const coloresCoches = [0xffffff, 0xaa0000, 0x0055ff, 0xddaa00, 0x333333];
+        for (let i = 0; i < 10; i++) {
+            const coche = crearCoche(coloresCoches[Math.floor(Math.random() * coloresCoches.length)]);
+            const ladoX = (Math.random() - 0.5) * 12;
+            const posZ = 10 - i * 10 + Math.random() * 5;
+            
+            coche.position.set(ladoX, -2.5, posZ);
+            coche.rotation.x = (Math.random() - 0.5) * Math.PI; 
+            coche.rotation.y = Math.random() * Math.PI * 2;
+            coche.rotation.z = (Math.random() - 0.5) * (Math.PI / 2);
+            
+            scene.add(coche);
+        }
+
+        // 5. RASTROS DE LÍQUIDO ROJO
+        const matLiquido = new THREE.MeshStandardMaterial({ 
+            color: 0x990000, 
+            metalness: 0.5, 
+            roughness: 0.1, 
+            transparent: true,
+            opacity: 0.85
+        });
+
+        for(let i = 0; i < 25; i++) {
+            const geoLiquido = new THREE.PlaneGeometry(1 + Math.random() * 3, 2 + Math.random() * 5);
+            const rastro = new THREE.Mesh(geoLiquido, matLiquido);
+            rastro.rotation.x = -Math.PI / 2;
+            rastro.rotation.z = Math.random() * Math.PI;
+            rastro.position.set((Math.random() - 0.5) * 12, -2.98, 20 - Math.random() * 100);
+            scene.add(rastro);
+        }
+
+        // 6. ESFERAS DE LUZ FLOTANTES Y ERRÁTICAS
+        const esferas = [];
+        for(let i = 0; i < 15; i++) {
+            const colorLuz = new THREE.Color().setHSL(Math.random(), 1, 0.6); 
+            const esferaGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const esferaMat = new THREE.MeshBasicMaterial({ color: colorLuz }); 
+            const esfera = new THREE.Mesh(esferaGeo, esferaMat);
+            
+            const luz = new THREE.PointLight(colorLuz, 1.5, 15);
+            esfera.add(luz);
+
+            esfera.position.set((Math.random() - 0.5) * 30, Math.random() * 15, 20 - Math.random() * 100);
+            scene.add(esfera);
+
+            esferas.push({
+                mesh: esfera,
+                velocidad: 0.02 + Math.random() * 0.05,
+                offset: Math.random() * 100
+            });
+        }
+
+        // 7. LA PUERTA FINAL (Conexión a h4.html)
+        const puertaGeo = new THREE.BoxGeometry(8, 14, 1);
+        const puertaMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Puerta brillante y estática
+        const puerta = new THREE.Mesh(puertaGeo, puertaMat);
+        puerta.position.set(0, 4, -80); // Se sitúa al fondo
+        scene.add(puerta);
+
+        // Luz intensa para que la puerta llame la atención del jugador
+        const luzPuerta = new THREE.PointLight(0xffffff, 3, 30);
+        luzPuerta.position.set(0, 4, -77);
+        scene.add(luzPuerta);
+
+        // 8. LUCES GENERALES
+        const luzAmbiente = new THREE.AmbientLight(0x221133, 1);
+        scene.add(luzAmbiente);
+
+        // 9. CONTROLES Y CÁMARA
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+        controls.getObject().position.set(0, -1, 28); 
+
+        let moviendose = false;
+        const velocidad = 0.12; 
+        let tiempo = 0;
+
+        const btnEntrar = document.getElementById('btn-entrar');
+        const uiContainer = document.getElementById('ui-container');
+        const textoInstruccion = document.getElementById('texto-instruccion');
+        const musicaFondo = document.getElementById('musicaFondo');
+
+        musicaFondo.volume = 0.5;
+
+        btnEntrar.addEventListener('click', () => {
+            uiContainer.style.display = 'none'; 
+            textoInstruccion.style.display = 'block'; 
+            controls.lock();
+            let playMusica = musicaFondo.play();
+            if (playMusica !== undefined) {
+                playMusica.catch(e => console.warn("Esperando caos.mp3... asegúrate de tener el archivo en la misma carpeta."));
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key.toLowerCase() === 'w' || event.key === 'ArrowUp') moviendose = true;
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key.toLowerCase() === 'w' || event.key === 'ArrowUp') moviendose = false;
+        });
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // 10. BUCLE DE ANIMACIÓN Y GLITCH
+        function animar() {
+            requestAnimationFrame(animar);
+            tiempo += 0.05;
+
+            // Animar esferas erráticas
+            esferas.forEach(obj => {
+                obj.mesh.position.x += Math.sin(tiempo * obj.velocidad * 10 + obj.offset) * 0.2;
+                obj.mesh.position.y += Math.cos(tiempo * obj.velocidad * 8 + obj.offset) * 0.2;
+                obj.mesh.position.z += Math.sin(tiempo * obj.velocidad * 5 + obj.offset) * 0.2;
+                
+                if(obj.mesh.position.y < -2) obj.mesh.position.y = -2;
+            });
+
+            // Movimiento del jugador
+            if (controls.isLocked === true && moviendose) {
+                controls.getObject().position.z -= velocidad;
+                
+                const caminarY = Math.abs(Math.sin(tiempo * 3)) * 0.15;
+                controls.getObject().position.y = -1 + caminarY;
+            }
+
+            // REDIRECCIÓN A H4.HTML AL TOCAR LA PUERTA (z = -78 para colisión)
+            if (controls.getObject().position.z <= -78) {
+                window.location.href = 'h4.html';
+            }
+
+            // Efecto Glitch de cámara
+            if (Math.random() > 0.95) { 
+                camera.position.x += (Math.random() - 0.5) * 0.2;
+                camera.rotation.z = (Math.random() - 0.5) * 0.05;
+                scene.fog.color.setHex(Math.random() > 0.5 ? 0xff0055 : 0x00ffff); 
+            } else {
+                camera.rotation.z = 0; 
+                scene.fog.color.setHex(0x3a004a); 
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animar();
+    </script>
+</body>
+</html>

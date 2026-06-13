@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ve a la salida</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        /* --- EFECTO VHS Y CRT OVERLAY --- */
+        #vhs-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        #vhs-noise {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.05);
+            pointer-events: none;
+            z-index: 51;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.8; }
+            50% { opacity: 1.0; }
+            100% { opacity: 0.9; }
+        }
+
+        #vhs-text {
+            position: absolute;
+            top: 40px; left: 40px;
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            z-index: 60;
+            pointer-events: none;
+            text-shadow: 2px 0px 1px red, -2px 0px 1px blue;
+            display: none;
+        }
+
+        /* --- INTERFAZ LIMINAL ESTÉRIL Y LIMPIA --- */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        #start-menu {
+            text-align: center;
+            max-width: 600px;
+            padding: 20px;
+            transition: opacity 1s ease-in-out;
+        }
+
+        #start-menu h1 { 
+            margin-top: 0; 
+            font-size: 2.8em; 
+            color: #ffff00; 
+            font-weight: 300;
+            letter-spacing: 14px;
+            text-transform: uppercase;
+            margin-bottom: 50px;
+        }
+        
+        #start-menu p { 
+            margin-bottom: 70px; 
+            font-size: 1em; 
+            color: #ffffff;
+            letter-spacing: 3px;
+            line-height: 1.8;
+        }
+        
+        button#startButton {
+            padding: 12px 35px;
+            font-size: 15px;
+            background-color: transparent;
+            border: 1px solid #ffffff;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            transition: all 0.4s ease;
+        }
+
+        button#startButton:hover {
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        /* --- PANTALLA DE SALIDA (GRACIAS) --- */
+        #thanks-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000000;
+            display: none; /* Se activa con flex al tocar la puerta */
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #thanks-text {
+            color: #ffff00;
+            font-size: 3em;
+            letter-spacing: 10px;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.6s ease-in-out;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 4px; height: 4px;
+            background-color: #ffffff;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="vhs-overlay"></div>
+    <div id="vhs-noise"></div>
+    <div id="vhs-text">PLAY ►<br><span style="font-size: 16px;">SP</span></div>
+
+    <div id="overlay">
+        <div id="start-menu">
+            <h1>Ve a la salida</h1>
+            <p>WASD para caminar<br>ESPACIO para saltar</p>
+            <button id="startButton">ENTRAR</button>
+        </div>
+    </div>
+
+    <div id="thanks-overlay">
+        <div id="thanks-text">Gracias</div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let canJump = false; 
+        let prevTime = performance.now();
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let busGroup, doorMesh;
+        
+        let isEnding = false; // Variable para saber si ya tocaste la puerta
+        
+        // Ahora se llama fin.mp3
+        let bgMusic = new Audio('fin.mp3');
+        bgMusic.loop = true;
+
+        const startButton = document.getElementById('startButton');
+        const overlay = document.getElementById('overlay');
+        const startMenu = document.getElementById('start-menu');
+        const thanksOverlay = document.getElementById('thanks-overlay');
+        const thanksText = document.getElementById('thanks-text');
+        const crosshair = document.getElementById('crosshair');
+        const vhsText = document.getElementById('vhs-text');
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xff9944); 
+            scene.fog = new THREE.FogExp2(0xff6600, 0.012); 
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: false }); 
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new THREE.PointerLockControls(camera, document.body);
+
+            controls.addEventListener('lock', function () {
+                if (!isEnding) {
+                    crosshair.style.display = 'block';
+                    vhsText.style.display = 'block';
+                }
+            });
+
+            controls.addEventListener('unlock', function () {
+                if (!isEnding) {
+                    crosshair.style.display = 'none';
+                    vhsText.style.display = 'none';
+                    overlay.style.display = 'flex';
+                    overlay.style.opacity = '1';
+                    startMenu.style.opacity = '1';
+                    document.querySelector('#start-menu h1').innerText = "PAUSA";
+                    document.querySelector('#start-menu p').innerHTML = "Haz clic en entrar para regresar.";
+                }
+            });
+
+            scene.add(controls.getObject());
+            controls.getObject().position.set(0, 2, 20); 
+
+            const onKeyDown = function (event) {
+                switch (event.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'Space': 
+                        if (canJump === true) {
+                            velocity.y += 12; 
+                            canJump = false;
+                        }
+                        break;
+                }
+            };
+            const onKeyUp = function (event) {
+                switch (event.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                }
+            };
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            scene.add(new THREE.AmbientLight(0xffddaa, 0.8));
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            sunLight.position.set(100, 40, -100);
+            scene.add(sunLight);
+
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(500, 500),
+                new THREE.MeshLambertMaterial({ color: 0x5c3a21 })
+            );
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            createOptimizedWheat();
+            createHollowBus();
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function createOptimizedWheat() {
+            const count = 40000; 
+            const geometry = new THREE.PlaneGeometry(0.8, 2.2); 
+            geometry.translate(0, 1.1, 0); 
+            
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0xd4af37, 
+                side: THREE.DoubleSide,
+                transparent: true,
+                alphaTest: 0.5
+            });
+
+            const mesh = new THREE.InstancedMesh(geometry, material, count);
+            const dummy = new THREE.Object3D();
+
+            for (let i = 0; i < count; i++) {
+                dummy.position.x = (Math.random() - 0.5) * 300;
+                dummy.position.z = (Math.random() - 0.5) * 300;
+                
+                if (dummy.position.distanceTo(new THREE.Vector3(0, 0, -40)) < 15) continue;
+                if (dummy.position.distanceTo(new THREE.Vector3(0, 0, 20)) < 4) continue;
+
+                dummy.rotation.y = Math.random() * Math.PI;
+                dummy.scale.setScalar(0.7 + Math.random() * 0.5);
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
+            }
+            scene.add(mesh);
+        }
+
+        function createHollowBus() {
+            busGroup = new THREE.Group();
+            busGroup.position.set(0, 0, -40); 
+            scene.add(busGroup);
+
+            const exteriorMat = new THREE.MeshLambertMaterial({ color: 0x244a29 });
+            const interiorMat = new THREE.MeshLambertMaterial({ color: 0x000000 }); 
+            const roofMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const seatMat = new THREE.MeshLambertMaterial({ color: 0xffffff }); 
+
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(5, 0.2, 15), interiorMat);
+            floor.position.set(0, 0.5, 0);
+            busGroup.add(floor);
+
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(5, 0.2, 15), roofMat);
+            roof.position.set(0, 3.5, 0);
+            busGroup.add(roof);
+
+            const frontWall = new THREE.Mesh(new THREE.BoxGeometry(4.6, 3.0, 0.2), exteriorMat);
+            frontWall.position.set(0, 2.0, -7.4);
+            busGroup.add(frontWall);
+
+            const backLeft = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3.0, 0.2), exteriorMat);
+            backLeft.position.set(-1.75, 2.0, 7.4);
+            busGroup.add(backLeft);
+
+            const backRight = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3.0, 0.2), exteriorMat);
+            backRight.position.set(1.75, 2.0, 7.4);
+            busGroup.add(backRight);
+
+            const tireGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.4, 16);
+            const tireMat = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            const tirePositions = [
+                [-2.4, 0.4, -5], [2.4, 0.4, -5], 
+                [-2.4, 0.4, 4], [2.4, 0.4, 4]    
+            ];
+            tirePositions.forEach(pos => {
+                const tire = new THREE.Mesh(tireGeo, tireMat);
+                tire.rotation.z = Math.PI / 2;
+                tire.position.set(...pos);
+                busGroup.add(tire);
+            });
+
+            for (let side of [-1, 1]) {
+                const xPos = side * 2.4;
+                const wallBottom = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.2, 15), exteriorMat);
+                wallBottom.position.set(xPos, 1.1, 0);
+                busGroup.add(wallBottom);
+                
+                const wallTop = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 15), exteriorMat);
+                wallTop.position.set(xPos, 3.3, 0);
+                busGroup.add(wallTop);
+
+                for (let i = 0; i < 6; i++) {
+                    const zPos = -6 + (i * 2.4);
+                    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.6, 0.4), exteriorMat);
+                    pillar.position.set(xPos, 2.5, zPos);
+                    busGroup.add(pillar);
+                    
+                    if (i < 5) {
+                        const winZ = zPos + 1.2;
+                        const windowMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.4), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15, side: THREE.DoubleSide }));
+                        windowMesh.position.set(xPos + (side * 0.11), 2.5, winZ);
+                        windowMesh.rotation.y = Math.PI / 2;
+                        busGroup.add(windowMesh);
+                    }
+                }
+            }
+
+            const seatGeo = new THREE.BoxGeometry(1.0, 0.8, 0.8);
+            const seatBackGeo = new THREE.BoxGeometry(1.0, 1.2, 0.2);
+            for (let i = 0; i < 6; i++) {
+                const zPos = -5 + (i * 2.0);
+                
+                const seatL = new THREE.Mesh(seatGeo, seatMat);
+                seatL.position.set(-1.4, 1.0, zPos);
+                const backL = new THREE.Mesh(seatBackGeo, seatMat);
+                backL.position.set(-1.4, 1.6, zPos + 0.3);
+                busGroup.add(seatL, backL);
+
+                const seatR = new THREE.Mesh(seatGeo, seatMat);
+                seatR.position.set(1.4, 1.0, zPos);
+                const backR = new THREE.Mesh(seatBackGeo, seatMat);
+                backR.position.set(1.4, 1.6, zPos + 0.3);
+                busGroup.add(seatR, backR);
+            }
+
+            const entranceDoor = new THREE.Group();
+            entranceDoor.position.set(1.0, 2.0, 7.5); 
+            entranceDoor.rotation.y = Math.PI / 2.5; 
+            
+            const eDoorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.8, 0.1), exteriorMat);
+            eDoorMesh.position.set(-0.7, 0, 0); 
+            entranceDoor.add(eDoorMesh);
+            
+            const eDoorWin = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.0), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 }));
+            eDoorWin.position.set(-0.7, 0.5, 0.06);
+            entranceDoor.add(eDoorWin);
+            
+            busGroup.add(entranceDoor);
+
+            const doorGeo = new THREE.PlaneGeometry(1.8, 2.6);
+            const doorMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+            doorMesh = new THREE.Mesh(doorGeo, doorMat);
+            doorMesh.position.set(0, 1.8, -7.28); 
+            busGroup.add(doorMesh);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function checkCollision(x, z) {
+            const margin = 0.3; 
+            const xMin = -2.5 - margin; const xMax = 2.5 + margin;
+            const zMin = -47.5 - margin; const zMax = -32.5 + margin;
+            
+            if (x > xMin && x < -2.3 + margin && z > zMin && z < zMax) return true;
+            if (x > 2.3 - margin && x < xMax && z > zMin && z < zMax) return true;
+            
+            // Pared del fondo (ligeramente ajustada para dejarte acercar a la puerta)
+            if (x > xMin && x < xMax && z > zMin && z < -47.4 + margin) return true;
+            
+            if (z < -32.5 && z > -47.5) {
+                if (x < -0.8 || x > 0.8) return true; 
+            }
+
+            if (z > -32.7 - margin && z < zMax) {
+                if (x < -1.0 + margin || x > 1.0 - margin) return true; 
+            }
+            
+            return false;
+        }
+
+        // --- FUNCIÓN QUE SE EJECUTA AL TOCAR LA PUERTA ---
+        function triggerEndingSequence() {
+            if (isEnding) return;
+            isEnding = true;
+            
+            controls.unlock();
+            
+            // Forzamos el fondo negro puro ocultando la retícula y controles
+            crosshair.style.display = 'none';
+            vhsText.style.display = 'none';
+            overlay.style.display = 'none';
+            
+            // Mostramos el contenedor oscuro
+            thanksOverlay.style.display = 'flex';
+            
+            // Apagamos la música
+            if (bgMusic) bgMusic.pause();
+
+            // A los 2 segundos exactos, aparece el texto "Gracias"
+            setTimeout(() => {
+                thanksText.style.opacity = '1';
+                
+                // Se cierra o limpia después de que lo lea
+                setTimeout(() => {
+                    try { window.close(); } catch(e) {}
+                    window.location.href = "about:blank";
+                }, 1800);
+            }, 2000);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (controls.isLocked === true && !isEnding) {
+                const time = performance.now();
+                const delta = (time - prevTime) / 1000;
+
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 35.0 * delta; 
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * 40.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 40.0 * delta;
+
+                let camObj = controls.getObject();
+                let prevX = camObj.position.x;
+                let prevZ = camObj.position.z;
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+
+                let newX = camObj.position.x;
+                let newZ = camObj.position.z;
+
+                camObj.position.set(newX, camObj.position.y, prevZ);
+                if (checkCollision(newX, prevZ)) {
+                    camObj.position.x = prevX;
+                    velocity.x = 0;
+                }
+
+                let finalX = camObj.position.x;
+                camObj.position.set(finalX, camObj.position.y, newZ);
+                if (checkCollision(finalX, newZ)) {
+                    camObj.position.z = prevZ;
+                    velocity.z = 0;
+                }
+
+                let px = camObj.position.x;
+                let pz = camObj.position.z;
+                let targetY = 2.0; 
+
+                if (px > -1.2 && px < 1.2) {
+                    if (pz <= -28 && pz > -32.5) {
+                        let t = (-28 - pz) / 4.5; 
+                        targetY = 2.0 + (t * 0.5);
+                    } 
+                    else if (pz <= -32.5 && pz >= -47.5) {
+                        targetY = 2.5; 
+                    }
+                }
+                
+                if (px > -2.3 && px < 2.3 && pz <= -32.5 && pz >= -47.5) {
+                    targetY = 2.5;
+                }
+
+                camObj.position.y += velocity.y * delta;
+                if (camObj.position.y < targetY) {
+                    velocity.y = 0;
+                    camObj.position.y = targetY;
+                    canJump = true;
+                }
+
+                // --- DETECCIÓN DE PROXIMIDAD A LA PUERTA (TOCARLA) ---
+                // La puerta está en z = -47.28. Si el jugador llega a z < -46.5 dentro del pasillo, se activa.
+                if (pz < -46.5 && px > -0.8 && px < 0.8) {
+                    triggerEndingSequence();
+                }
+
+                prevTime = time;
+            } else if (isEnding) {
+                // Mantener el tiempo actualizado para que no haya saltos bruscos si se destraba
+                prevTime = performance.now();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // CONTROL DE ACCIONES AL PRESIONAR ENTRAR
+        startButton.addEventListener('click', function () {
+            // Se manda a llamar la reproducción de mp3.
+            bgMusic.play().catch(e => console.log("Si la música no suena, asegúrate de que fin.mp3 esté en la misma carpeta o deshabilita los bloqueadores de auto-play del navegador.", e));
+            
+            startMenu.style.opacity = '0';
+            
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    if (!scene) init();
+                    controls.lock(); 
+                }, 800);
+            }, 1200);
+        });
+    </script>
+</body>
+</html>
