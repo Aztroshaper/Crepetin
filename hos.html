@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Hospital Abandonado - Urgencias</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #020202;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+        
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(2, 2, 2, 0.95);
+            z-index: 10;
+        }
+        
+        #btn-entrar {
+            padding: 20px 40px;
+            font-size: 28px;
+            color: #8a0303; 
+            background-color: transparent;
+            border: 2px solid #8a0303;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(138, 3, 3, 0.3);
+            transition: all 0.3s;
+            font-family: inherit;
+            letter-spacing: 2px;
+        }
+        
+        #btn-entrar:hover {
+            background-color: #8a0303;
+            color: black;
+            box-shadow: 0 0 30px #8a0303;
+        }
+
+        #texto-instruccion {
+            position: absolute;
+            top: 40px;
+            width: 100vw;
+            text-align: center;
+            color: #ffffff;
+            font-size: 18px;
+            letter-spacing: 4px;
+            opacity: 0; 
+            z-index: 5;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            animation: parpadeo 4s infinite alternate;
+        }
+
+        @keyframes parpadeo {
+            0% { opacity: 0.1; }
+            50% { opacity: 0.9; }
+            100% { opacity: 0.1; }
+        }
+
+        .estatica-overlay {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0.12;
+            background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            animation: animEstatica 0.15s steps(2, end) infinite;
+        }
+
+        @keyframes animEstatica {
+            0% { background-position: 0 0; }
+            20% { background-position: -5% -10%; }
+            40% { background-position: -15% 5%; }
+            60% { background-position: 7% -25%; }
+            80% { background-position: 20% 25%; }
+            100% { background-position: -25% 10%; }
+        }
+
+        #viñeta {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 15;
+            background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="estatica-overlay" id="estatica"></div>
+    <div id="viñeta"></div>
+
+    <div id="ui-container">
+        <button id="btn-entrar">Ve a la sala de urgencias</button>
+    </div>
+
+    <div id="texto-instruccion">MANTÉN 'W' PARA AVANZAR. MANTÉN 'SHIFT' PARA CORRER.</div>
+
+    <audio id="musicaFondo" loop>
+        <source src="beep.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonidoPasos" loop>
+        <source src="paso.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    
+    <script>
+        // ESCENA Y NIEBLA DENSA
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020202); 
+        scene.fog = new THREE.FogExp2(0x050505, 0.08); 
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // PISO DE ROMBOS
+        const canvasPiso = document.createElement('canvas');
+        canvasPiso.width = 256; canvasPiso.height = 256;
+        const ctxPiso = canvasPiso.getContext('2d');
+        ctxPiso.fillStyle = '#b0b0b0'; 
+        ctxPiso.fillRect(0, 0, 256, 256);
+        ctxPiso.fillStyle = '#1a1a1a'; 
+        ctxPiso.beginPath();
+        ctxPiso.moveTo(128, 0); ctxPiso.lineTo(256, 128); ctxPiso.lineTo(128, 256); ctxPiso.lineTo(0, 128);
+        ctxPiso.fill();
+        
+        const texPiso = new THREE.CanvasTexture(canvasPiso);
+        texPiso.wrapS = THREE.RepeatWrapping; texPiso.wrapT = THREE.RepeatWrapping;
+        texPiso.repeat.set(10, 60); 
+
+        const sueloGeo = new THREE.PlaneGeometry(10, 80);
+        const sueloMat = new THREE.MeshStandardMaterial({ 
+            map: texPiso, 
+            roughness: 0.7, 
+            metalness: 0.1
+        });
+        const suelo = new THREE.Mesh(sueloGeo, sueloMat);
+        suelo.rotation.x = -Math.PI / 2;
+        suelo.position.y = -3;
+        scene.add(suelo);
+
+        // PAREDES
+        const textureLoader = new THREE.TextureLoader();
+        const paredTex = textureLoader.load('par.jpeg', function(texture) {
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(20, 4);
+        });
+
+        const paredGeo = new THREE.PlaneGeometry(80, 20);
+        const paredMat = new THREE.MeshStandardMaterial({ 
+            map: paredTex,
+            color: 0x7a8a7a, 
+            roughness: 1.0,  
+            metalness: 0.0 
+        });
+        
+        const paredIzq = new THREE.Mesh(paredGeo, paredMat);
+        paredIzq.position.set(-4, 2, 0);
+        paredIzq.rotation.y = Math.PI / 2;
+        scene.add(paredIzq);
+
+        const paredDer = new THREE.Mesh(paredGeo, paredMat);
+        paredDer.position.set(4, 2, 0);
+        paredDer.rotation.y = -Math.PI / 2;
+        scene.add(paredDer);
+
+        // TECHO
+        const techoGeo = new THREE.PlaneGeometry(10, 80);
+        const techoMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 1 });
+        const techo = new THREE.Mesh(techoGeo, techoMat);
+        techo.rotation.x = Math.PI / 2;
+        techo.position.y = 5;
+        scene.add(techo);
+
+        // OBJETOS DEL HOSPITAL
+        const puertaGeo = new THREE.BoxGeometry(0.2, 5, 2.5);
+        const puertaMat = new THREE.MeshStandardMaterial({ color: 0x2a363b, roughness: 0.9 });
+
+        for (let z = 30; z > -35; z -= 4) {
+            
+            if (Math.random() > 0.4) {
+                const esIzq = Math.random() > 0.5;
+                const puerta = new THREE.Mesh(puertaGeo, puertaMat);
+                puerta.position.set(esIzq ? -3.9 : 3.9, -0.5, z);
+                scene.add(puerta);
+            }
+
+            if (Math.random() > 0.75) {
+                const camillaGroup = new THREE.Group();
+                const colchon = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.5, 0.3, 3),
+                    new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 1 })
+                );
+                colchon.position.y = 0.5;
+                camillaGroup.add(colchon);
+
+                const pataMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.6 });
+                const posicionesPatas = [[-0.6, 0.6], [0.6, 0.6], [-0.6, -1.2], [0.6, -1.2]];
+                posicionesPatas.forEach(pos => {
+                    const pata = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5), pataMat);
+                    pata.position.set(pos[0], -0.25, pos[1]);
+                    camillaGroup.add(pata);
+                });
+
+                camillaGroup.position.set((Math.random() - 0.5) * 4, -2.5, z);
+                camillaGroup.rotation.y = Math.random() * Math.PI;
+                scene.add(camillaGroup);
+            }
+
+            if (Math.random() > 0.6) {
+                const charco = new THREE.Mesh(
+                    new THREE.PlaneGeometry(Math.random() * 2 + 0.5, Math.random() * 2 + 0.5),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x5a0000, 
+                        roughness: 0.1,  
+                        transparent: true, 
+                        opacity: 0.85 
+                    })
+                );
+                charco.rotation.x = -Math.PI / 2;
+                charco.rotation.z = Math.random() * Math.PI;
+                charco.position.set((Math.random() - 0.5) * 6, -2.98, z); 
+                scene.add(charco);
+            }
+        }
+
+        // ILUMINACIÓN 
+        const linterna = new THREE.PointLight(0xdddddd, 0.8, 12); 
+        scene.add(linterna);
+
+        const luzAmbiente = new THREE.AmbientLight(0x050505, 1);
+        scene.add(luzAmbiente);
+
+        const luzFinal = new THREE.PointLight(0xff0000, 1, 15); 
+        luzFinal.position.set(0, 0, -38);
+        scene.add(luzFinal);
+
+        // CONTROLES Y CÁMARA
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+        controls.getObject().position.set(0, -0.5, 35); 
+
+        // VARIABLES DE MOVIMIENTO
+        let moviendose = false;
+        let corriendo = false;
+        const velocidadCaminar = 0.035; 
+        const velocidadCorrer = 0.09; 
+        let tiempoPasos = 0;
+
+        const btnEntrar = document.getElementById('btn-entrar');
+        const uiContainer = document.getElementById('ui-container');
+        const textoInstruccion = document.getElementById('texto-instruccion');
+        const musicaFondo = document.getElementById('musicaFondo');
+        const sonidoPasos = document.getElementById('sonidoPasos');
+        const estatica = document.getElementById('estatica');
+
+        musicaFondo.volume = 0.4;
+        sonidoPasos.volume = 0.8;
+
+        btnEntrar.addEventListener('click', () => {
+            uiContainer.style.display = 'none'; 
+            textoInstruccion.style.display = 'block'; 
+            controls.lock();
+
+            let playMusica = musicaFondo.play();
+            if (playMusica !== undefined) {
+                playMusica.catch(e => console.warn("Esperando interacción para audio..."));
+            }
+        });
+
+        // DETECCIÓN DE TECLAS (Caminar y Correr)
+        document.addEventListener('keydown', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') moviendose = true;
+            if (event.key === 'Shift') corriendo = true;
+        });
+
+        document.addEventListener('keyup', (event) => {
+            const tecla = event.key.toLowerCase();
+            if (tecla === 'w' || event.key === 'ArrowUp') moviendose = false;
+            if (event.key === 'Shift') corriendo = false;
+        });
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // BUCLE DE ANIMACIÓN
+        function iniciarJuego() {
+            requestAnimationFrame(iniciarJuego);
+
+            if (controls.isLocked === true) {
+                if (moviendose) {
+                    // Determinar velocidad actual basada en si presiona Shift
+                    const velocidadActual = corriendo ? velocidadCorrer : velocidadCaminar;
+                    controls.getObject().position.z -= velocidadActual;
+                    
+                    // El balanceo de cámara y el ritmo se aceleran si corres
+                    const ritmoPasos = corriendo ? 0.35 : 0.15;
+                    tiempoPasos += ritmoPasos; 
+                    
+                    const caminarY = Math.abs(Math.sin(tiempoPasos)) * (corriendo ? 0.12 : 0.08);
+                    const caminarX = Math.cos(tiempoPasos * 0.5) * (corriendo ? 0.05 : 0.03);
+
+                    controls.getObject().position.y = -0.5 + caminarY;
+                    controls.getObject().position.x += caminarX * 0.1;
+
+                    // Ajustar velocidad de reproducción del audio si es posible
+                    sonidoPasos.playbackRate = corriendo ? 1.5 : 1.0;
+
+                    if (sonidoPasos.paused) {
+                        let playPasos = sonidoPasos.play();
+                        if (playPasos !== undefined) playPasos.catch(e => {});
+                    }
+                } else {
+                    controls.getObject().position.y += (-0.5 - controls.getObject().position.y) * 0.1;
+                    if (!sonidoPasos.paused) sonidoPasos.pause();
+                }
+
+                // HITBOXES
+                const limiteX = 3.2;
+                if (controls.getObject().position.x > limiteX) {
+                    controls.getObject().position.x = limiteX;
+                } else if (controls.getObject().position.x < -limiteX) {
+                    controls.getObject().position.x = -limiteX;
+                }
+            }
+
+            linterna.position.copy(controls.getObject().position);
+
+            if (Math.random() < 0.03) { 
+                linterna.color.setHex(0xff0000); 
+                linterna.intensity = 1.5 + Math.random(); 
+                estatica.style.opacity = 0.3; 
+            } else {
+                linterna.color.setHex(0xdddddd); 
+                linterna.intensity = 0.8;
+                estatica.style.opacity = 0.12; 
+            }
+
+            if (controls.getObject().position.z <= -38) {
+                window.location.href = 'oper.html'; 
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        iniciarJuego();
+    </script>
+</body>
+</html>
