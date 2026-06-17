@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turno nocturno</title>
+
+<!-- IMPORTACIÓN DE THREE.JS PARA EL ENTORNO 3D -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+/* VARIABLES ESTILO INDUSTRIAL / ALERTA CREEPY */
+:root {
+  --fnaf-color: #ff5500; 
+  --fnaf-red: #ff2222;   
+  --fnaf-glow: rgba(255, 85, 0, 0.5);
+  --sl-metallic: linear-gradient(135deg, #2b2b2b 0%, #1a1a1a 50%, #0a0a0a 100%);
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+body{
+background:black;
+overflow:hidden;
+color:white;
+-webkit-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+}
+
+img { -webkit-user-drag: none; user-drag: none; }
+
+#fadeScreen {
+position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+background: black; z-index: 100000; opacity: 0; pointer-events: none;
+transition: opacity 1s ease-in-out;
+}
+
+/* VHS SUPER MARCADO */
+body::before{
+content:""; position:fixed; width:100%; height:100%;
+background: repeating-linear-gradient(to bottom, rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) 2px, transparent 2px, transparent 5px);
+mix-blend-mode:overlay; pointer-events:none; z-index:9999; animation:vhsLines .12s infinite;
+}
+
+body::after{
+content:""; position:fixed; width:100%; height:100%;
+background:rgba(255, 85, 0, 0.02); pointer-events:none; z-index:9998; animation:vhsFlicker .2s infinite;
+}
+
+#vhsNoise{
+position:fixed; width:100%; height:100%; background:url('static.gif');
+opacity:.08; mix-blend-mode:screen; pointer-events:none; z-index:9997;
+}
+
+/* MENU MEJORADO */
+#menu{
+position:absolute; width:100%; height:100%;
+background:radial-gradient(circle, rgba(15,5,0,0.4) 0%, rgba(0,0,0,0.85) 100%), url('cana.gif') center/cover;
+display:flex; flex-direction:column; justify-content:center; align-items:center;
+gap:25px; z-index:100; filter:contrast(1.1) saturate(0.9); box-shadow:inset 0 0 150px rgba(0,0,0,1);
+}
+
+.title{
+font-size:75px; letter-spacing:14px; font-weight:900; text-transform:uppercase; color: #e6e6e6;
+text-shadow: 3px 0 var(--fnaf-color), -3px 0 var(--fnaf-red), 0 0 25px rgba(255,255,255,0.2);
+animation:fnafIntro 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards, flicker 3s infinite;
+}
+
+.subtitle{
+opacity:.8; font-size:14px; letter-spacing:6px; text-transform:uppercase; max-width:600px;
+text-align:center; line-height:1.6; color: var(--fnaf-color); text-shadow:0 0 10px var(--fnaf-glow);
+}
+
+button{
+padding:15px 40px; background: rgba(15, 5, 0, 0.8); border: 1px solid var(--fnaf-color);
+color: var(--fnaf-color); cursor:pointer; font-size:14px; letter-spacing:3px; font-weight:bold;
+text-transform:uppercase; transition:.3s ease; backdrop-filter: blur(5px);
+box-shadow: inset 0 0 10px rgba(255, 85, 0, 0.1), 0 4px 15px rgba(0,0,0,0.8);
+}
+
+button:hover{
+background: var(--fnaf-color); color: black; border-color: white; box-shadow: 0 0 20px var(--fnaf-glow); transform: scale(1.03);
+}
+
+/* PANTALLA DEL PERIÓDICO */
+#introImageScreen{
+position:absolute; width:100%; height:100%; background:radial-gradient(circle, #120805 0%, #000000 100%);
+display:none; justify-content:center; align-items:center; flex-direction:column; z-index:150; overflow:hidden; box-shadow:inset 0 0 150px rgba(0,0,0,1);
+}
+
+#signalText{
+position:absolute; top:20px; left:50%; transform:translateX(-50%); font-size:14px; letter-spacing:4px; opacity:.9;
+color: var(--fnaf-color); font-weight:bold; text-align:center; width:90%; z-index:160; background: rgba(0,0,0,0.7);
+padding: 10px; border: 1px solid var(--fnaf-color); animation: signalGlitch 3s infinite; text-shadow:0 0 10px var(--fnaf-glow);
+}
+
+#zoomContainer{
+width:100%; height:100%; overflow:hidden; position:relative; cursor:grab; display:flex; justify-content:center; align-items:center; background:#050505;
+}
+
+#zoomImage{
+max-width:none; width:100%; height:100%; object-fit:contain; transform:translate(0px,0px) scale(1.3);
+transition:transform .05s linear; filter:contrast(1.2) brightness(.75) sepia(0.1);
+}
+
+#continueBtn{ position:absolute; bottom:40px; z-index:170; background: rgba(0,0,0,0.8); border-color: var(--fnaf-color); color: var(--fnaf-color); font-size: 16px; padding: 20px 50px; letter-spacing: 5px; }
+#continueBtn:hover{ background: var(--fnaf-color); color: black; box-shadow:0 0 25px var(--fnaf-glow); }
+
+/* JUEGO */
+#game{
+display:none; width:100vw; height:100vh; position:relative; overflow:hidden; background:black;
+filter:contrast(1.15) saturate(.85);
+}
+
+/* RENDER 3D DE THREE.JS */
+#bg3d { position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; }
+
+.darkness{ position:absolute; width:100%; height:100%; background:radial-gradient(circle, transparent 20%, rgba(10,3,0,0.9) 100%); pointer-events:none; z-index:2; transition: opacity 0.5s ease; }
+#game.active-panel2 .darkness { opacity: 0; } /* Se quita la oscuridad al ver el PC de cerca */
+
+#topbar{ position:absolute; top:0; left:0; width:100%; padding:20px 30px; display:flex; justify-content:space-between; font-size:24px; font-family: 'Courier New', Courier, monospace; font-weight:bold; letter-spacing:3px; z-index:10; text-shadow:2px 2px 5px black, 0 0 10px rgba(255,255,255,0.2); }
+#hour{ color:#fff; }
+#power{ color: var(--fnaf-color); text-shadow:0 0 10px var(--fnaf-glow); }
+
+#panel2Btn { position:absolute; bottom:30px; right:210px; z-index:35; border-radius: 0; background:rgba(15,5,0,0.9); border: 1px solid var(--fnaf-color); color: var(--fnaf-color); box-shadow:0 0 15px rgba(255, 85, 0, 0.2); }
+#panel2Btn:hover{ background: var(--fnaf-color); color: black; box-shadow: 0 0 20px var(--fnaf-glow); }
+
+#cameraBtn, #closeCamBtn{ position:absolute; bottom:30px; right:30px; z-index:35; border-radius: 0; }
+#cameraBtn{ background:rgba(15,5,0,0.9); border: 1px solid var(--fnaf-color); color: var(--fnaf-color); box-shadow:0 0 15px rgba(255, 85, 0, 0.2); }
+#closeCamBtn{ display:none; background:rgba(20,5,5,0.9); border:1px solid var(--fnaf-red); color:var(--fnaf-red); box-shadow:0 0 15px rgba(204, 51, 51, 0.2); }
+#closeCamBtn:hover{ background:var(--fnaf-red); color:white; box-shadow:0 0 20px rgba(204, 51, 51, 0.6); }
+
+#cameraSystem{ position:absolute; width:100%; height:100%; background:#020202; display:none; z-index:20; animation:camMenuOpen .35s ease; }
+@keyframes camMenuOpen{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
+#cameraFeed{ position:absolute; width:100%; height:100%; object-fit:cover; filter:grayscale(0.8) contrast(1.4) brightness(0.65); transition: filter 0.2s ease; }
+
+#heavyStatic{ position:absolute; width:100%; height:100%; background:url('static.gif'); opacity:0; pointer-events:none; mix-blend-mode:screen; z-index:22; transition: opacity 0.05s linear; }
+#static{ position:absolute; width:100%; height:100%; background:url('static.gif'); opacity:.15; pointer-events:none; mix-blend-mode:overlay; z-index:21; }
+
+#map{
+position:absolute; right:30px; bottom:100px; width:320px; height:260px; background:rgba(15,5,0,0.85);
+padding:15px; border: 1px solid var(--fnaf-color); z-index:25; box-shadow:0 0 30px rgba(255, 85, 0, 0.15); backdrop-filter: blur(4px);
+}
+#map::before{ content:""; position:absolute; top:40px; left:40px; right:40px; bottom:60px; border: 1px solid rgba(255, 85, 0, 0.2); pointer-events:none; background: repeating-linear-gradient( 0deg, transparent, transparent 10px, rgba(255, 85, 0, 0.03) 10px, rgba(255, 85, 0, 0.03) 11px ), repeating-linear-gradient( 90deg, transparent, transparent 10px, rgba(255, 85, 0, 0.03) 10px, rgba(255, 85, 0, 0.03) 11px ); }
+
+.camButton{
+position:absolute; padding:6px 10px; background:rgba(15,5,0,0.9); border: 1px solid var(--fnaf-color);
+color: var(--fnaf-color); cursor:pointer; font-size:9px; font-family: 'Courier New', Courier, monospace;
+font-weight:bold; text-align:center; letter-spacing:1px; transition:all 0.1s ease; box-shadow:0 2px 5px rgba(0,0,0,0.8);
+width:85px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.camButton:hover{ background: var(--fnaf-color); color: black; box-shadow: 0 0 15px var(--fnaf-glow); }
+.camButton:nth-child(1) { top: 20px; left: 20px; } .camButton:nth-child(2) { top: 20px; left: 215px; } .camButton:nth-child(3) { top: 85px; left: 20px; } .camButton:nth-child(4) { top: 85px; left: 118px; } .camButton:nth-child(5) { top: 85px; left: 215px; } .camButton:nth-child(6) { top: 150px; left: 20px; } .camButton:nth-child(7) { top: 150px; left: 118px; } .camButton:nth-child(8) { top: 215px; left: 118px; }
+
+.controlPanel{ position:absolute; bottom:120px; width:100px; height:160px; background: var(--sl-metallic); border: 1px solid #333; display:flex; justify-content:center; align-items:center; z-index:12; box-shadow:0 10px 25px rgba(0,0,0,0.9), inset 0 0 10px rgba(255,255,255,0.05); border-radius: 5px; }
+#leftPanel{ left:20px; } #rightPanel{ right:20px; }
+
+.controlPanel button { padding: 15px 15px; font-size: 9px; border: 1px solid var(--fnaf-color); color: var(--fnaf-color); background: #050505; border-radius: 50%; width: 70px; height: 70px; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 5px rgba(255, 85, 0, 0.2); }
+.controlPanel button:hover { background: var(--fnaf-color); color: black; box-shadow: 0 0 15px var(--fnaf-glow); }
+
+#doorLeft, #doorRight{ position:absolute; top:0; width:150px; height:100%; background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.8) 100%), repeating-linear-gradient(0deg, #1a1a1a 0px, #1a1a1a 40px, #111 40px, #111 45px), #222; border-left: 8px solid #0a0a0a; border-right: 8px solid #0a0a0a; box-shadow:inset 0 0 40px rgba(0,0,0,0.9), 5px 0 20px rgba(0,0,0,0.8); transition:transform .4s cubic-bezier(0.17, 0.84, 0.44, 1); z-index:11; }
+#doorLeft{ left:-150px; } #doorRight{ right:-150px; }
+.closedLeft{ transform:translateX(150px); } .closedRight{ transform:translateX(-150px); }
+
+#callOverlay{ position:absolute; width:100%; height:100%; background:transparent; display:flex; justify-content:flex-start; align-items:center; flex-direction:column; z-index:50; gap:20px; padding:40px; text-align:center; pointer-events:none; }
+#callOverlay h1 { font-size: 20px; letter-spacing: 6px; color: white; background: rgba(25, 10, 0, 0.9); padding: 10px 25px; border: 1px solid var(--fnaf-color); box-shadow: 0 0 15px rgba(255, 85, 0, 0.3); font-family: 'Courier New', Courier, monospace; }
+#answerBtn{ pointer-events:auto; background: var(--fnaf-color); color:black; border-color: var(--fnaf-color); font-weight:900; margin-top: 10px; }
+#answerBtn:hover{ background:white; border-color:white; box-shadow:0 0 20px white; }
+#callText{ pointer-events:auto; max-width:700px; font-size:16px; line-height:1.6; min-height:90px; background:rgba(10, 3, 0, 0.9); border:1px solid rgba(255,255,255,0.15); border-left: 3px solid var(--fnaf-color); padding:20px 30px; box-shadow:0 10px 30px rgba(0,0,0,0.9); color:#ccc; font-family: 'Courier New', Courier, monospace; }
+#safeText{ position:absolute; bottom:120px; left:40px; font-size:12px; color: var(--fnaf-color); opacity:.7; letter-spacing:3px; background:rgba(0,0,0,0.8); padding:8px 15px; border: 1px solid var(--fnaf-color); }
+
+/* SISTEMA PANEL 2 INTERFAZ CRT (Súper puesto a Three.js) */
+#panel2UI {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 600px; height: 450px; z-index: 50; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease; display: flex; justify-content: center; align-items: center;
+}
+#panel2UI.visible { opacity: 1; pointer-events: auto; }
+
+.crt-glass {
+    background: radial-gradient(circle at center, rgba(51, 17, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+    border-radius: 50% / 10%; width: 100%; height: 100%; position: relative; overflow: hidden;
+    box-shadow: inset 0 0 50px rgba(0,0,0,1); display: flex; flex-direction: column; padding: 40px;
+    border: 2px solid rgba(26, 5, 0, 0.5);
+}
+.crt-glass::after {
+    content: " "; display: block; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 85, 0, 0.08), rgba(255, 0, 0, 0.03), rgba(255, 120, 0, 0.08));
+    z-index: 2; background-size: 100% 4px, 6px 100%; pointer-events: none;
+}
+.crt-content {
+    z-index: 3; color: var(--fnaf-color); font-family: 'Courier New', Courier, monospace;
+    text-shadow: 0 0 5px var(--fnaf-color), 0 0 10px var(--fnaf-color);
+    display: flex; flex-direction: column; gap: 20px; height: 100%; justify-content: center;
+}
+.crt-content h2 { text-align: center; border-bottom: 2px solid var(--fnaf-color); padding-bottom: 5px; margin-bottom: 5px; letter-spacing: 2px; }
+.crt-btn {
+    background: rgba(50, 15, 0, 0.4); border: 1px solid var(--fnaf-color); color: var(--fnaf-color);
+    padding: 15px; font-size: 16px; text-align: left; cursor: pointer;
+    position: relative; overflow: hidden; text-shadow: 0 0 5px var(--fnaf-color);
+}
+.crt-btn:hover { background: var(--fnaf-color); color: #000; text-shadow: none; box-shadow: 0 0 15px var(--fnaf-color); }
+.crt-progress-bar { position: absolute; top: 0; left: 0; height: 100%; background: var(--fnaf-color); opacity: 0.3; width: 0%; pointer-events: none; }
+#logbookMsg { color: #ff8833; text-align: center; font-weight: bold; display: none; text-shadow: 0 0 8px #ff8833; font-size: 14px; }
+
+#exitPanel2Btn {
+    position: absolute; bottom: -80px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,5,5,0.9); border: 2px solid var(--fnaf-red); color: var(--fnaf-red);
+    font-size: 16px; font-weight: bold; letter-spacing: 2px; padding: 15px 40px;
+    z-index: 999; cursor: pointer; box-shadow: 0 0 20px rgba(0,0,0,0.9); pointer-events: auto;
+}
+#exitPanel2Btn:hover { background: var(--fnaf-red); color: white; box-shadow: 0 0 20px rgba(204, 51, 51, 0.6); }
+
+
+#jumpscare{ position:absolute; width:100%; height:100%; display:none; justify-content:center; align-items:center; background:black; z-index:200; }
+#jumpscare img{ width:100%; height:100%; object-fit:cover; animation:shake .05s infinite; }
+#gameOver{ position:absolute; width:100%; height:100%; background:radial-gradient(circle, #250505 0%, #000000 100%); display:none; justify-content:center; align-items:center; flex-direction:column; z-index:300; gap:30px; }
+#gameOver h1{ font-size:100px; letter-spacing:15px; color:var(--fnaf-red); text-shadow:0 0 40px rgba(255,0,0,0.8); font-weight:900; font-family: 'Courier New', Courier, monospace; }
+#winScreen{ position:absolute; width:100%; height:100%; background:black; display:none; justify-content:center; align-items:center; flex-direction:column; z-index:250; }
+#winScreen h1{ font-size:130px; letter-spacing:8px; color: var(--fnaf-color); text-shadow:0 0 30px var(--fnaf-glow); }
+#winScreen p{ font-size:20px; color: #aaa; letter-spacing:5px; margin-top:15px; margin-bottom:40px; text-transform:uppercase; }
+
+@keyframes flicker{ 0%{opacity:1;} 50%{opacity:.7;} 100%{opacity:1;} }
+@keyframes shake{ 0%{transform:translate(5px, 3px) rotate(0deg);} 25%{transform:translate(-4px, -3px) rotate(-1deg);} 50%{transform:translate(3px, -4px) rotate(1deg);} 75%{transform:translate(-3px, 4px) rotate(0deg);} 100%{transform:translate(5px, 3px) rotate(0deg);} }
+@keyframes camShake{ 0% { transform: translate(1px, 1px) scale(1.02); filter: grayscale(0.8) contrast(1.8) brightness(0.7); } 25% { transform: translate(-1px, -2px) scale(1.02); filter: grayscale(0.8) contrast(1.4) brightness(1.0); } 50% { transform: translate(-2px, 1px) scale(1.02); filter: grayscale(0.8) contrast(2.0) brightness(0.8); } 75% { transform: translate(2px, 2px) scale(1.02); filter: grayscale(0.8) contrast(1.2) brightness(0.9); } 100% { transform: translate(1px, -1px) scale(1.02); filter: grayscale(0.8) contrast(1.6) brightness(0.6); } }
+.camera-danger { animation: camShake 0.15s infinite !important; }
+@keyframes vhsLines{ 0%{transform:translateY(0px);} 100%{transform:translateY(6px);} }
+@keyframes vhsFlicker{ 0%{opacity:.02;} 50%{opacity:.06;} 100%{opacity:.02;} }
+@keyframes fnafIntro{ 0% { transform: scale(0.85); filter: blur(20px); opacity: 0; letter-spacing: 2px; } 50% { opacity: 0.6; filter: blur(5px); } 100% { transform: scale(1); filter: blur(0); opacity: 1; } }
+@keyframes signalGlitch{ 0%, 90%, 100%{ transform:translateX(-50%) translate(0px); opacity:.9; filter:skewX(0deg); } 92%{ transform:translateX(-50%) translate(-5px,2px); opacity:1; filter:skewX(-15deg); } 94%{ transform:translateX(-50%) translate(5px,-2px); opacity:.5; filter:skewX(10deg); } 96%{ transform:translateX(-50%) translate(-2px,1px); opacity:.8; filter:skewX(-5deg); } }
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="fadeScreen"></div>
+<div id="vhsNoise"></div>
+
+<div id="menu">
+<div class="title">EL CAN ABANDONADO</div>
+<div class="subtitle">SOBREVIVE ESTA NOCHE</div>
+<button onclick="startGame()">ENTRAR A OFICINA</button>
+<button onclick="location.reload()">SALIR</button>
+</div>
+
+<div id="introImageScreen">
+<div id="signalText">ENCONTRASTE UNA PÁGINA EN EL PISO, USA EL ZOOM PARA INSPECCIONAR.</div>
+<div id="zoomContainer">
+<img id="zoomImage" src="peri.png">
+</div>
+<button id="continueBtn" onclick="continueToGame()">CERRAR DOCUMENTO</button>
+</div>
+
+<div id="game">
+
+<!-- CANVAS DE THREE.JS PARA LA OFICINA 3D -->
+<div id="bg3d"></div>
+
+<div class="darkness"></div>
+<div id="phoneHotspot" style="position:absolute;left:58%;top:63%;width:90px;height:90px;z-index:15;cursor:pointer;border-radius:50%;"></div>
+
+<div id="topbar">
+<div id="hour">12 AM</div>
+<div id="power">100%</div>
+</div>
+
+<div id="doorLeft"></div>
+<div id="doorRight"></div>
+
+<div class="controlPanel" id="leftPanel">
+<button onclick="toggleLeftDoor()">PUERTA</button>
+</div>
+
+<div class="controlPanel" id="rightPanel">
+<button onclick="toggleRightDoor()">PUERTA</button>
+</div>
+
+<button id="panel2Btn" onclick="goToPanel2()">PANEL 2</button>
+<button id="cameraBtn" onclick="toggleCameras()">MONITOR</button>
+<button id="closeCamBtn" onclick="toggleCameras()">CERRAR MONITOR</button>
+
+<div id="cameraSystem">
+<img id="cameraFeed" src="cam1_empty.gif">
+<div id="heavyStatic"></div>
+<div id="static"></div>
+<div id="map">
+<div class="camButton" onclick="changeCam(0)">Terraza 1</div>
+<div class="camButton" onclick="changeCam(1)">Escalera</div>
+<div class="camButton" onclick="changeCam(2)">Cuarto 1</div>
+<div class="camButton" onclick="changeCam(3)">Cuarto 2</div>
+<div class="camButton" onclick="changeCam(4)">Cuarto 3</div>
+<div class="camButton" onclick="changeCam(5)">Cuarto 4</div>
+<div class="camButton" onclick="changeCam(6)">Recepción</div>
+<div class="camButton" onclick="changeCam(7)">Oficina</div>
+</div>
+</div>
+
+<!-- CAPA UI PARA EL MONITOR CRT EN PANEL 2 -->
+<div id="panel2UI">
+    <div class="crt-glass">
+        <div class="crt-content">
+            <h2>SISTEMA DOS - TERMINAL</h2>
+            <p id="logbookMsg">Nuevo documento integrado a tu logbook</p>
+            
+            <button class="crt-btn" id="btnDoc" onmousedown="startHold('doc', 10)" onmouseup="stopHold()" onmouseleave="stopHold()">
+                RESTAURAR DOCUMENTO <span id="time-doc" style="float:right;">[10s]</span>
+                <div class="crt-progress-bar" id="prog-doc"></div>
+            </button>
+            
+            <button class="crt-btn" id="btnRepCam" onmousedown="startHold('cam', 15)" onmouseup="stopHold()" onmouseleave="stopHold()">
+                <span id="camStatusText">REPARAR CÁMARA <span style="color:var(--fnaf-color);">[OPERATIVO]</span></span> <span id="time-cam" style="float:right;">[15s]</span>
+                <div class="crt-progress-bar" id="prog-cam"></div>
+            </button>
+            
+            <button class="crt-btn" onclick="rechargeDoors()">
+                RECARGAR BATERÍA (RESTAN <span id="rechargeCount">4</span>)
+            </button>
+        </div>
+    </div>
+    <button id="exitPanel2Btn" onclick="goToMain()">VOLVER A LAS PUERTAS</button>
+</div>
+
+<div id="callOverlay">
+<h1>LLAMADA ENTRANTE</h1>
+<button id="answerBtn" onclick="answerCall()">RESPONDER</button>
+<div id="callText"></div>
+<div id="safeText">EL PERRO NO PUEDE MOVERSE DURANTE LA LLAMADA</div>
+</div>
+
+<div id="jumpscare">
+<img src="jump.gif">
+</div>
+
+<div id="gameOver">
+<h1>¿QUÉ PASÓ?</h1>
+<button onclick="location.reload()">REINICIAR SISTEMA</button>
+<button onclick="backToMenu()">SALIR</button>
+</div>
+
+<div id="winScreen">
+<h1>6 AM</h1>
+<p>Turno finalizado.</p>
+<button onclick="window.location.href='ulti.html'">VOLVER AL MENÚ</button>
+</div>
+
+</div>
+
+<!-- AUDIOS MODIFICADOS A FORMATO OGG -->
+<audio id="ambient" preload="auto" src="enelcan.ogg" loop></audio>
+<audio id="phoneAudio" src="123.ogg" preload="auto" crossorigin="anonymous"></audio>
+<audio id="staticSound" preload="auto" src="wav.ogg"></audio>
+<audio id="doorSound" preload="auto" src="door.ogg"></audio>
+<audio id="jumpscareSound" preload="auto" src="scream.ogg"></audio>
+<audio id="sndInsertar" preload="auto" src="insertar.ogg"></audio>
+<audio id="sndInsertar2" preload="auto" src="insertar2.ogg"></audio>
+<audio id="sndInsertar3" preload="auto" src="insertar3.ogg"></audio>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("phoneAudio").volume = 0.7; 
+    document.getElementById("ambient").volume = 0.6; 
+    document.getElementById("sndInsertar").volume = 1.0; 
+    document.getElementById("sndInsertar2").volume = 1.0; 
+    document.getElementById("sndInsertar3").volume = 1.0; 
+    init3D(); // Iniciamos Three.js desde el principio
+});
+
+let gameStarted=false; let currentCam=0; let power=100; let hour=12;
+let leftDoor=false; let rightDoor=false; let dogPosition=0; let aiLevel=1; let safeMode=true;
+let camFailed = false; let batteryCharges = 4; let holdType = null; let holdInterval = null;
+let holdValue = 0; let holdMax = 0; let holdInitialSeconds = 0;
+
+let scale=1.3; let pointX=0; let pointY=0; let isDragging=false; let startX,startY;
+
+const zoomImage=document.getElementById("zoomImage");
+const feed=document.getElementById("cameraFeed");
+const heavyStatic=document.getElementById("heavyStatic");
+const cams=[ ["c1.gif","c2.gif"], ["c3.gif","c4.gif"], ["c5.gif","c6.gif"], ["c1.gif","c2.gif"], ["c3.gif","c4.gif"], ["c5.gif","c6.gif"], ["c1.gif","c2.gif"], ["c4.gif","cam8_dog.jpg"] ];
+
+// ------ LOGICA THREE.JS ------
+let scene, camera, renderer, screenLight, fanBlades;
+
+document.getElementById("phoneHotspot").addEventListener("click",()=>{ if(document.getElementById("callOverlay").style.display!=="none") answerCall(); });
+
+function forceAudio(a){ if(!a) return; a.load(); const p=a.play(); if(p){p.then(()=>{a.pause();a.currentTime=0;}).catch(()=>{});} }
+document.addEventListener("click",()=>{
+["ambient","phoneAudio","staticSound","doorSound","jumpscareSound","sndInsertar","sndInsertar2","sndInsertar3"].forEach(id=>forceAudio(document.getElementById(id)));
+},{once:true});
+
+let isPanel2View = false;
+let mouseX = 0; let mouseY = 0;
+
+function init3D() {
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x020101, 0.08);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.5, 4.5);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('bg3d').appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x2f2622));
+
+    const ceilingLight = new THREE.PointLight(0xffa550, 0.8, 20);
+    ceilingLight.position.set(0, 5, 2);
+    ceilingLight.castShadow = true;
+    scene.add(ceilingLight);
+
+    const spotLight = new THREE.SpotLight(0xffcc88, 1);
+    spotLight.position.set(2.5, 4, 1);
+    spotLight.angle = Math.PI / 5;
+    spotLight.penumbra = 0.5;
+    spotLight.castShadow = true;
+    scene.add(spotLight);
+
+    screenLight = new THREE.PointLight(0xff8844, 1.4, 9);
+    screenLight.position.set(2.5, 1.7, 1.5);
+    scene.add(screenLight);
+
+    // Habitación principal
+    const room = new THREE.Mesh(new THREE.BoxGeometry(30, 15, 30), new THREE.MeshStandardMaterial({ color: 0x050404, side: THREE.BackSide }));
+    room.receiveShadow = true;
+    scene.add(room);
+
+    // Grupo de la mesa
+    const deskGroup = new THREE.Group();
+    deskGroup.position.set(2.5, 0, 1);
+    scene.add(deskGroup);
+
+    const deskTop = new THREE.Mesh(new THREE.BoxGeometry(6, 0.2, 3), new THREE.MeshStandardMaterial({ color: 0x1f1005, roughness: 0.9 }));
+    deskTop.position.set(0, 1, 0);
+    deskTop.castShadow = true;
+    deskTop.receiveShadow = true;
+    deskGroup.add(deskTop);
+
+    // Patas de la mesa
+    const legGeo = new THREE.BoxGeometry(0.2, 1, 0.2);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x0a0502 });
+    for(let i=0; i<4; i++) {
+        let leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(i%2===0?-2.8:2.8, 0.5, i<2?-1.3:1.3);
+        deskGroup.add(leg);
+    }
+
+    // Monitor CRT y pantalla
+    const crtGroup = new THREE.Group();
+    crtGroup.position.set(0.5, 1.1, -0.2);
+    crtGroup.rotation.y = -0.2;
+    deskGroup.add(crtGroup);
+
+    const crtCase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.4), new THREE.MeshStandardMaterial({ color: 0x4a2311, roughness: 0.7 }));
+    crtCase.position.set(0, 0.7, 0);
+    crtCase.castShadow = true;
+    crtGroup.add(crtCase);
+
+    const crtMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.0), new THREE.MeshBasicMaterial({ color: 0x2a0800 }));
+    crtMesh.position.set(0, 0.7, 0.71);
+    crtGroup.add(crtMesh);
+
+    // Teclado
+    const kb = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.4), new THREE.MeshStandardMaterial({ color: 0x221105 }));
+    kb.position.set(0.5, 1.12, 0.8);
+    kb.rotation.y = -0.1;
+    deskGroup.add(kb);
+
+    // Ventilador Animado
+    const fanGroup = new THREE.Group();
+    fanGroup.position.set(-1.5, 1.1, -0.5);
+    deskGroup.add(fanGroup);
+    fanGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 0.1, 16), new THREE.MeshStandardMaterial({ color: 0x111111 })));
+    const fanPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6, 8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+    fanPole.position.set(0, 0.3, 0);
+    fanGroup.add(fanPole);
+    fanBlades = new THREE.Group();
+    fanBlades.position.set(0, 0.6, 0.1);
+    fanGroup.add(fanBlades);
+    const bladeGeo = new THREE.BoxGeometry(0.8, 0.1, 0.02);
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+    const b1 = new THREE.Mesh(bladeGeo, bladeMat);
+    const b2 = new THREE.Mesh(bladeGeo, bladeMat);
+    b2.rotation.z = Math.PI / 2;
+    fanBlades.add(b1); fanBlades.add(b2);
+
+    // Estatuilla (Hombre feliz)
+    const statueGroup = new THREE.Group();
+    statueGroup.position.set(1.5, 1.1, -0.3);
+    deskGroup.add(statueGroup);
+    const stMat = new THREE.MeshStandardMaterial({ color: 0xf4d03f, roughness: 0.4 });
+    const stBody = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.1), stMat);
+    stBody.position.set(0, 0.15, 0);
+    statueGroup.add(stBody);
+    const stHead = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), stMat);
+    stHead.position.set(0, 0.4, 0);
+    statueGroup.add(stHead);
+
+    // Pantalla encendida
+    crtMesh.material = new THREE.MeshBasicMaterial({color:0xff8844});
+    const glowScreen = new THREE.PointLight(0xff7733,2.2,8);
+    glowScreen.position.set(0,0.7,1);
+    crtGroup.add(glowScreen);
+
+    // Telefono 3D
+    const phone=new THREE.Group();
+    const pm=new THREE.MeshStandardMaterial({color:0x111111});
+    const base=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.12,0.32),pm);
+    phone.add(base);
+    const handset=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.08,0.12),pm);
+    handset.position.y=0.1;
+    phone.add(handset);
+    phone.position.set(-1.2,1.12,0.5);
+    deskGroup.add(phone);
+
+    // Decoraciones CAN
+    for(let i=0;i<5;i++){
+      const poster=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.8),new THREE.MeshBasicMaterial({color:0x553311}));
+      poster.position.set(-8+i*4,3.2,-14.8);
+      scene.add(poster);
+    }
+
+    // Plantas secas
+    for(let i=0;i<8;i++){
+      const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.03,0.6),new THREE.MeshStandardMaterial({color:0x5a4720}));
+      stem.position.set(-10+Math.random()*20,0.3,-8+Math.random()*10);
+      scene.add(stem);
+    }
+
+    
+    // PUERTAS 3D INTEGRADAS
+    window.leftDoor3D = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2,4.5,0.15),
+        new THREE.MeshStandardMaterial({color:0x2a211d,roughness:0.95})
+    );
+    leftDoor3D.position.set(-4.2,2.2,1.5);
+    scene.add(leftDoor3D);
+
+    window.rightDoor3D = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2,4.5,0.15),
+        new THREE.MeshStandardMaterial({color:0x2a211d,roughness:0.95})
+    );
+    rightDoor3D.position.set(4.2,2.2,1.5);
+    scene.add(rightDoor3D);
+
+    // Carteles CAN
+    for(let i=0;i<4;i++){
+      const sign=new THREE.Mesh(
+        new THREE.BoxGeometry(1.6,.8,.05),
+        new THREE.MeshStandardMaterial({color:0x884400,emissive:0x331100})
+      );
+      sign.position.set((i<2?-5:5),3.2,(i%2===0?-4:2));
+      scene.add(sign);
+    }
+
+    // Plantas secas
+    for(let i=0;i<12;i++){
+      const stem=new THREE.Mesh(
+        new THREE.CylinderGeometry(.02,.03,.5+Math.random()*.8,5),
+        new THREE.MeshStandardMaterial({color:0x5a4a2a})
+      );
+      stem.position.set((Math.random()*10)-5,0.4,(Math.random()*8)-4);
+      scene.add(stem);
+    }
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX / window.innerWidth) - 0.5;
+        mouseY = (e.clientY / window.innerHeight) - 0.5;
+    });
+
+    animate3D();
+}
+
+function animate3D() {
+    requestAnimationFrame(animate3D);
+
+    if (fanBlades) fanBlades.rotation.z += 0.2;
+
+    if (isPanel2View) {
+        let targetPos = new THREE.Vector3(3.0, 1.8, 1.8);
+        let targetRot = new THREE.Euler(0, -0.2, 0, 'YXZ');
+        camera.position.lerp(targetPos, 0.08);
+        camera.quaternion.slerp(new THREE.Quaternion().setFromEuler(targetRot), 0.08);
+        
+        if (camera.position.distanceTo(targetPos) < 0.1) {
+            document.getElementById('panel2UI').classList.add('visible');
+        } else {
+            document.getElementById('panel2UI').classList.remove('visible');
+        }
+    } else {
+        document.getElementById('panel2UI').classList.remove('visible');
+        let baseRot = new THREE.Euler(-mouseY * 0.3, -mouseX * 0.5, 0, 'YXZ');
+        camera.quaternion.slerp(new THREE.Quaternion().setFromEuler(baseRot), 0.06);
+        camera.position.lerp(new THREE.Vector3(0, 1.5, 4.5), 0.06);
+    }
+
+    if(Math.random() > 0.95) screenLight.intensity = 0.4 + Math.random() * 0.3;
+    
+    if(window.leftDoor3D){
+      leftDoor3D.position.x += (((leftDoor)?-3.4:-4.2)-leftDoor3D.position.x)*0.08;
+    }
+    if(window.rightDoor3D){
+      rightDoor3D.position.x += (((rightDoor)?3.4:4.2)-rightDoor3D.position.x)*0.08;
+    }
+    renderer.render(scene, camera);
+
+}
+
+// ------ LÓGICA DEL DOM Y JUEGO ------
+
+function startGame(){
+    let fade = document.getElementById("fadeScreen");
+    fade.style.opacity = "1";
+    setTimeout(() => {
+        document.getElementById("menu").style.display="none";
+        document.getElementById("introImageScreen").style.display="flex";
+        setTransform();
+        fade.style.opacity = "0";
+    }, 1000);
+}
+
+function continueToGame(){
+    let fade = document.getElementById("fadeScreen");
+    fade.style.opacity = "1";
+    setTimeout(() => {
+        document.getElementById("introImageScreen").style.display="none";
+        document.getElementById("game").style.display="block";
+        gameStarted=true;
+        document.getElementById("ambient").play();
+        startClock(); startAI(); powerDrain();
+        fade.style.opacity = "0";
+    }, 1000);
+}
+
+function setTransform(){ zoomImage.style.transform=`translate(${pointX}px, ${pointY}px) scale(${scale})`; }
+const container=document.getElementById("zoomContainer");
+container.addEventListener("wheel",(e)=>{ e.preventDefault(); const xs=(e.clientX-pointX)/scale; const ys=(e.clientY-pointY)/scale; const delta=(e.deltaY*-0.0015); scale+=delta; if(scale<1.0) scale=1.0; if(scale>4.0) scale=4.0; pointX=e.clientX-xs*scale; pointY=e.clientY-ys*scale; setTransform(); });
+container.addEventListener("mousedown",(e)=>{ isDragging=true; startX=e.clientX-pointX; startY=e.clientY-pointY; container.style.cursor="grabbing"; });
+container.addEventListener("mouseup",()=>{ isDragging=false; container.style.cursor="grab"; });
+container.addEventListener("mouseleave",()=>{ isDragging=false; container.style.cursor="grab"; });
+container.addEventListener("mousemove",(e)=>{ if(!isDragging) return; pointX=e.clientX-startX; pointY=e.clientY-startY; setTransform(); });
+
+function answerCall(){
+    document.getElementById("answerBtn").style.display="none";
+    const audio=document.getElementById("phoneAudio"); audio.play();
+    const messages=["Ah, ¿hola?... tú eres el nuevo ¿no?... el guardia temporal.", "Bueno... no esperaba que alguien aceptara este turno tan rápido.", "Bien, tu trabajo es cuidar el establecimiento por esta noche", "Últimamente se meten sujetos de un colectivo raro.", "Se hacen llamar colectivo Chanate. Entran a grabar cosas, intervenir paredes y llevarse piezas.No nos pagan lo suficiente para intervenir... pero bueno.", "Supongo que ya viste cómo quedó el CAN después de...ya sabes, lo que pasó hace un año...es triste...Más porque solo cerraron todo y dejaron el lugar abandonado.", "Entiendo que fue algo muy duro pero, ¿dejar todo su tabrajo botado así como si nada?, bah...", "Sobre el perro, era la mascota principal del lugar y una obra enorme, todos aquí lo adoraban, después del cierre lo usaron como una manera de espantar a los rateros, pero ahorita esta medio defectuoso.", "Aún no sabemos porque, pero las cámaras fallan cuando aparece. Y si llega a la oficina...cierra las puertas inmediatamente, últimamente sus movimientos son algo erraticos y no nos gustaría que te lastimaras, más porque no tenemos presupuesto para tu seguro. Ah... y trata de no quedarte sin energía.", "Buena suerte."];
+    typeMessage(messages,0);
+}
+
+function typeMessage(messages,index){
+    if(index>=messages.length){
+        document.getElementById("callText").innerHTML="...";
+        setTimeout(()=>{ document.getElementById("callOverlay").style.display="none"; document.getElementById("safeText").style.display="none"; setTimeout(()=>{ safeMode=false; },30000); },3000);
+        return;
+    }
+    const text=document.getElementById("callText"); text.innerHTML="";
+    let sentence=messages[index]; let char=0;
+    const typing=setInterval(()=>{ text.innerHTML += sentence.charAt(char); char++; if(char>=sentence.length){ clearInterval(typing); setTimeout(()=>{ eraseMessage(messages,index); },2500); } },40);
+}
+
+function eraseMessage(messages,index){
+    const text=document.getElementById("callText");
+    let erase=setInterval(()=>{ text.innerHTML=text.innerHTML.slice(0,-1); if(text.innerHTML.length<=0){ clearInterval(erase); typeMessage(messages,index+1); } },15);
+}
+
+function toggleCameras(){
+    const camsys=document.getElementById("cameraSystem");
+    if(camsys.style.display=="block"){ camsys.style.display="none"; document.getElementById("closeCamBtn").style.display="none"; }
+    else{ camsys.style.display="block"; document.getElementById("closeCamBtn").style.display="block"; document.getElementById("staticSound").play(); updateCamera(); }
+}
+
+function changeCam(num){ heavyStatic.style.opacity = "0.9"; setTimeout(() => { if(!camFailed) heavyStatic.style.opacity = "0"; }, 150); currentCam=num; updateCamera(); }
+
+function updateCamera(){
+    if(currentCam===dogPosition){ feed.src=cams[currentCam][1]; feed.classList.add("camera-danger"); }
+    else{ feed.src=cams[currentCam][0]; feed.classList.remove("camera-danger"); }
+    const buttons = document.querySelectorAll('.camButton');
+    buttons.forEach((btn, index) => {
+        if(index === currentCam) { btn.style.background = camFailed ? 'var(--fnaf-red)' : 'var(--fnaf-color)'; btn.style.color = 'black'; btn.style.boxShadow = camFailed ? '0 0 15px var(--fnaf-red)' : '0 0 15px var(--fnaf-glow)'; } 
+        else { btn.style.background = 'rgba(15,5,0,0.9)'; btn.style.color = camFailed ? 'var(--fnaf-red)' : 'var(--fnaf-color)'; btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.8)'; }
+    });
+    if (camFailed) { feed.style.filter = "sepia(0.8) hue-rotate(-20deg) saturate(2) brightness(0.9)"; heavyStatic.style.opacity = "0.6"; } 
+    else { feed.style.filter = "grayscale(0.8) contrast(1.4) brightness(0.65)"; heavyStatic.style.opacity = "0"; }
+    document.getElementById("camStatusText").innerHTML = camFailed ? 'REPARAR CÁMARA <span style="color:var(--fnaf-red);">[FALLO DETECTADO]</span>' : 'REPARAR CÁMARA <span style="color:var(--fnaf-color);">[OPERATIVO]</span>';
+}
+
+function startAI(){
+    setInterval(()=>{
+        if(!gameStarted || safeMode) return;
+        let moveChance=Math.random()*10;
+        if(hour>=2) aiLevel=3; if(hour>=3) aiLevel=5; if(hour>=4) aiLevel=7; if(hour>=5) aiLevel=9;
+        if(!camFailed && Math.random() < 0.10) { camFailed = true; if(document.getElementById("cameraSystem").style.display == "block"){ updateCamera(); } }
+        if(moveChance<aiLevel){ let jumpChance=Math.random(); if(jumpChance>.75 && dogPosition<6){ dogPosition+=2; }else{ dogPosition+=1; } }
+        if(dogPosition>7){ dogPosition=7; }
+        if(dogPosition>=7){ attackOffice(); }
+        if(document.getElementById("cameraSystem").style.display == "block"){ updateCamera(); }
+    },4500);
+}
+
+function attackOffice(){
+    if(safeMode) return;
+    let attackChance=Math.random();
+    if(attackChance>.25){
+        if(!leftDoor || !rightDoor){ jumpscare(); }
+        else{ document.getElementById("doorSound").play(); dogPosition = Math.floor(Math.random() * 3); if(document.getElementById("cameraSystem").style.display == "block"){ updateCamera(); } }
+    }
+}
+
+function jumpscare(){
+    if(safeMode) return;
+    goToMain(); // Asegura salir de panel 2
+    document.getElementById("jumpscare").style.display="flex"; document.getElementById("jumpscareSound").play(); gameStarted=false;
+    setTimeout(()=>{ document.getElementById("jumpscare").style.display="none"; document.getElementById("gameOver").style.display="flex"; },3500);
+}
+
+function toggleLeftDoor(){ leftDoor=!leftDoor; document.getElementById("doorSound").play(); document.getElementById("doorLeft").classList.toggle("closedLeft"); }
+function toggleRightDoor(){ rightDoor=!rightDoor; document.getElementById("doorSound").play(); document.getElementById("doorRight").classList.toggle("closedRight"); }
+
+function startClock(){ setInterval(()=>{ if(!gameStarted) return; hour++; if(hour===13) document.getElementById("hour").innerHTML="1 AM"; if(hour===14) document.getElementById("hour").innerHTML="2 AM"; if(hour===15) document.getElementById("hour").innerHTML="3 AM"; if(hour===16) document.getElementById("hour").innerHTML="4 AM"; if(hour===17) document.getElementById("hour").innerHTML="5 AM"; if(hour===18){ document.getElementById("hour").innerHTML="6 AM"; winGame(); } },60000); }
+
+function powerDrain(){ setInterval(()=>{ if(!gameStarted) return; if(leftDoor) power-=0.035; if(rightDoor) power-=0.035; if(document.getElementById("cameraSystem").style.display=="block"){ power-=0.025; } power-=0.006; if(power<0) power=0; document.getElementById("power").innerHTML=Math.floor(power)+"%"; if(power<=0){ blackout(); } },100); }
+
+function blackout(){ gameStarted=false; goToMain(); document.getElementById("bg3d").style.filter="brightness(.03)"; document.getElementById("cameraBtn").style.display="none"; document.getElementById("closeCamBtn").style.display="none"; document.getElementById("panel2Btn").style.display="none"; setTimeout(()=>{ safeMode=false; jumpscare(); },10000); }
+
+function winGame(){ gameStarted=false; document.getElementById("winScreen").style.display="flex"; }
+function backToMenu(){ location.reload(); }
+
+function goToPanel2() {
+    let snd = document.getElementById("sndInsertar"); snd.currentTime = 0; snd.play();
+    document.getElementById('game').classList.add('active-panel2');
+    document.getElementById('cameraBtn').style.display = 'none'; document.getElementById('panel2Btn').style.display = 'none';
+    const camsys = document.getElementById("cameraSystem");
+    if(camsys.style.display == "block"){ camsys.style.display = "none"; document.getElementById("closeCamBtn").style.display="none"; }
+    isPanel2View = true;
+}
+
+function goToMain() {
+    document.getElementById('game').classList.remove('active-panel2');
+    document.getElementById('cameraBtn').style.display = 'block'; document.getElementById('panel2Btn').style.display = 'block';
+    isPanel2View = false;
+}
+
+function playInsertar2() { let s = document.getElementById("sndInsertar2"); s.currentTime = 0; s.play(); }
+function playInsertar3() { let s = document.getElementById("sndInsertar3"); s.currentTime = 0; s.play(); }
+
+function startHold(type, seconds) {
+    playInsertar2(); holdType = type; holdValue = 0; holdMax = seconds * 10; holdInitialSeconds = seconds;
+    document.getElementById(`time-${type}`).innerText = `[${seconds}s]`;
+    holdInterval = setInterval(() => {
+        holdValue++; let pct = (holdValue / holdMax) * 100; document.getElementById(`prog-${type}`).style.width = pct + "%";
+        let remaining = Math.ceil((holdMax - holdValue) / 10); document.getElementById(`time-${type}`).innerText = `[${remaining}s]`;
+        if (holdValue >= holdMax) { clearInterval(holdInterval); completeHold(type); }
+    }, 100);
+}
+
+function stopHold() {
+    if (holdInterval) {
+        clearInterval(holdInterval); holdInterval = null;
+        if (holdType && holdValue < holdMax) { document.getElementById(`prog-${holdType}`).style.width = "0%"; document.getElementById(`time-${holdType}`).innerText = `[${holdInitialSeconds}s]`; }
+    }
+}
+
+document.addEventListener('mouseup', stopHold);
+
+function completeHold(type) {
+    playInsertar3();
+    if (type === 'doc') {
+        document.getElementById('logbookMsg').style.display = 'block'; document.getElementById('time-doc').innerText = `[0s]`;
+        setTimeout(() => { let btn = document.getElementById('btnDoc'); if (btn) btn.style.display = 'none'; }, 5000);
+    } else if (type === 'cam') {
+        camFailed = false; document.getElementById(`prog-${type}`).style.width = "0%"; document.getElementById(`time-cam`).innerText = `[15s]`; updateCamera(); 
+    }
+}
+
+function rechargeDoors() {
+    if (batteryCharges > 0) {
+        playInsertar2(); setTimeout(playInsertar3, 200);
+        power += 5; if (power > 100) power = 100; batteryCharges--;
+        document.getElementById('rechargeCount').innerText = batteryCharges; document.getElementById("power").innerHTML=Math.floor(power)+"%";
+    }
+}
+</script>
+
+</body>
+</html>
