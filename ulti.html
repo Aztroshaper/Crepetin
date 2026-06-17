@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPLEJO</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        :root {
+            --text-color: #e0e0e0;
+        }
+
+        /* Restricciones de copiado y selección */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            user-select: none; -webkit-user-select: none; -moz-user-select: none;
+        }
+
+        body, html {
+            width: 100%; height: 100%;
+            background-color: #000; overflow: hidden;
+            font-family: "Courier New", Courier, monospace;
+            color: var(--text-color);
+        }
+
+        /* EFECTOS VHS CSS */
+        .crt-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none; z-index: 50;
+        }
+
+        .vhs-noise {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.08; pointer-events: none; z-index: 51;
+            animation: noiseJitter 0.2s infinite;
+        }
+
+        /* PANTALLA DE INICIO */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #020202; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            z-index: 100; transition: opacity 3s;
+        }
+
+        .content { text-align: center; max-width: 800px; padding: 20px; }
+
+        .glitch-text {
+            font-size: 4rem; letter-spacing: 5px; margin-bottom: 10px;
+            text-shadow: 2px 0 0 red, -2px 0 0 blue;
+            animation: slightGlitch 4s infinite;
+        }
+
+        .sub-text { font-size: 1.2rem; color: #a0a0a0; margin-bottom: 50px; font-weight: normal; }
+
+        .rules-container p { opacity: 0; font-size: 1.1rem; margin-bottom: 15px; animation: fadeIn 2s forwards; }
+        .rules-container p:nth-child(1) { animation-delay: 1s; }
+        .rules-container p:nth-child(2) { animation-delay: 3s; }
+        .rules-container p:nth-child(3) { animation-delay: 5s; }
+        .rules-container p:nth-child(4) { animation-delay: 7s; }
+
+        #btn-ingresar {
+            opacity: 0; margin-top: 50px; padding: 15px 40px; font-family: inherit; font-size: 1.5rem;
+            background: transparent; color: var(--text-color); border: 1px solid var(--text-color);
+            cursor: pointer; transition: all 0.3s; animation: fadeIn 2s forwards; animation-delay: 9s;
+        }
+
+        #btn-ingresar:hover { background: var(--text-color); color: #000; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+
+        /* PANTALLA FINAL REVISADA */
+        #end-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 200; display: flex; 
+            justify-content: center; align-items: center; pointer-events: none;
+            opacity: 0; transition: opacity 3s ease-in-out;
+        }
+
+        .hidden { display: none !important; }
+
+        /* ANIMACIONES */
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes noiseJitter {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-1px, 1px); }
+            20% { transform: translate(1px, -2px); }
+            30% { transform: translate(-2px, 0px); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes slightGlitch {
+            0%, 95% { text-shadow: 2px 0 0 rgba(255,0,0,0.5), -2px 0 0 rgba(0,0,255,0.5); transform: translate(0); }
+            96% { text-shadow: -2px 0 0 rgba(255,0,0,0.8), 2px 0 0 rgba(0,0,255,0.8); transform: translate(-2px, 1px); }
+            98% { text-shadow: 2px 0 0 rgba(255,0,0,0.8), -2px 0 0 rgba(0,0,255,0.8); transform: translate(2px, -1px); }
+            100% { text-shadow: 2px 0 0 rgba(255,0,0,0.5), -2px 0 0 rgba(0,0,255,0.5); transform: translate(0); }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('dragstart', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+    </script>
+
+    <div class="crt-overlay"></div>
+    <div class="vhs-noise"></div>
+
+    <div id="start-screen">
+        <div class="content">
+            <h1 class="glitch-text">LO HICISTE</h1>
+            <h2 class="sub-text">¿Tomaste lo qué necesitabas?</h2>
+            
+            <div class="rules-container" id="rules">
+                <p>Toda persona que ingrese a las instalaciones deberá atravesar el corredor de inspección.</p>
+                <p>No se detenga.</p>
+                <p>No mire dentro de las habitaciones.</p>
+                <p>Continúe caminando, si tiene la suficiente paciencia, podrá terminar este pasillo infinito.</p>
+            </div>
+            <button id="btn-ingresar">INGRESAR</button>
+        </div>
+    </div>
+
+    <div id="end-screen" class="hidden"></div>
+
+    <audio id="audioElCan" loop>
+        <source src="elcan.wav" type="audio/wav">
+    </audio>
+    <audio id="sonidoPasos" loop>
+        <source src="agua.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="game-container"></div>
+
+    <script>
+        // --- CONFIGURACIÓN GLOBAL ---
+        let scene, camera, renderer;
+        let gameStarted = false, isEnding = false;
+        let clock = new THREE.Clock();
+
+        // Movimiento pesado (Custom PointerLock)
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let isSprinting = false; // Variable para correr agregada
+        const speed = 10.0; 
+        const mass = 7.0;
+        let isLocked = false;
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+        // Entorno
+        const corridorLength = 700; // Pasillo más corto para tener la puerta más cerca
+        let doors = [], lights = [], entities = [];
+        let endDoor; 
+        const endZ = -corridorLength + 20;
+
+        // Audio
+        let listener;
+        const sounds = {};
+        let stepTimer = 0;
+
+        const btnIngresar = document.getElementById('btn-ingresar');
+        const audioElCan = document.getElementById('audioElCan');
+        const sonidoPasos = document.getElementById('sonidoPasos');
+
+        audioElCan.volume = 0.8;
+        sonidoPasos.volume = 1.0;
+
+        // Colores para la puerta final
+        const colorBlanco = new THREE.Color(0xffffff);
+        const colorNaranja = new THREE.Color(0xff6600);
+        const colorActualPuerta = new THREE.Color();
+
+        // --- INICIO Y CONTEXTO DE AUDIO ---
+        btnIngresar.addEventListener('click', () => {
+            const startScreen = document.getElementById('start-screen');
+            startScreen.style.opacity = '0';
+            
+            // Iniciar el juego e intentar bloquear el puntero inmediatamente para evitar cuelgues
+            initGame();
+            document.body.requestPointerLock();
+
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+            }, 3000);
+
+            // Iniciar audio en bucle
+            let playElCan = audioElCan.play();
+            if (playElCan !== undefined) {
+                playElCan.catch(e => console.warn("Cargando elcan.wav..."));
+            }
+        });
+
+        // GENERACIÓN DE TEXTURAS PROCEDURALES
+        function crearTexturaPared() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#2a2a2a'; 
+            ctx.fillRect(0, 0, 512, 512);
+
+            for (let i = 0; i < 40000; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                const c = Math.floor(Math.random() * 20 + 20);
+                ctx.fillStyle = `rgb(${c},${c},${c})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+
+            ctx.fillStyle = '#111';
+            for (let y = 0; y < 512; y += 128) {
+                ctx.fillRect(0, y, 512, 6);
+                ctx.fillStyle = '#3a3a3a';
+                ctx.fillRect(0, y+6, 512, 2);
+                ctx.fillStyle = '#111';
+            }
+
+            const textura = new THREE.CanvasTexture(canvas);
+            textura.wrapS = THREE.RepeatWrapping;
+            textura.wrapT = THREE.RepeatWrapping;
+            textura.repeat.set(corridorLength / 10, 1);
+            return textura;
+        }
+
+        function crearTexturaPiso() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#0f0f0f';
+            ctx.fillRect(0, 0, 512, 512);
+
+            for(let i = 0; i < 20000; i++) {
+                ctx.fillStyle = Math.random() > 0.8 ? '#1a1a1a' : '#050505';
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, 3, 3);
+            }
+
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+            for(let i = 0; i < 512; i += 64) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
+            }
+
+            const textura = new THREE.CanvasTexture(canvas);
+            textura.wrapS = THREE.RepeatWrapping;
+            textura.wrapT = THREE.RepeatWrapping;
+            textura.repeat.set(2, corridorLength / 4);
+            return textura;
+        }
+
+        function initGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+
+            // Escena base
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020202);
+            scene.fog = new THREE.FogExp2(0x020202, 0.035);
+
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 1.6, 0);
+            scene.add(camera);
+
+            // Iniciar Audio Spatial
+            listener = new THREE.AudioListener();
+            camera.add(listener);
+            if (listener.context.state === 'suspended') {
+                listener.context.resume();
+            }
+            loadLocalAudio();
+
+            // Controles de cámara
+            document.body.addEventListener('click', () => {
+                if (!isEnding) document.body.requestPointerLock();
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                isLocked = document.pointerLockElement === document.body;
+            });
+
+            document.addEventListener('mousemove', (event) => {
+                if (isLocked && !isEnding) {
+                    euler.setFromQuaternion(camera.quaternion);
+                    euler.y -= event.movementX * 0.002;
+                    euler.x -= event.movementY * 0.002;
+                    euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+                    camera.quaternion.setFromEuler(euler);
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if(e.code === 'KeyW' || e.code === 'ArrowUp') moveForward = true;
+                if(e.code === 'KeyS' || e.code === 'ArrowDown') moveBackward = true;
+                if(e.code === 'KeyA' || e.code === 'ArrowLeft') moveLeft = true;
+                if(e.code === 'KeyD' || e.code === 'ArrowRight') moveRight = true;
+                if(e.code === 'ShiftLeft' || e.code === 'ShiftRight') isSprinting = true; // Control de correr
+            });
+            document.addEventListener('keyup', (e) => {
+                if(e.code === 'KeyW' || e.code === 'ArrowUp') moveForward = false;
+                if(e.code === 'KeyS' || e.code === 'ArrowDown') moveBackward = false;
+                if(e.code === 'KeyA' || e.code === 'ArrowLeft') moveLeft = false;
+                if(e.code === 'KeyD' || e.code === 'ArrowRight') moveRight = false;
+                if(e.code === 'ShiftLeft' || e.code === 'ShiftRight') isSprinting = false; // Dejar de correr
+            });
+
+            renderer = new THREE.WebGLRenderer({ antialias: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            buildCorridor();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            animate();
+        }
+
+        function loadLocalAudio() {
+            const audioLoader = new THREE.AudioLoader();
+            const files = ['puerta', 'crujido', 'respiracion', 'metal', 'entidad', 'foco'];
+            
+            files.forEach(name => {
+                audioLoader.load(`audio/${name}.wav`, (buffer) => {
+                    sounds[name] = buffer;
+                    if(name === 'respiracion') {
+                        const sound = new THREE.Audio(listener);
+                        sound.setBuffer(buffer);
+                        sound.setLoop(true);
+                        sound.setVolume(0.08);
+                        sound.play();
+                    }
+                }, undefined, (err) => {
+                    console.warn(`Silencio local: no se cargó ${name}.wav`);
+                });
+            });
+        }
+
+        function playSpatialSound(buffer, position, volume = 1.0) {
+            if(!buffer) return;
+            try {
+                const posAudio = new THREE.PositionalAudio(listener);
+                posAudio.setBuffer(buffer);
+                posAudio.setRefDistance(5);
+                posAudio.setVolume(volume);
+                
+                const mesh = new THREE.Object3D();
+                mesh.position.copy(position);
+                mesh.add(posAudio);
+                scene.add(mesh);
+                
+                posAudio.play();
+                setTimeout(() => scene.remove(mesh), 5000);
+            } catch(e) {}
+        }
+
+        function buildCorridor() {
+            const texPared = crearTexturaPared();
+            const texPiso = crearTexturaPiso();
+
+            const matWall = new THREE.MeshLambertMaterial({ map: texPared, color: 0x888888 });
+            const matFloor = new THREE.MeshLambertMaterial({ map: texPiso, color: 0xaaaaaa });
+            const matDoor = new THREE.MeshLambertMaterial({ color: 0x111111 });
+
+            const geoFloor = new THREE.PlaneGeometry(8, corridorLength);
+            const floor = new THREE.Mesh(geoFloor, matFloor);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.z = -corridorLength / 2;
+            scene.add(floor);
+
+            const geoWall = new THREE.PlaneGeometry(corridorLength, 4);
+            const wallL = new THREE.Mesh(geoWall, matWall);
+            wallL.position.set(-4, 1.5, -corridorLength / 2);
+            wallL.rotation.y = Math.PI / 2;
+            scene.add(wallL);
+
+            const wallR = new THREE.Mesh(geoWall, matWall);
+            wallR.position.set(4, 1.5, -corridorLength / 2);
+            wallR.rotation.y = -Math.PI / 2;
+            scene.add(wallR);
+
+            const geoCeil = new THREE.PlaneGeometry(8, corridorLength);
+            const ceil = new THREE.Mesh(geoCeil, matFloor);
+            ceil.rotation.x = Math.PI / 2;
+            ceil.position.set(0, 3, -corridorLength / 2);
+            scene.add(ceil);
+
+            for (let z = -10; z > -corridorLength + 50; z -= 15) {
+                if (Math.random() > 0.2) {
+                    // Creación de las lámparas cuadradas en el techo
+                    const lampGeo = new THREE.PlaneGeometry(1.5, 1.5); 
+                    const lampMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                    const lampMesh = new THREE.Mesh(lampGeo, lampMat);
+                    lampMesh.rotation.x = Math.PI / 2;
+                    lampMesh.position.set(0, 2.98, z); // Ligeramente debajo del techo para evitar superposición
+                    scene.add(lampMesh);
+
+                    const light = new THREE.PointLight(0xddffdd, 0.7, 15);
+                    light.position.set(0, 2.8, z);
+                    light.userData = { flicker: Math.random(), base: 0.7, mesh: lampMesh }; // Se guarda la malla para el parpadeo
+                    lights.push(light);
+                    scene.add(light);
+                }
+
+                [-3.9, 3.9].forEach(x => {
+                    const door = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 1.2), matDoor);
+                    door.position.set(x, 1.25, z + (x > 0 ? 5 : 0));
+                    
+                    const doorLight = new THREE.PointLight(0x32cd32, 0, 8); 
+                    doorLight.position.set(x > 0 ? -0.5 : 0.5, 0, 0);
+                    door.add(doorLight);
+
+                    const armGeo = new THREE.BoxGeometry(6, 0.3, 0.3);
+                    armGeo.translate(3, 0, 0); 
+                    const armMat = new THREE.MeshLambertMaterial({color: 0x050505});
+                    const arm = new THREE.Mesh(armGeo, armMat);
+                    if (x > 0) arm.rotation.y = Math.PI; 
+                    arm.scale.x = 0.01;
+                    arm.visible = false;
+                    door.add(arm);
+
+                    door.userData = { 
+                        light: doorLight,
+                        arm: arm,
+                        active: false,
+                        timer: Math.random() * 5
+                    };
+                    doors.push(door);
+                    scene.add(door);
+                });
+
+                if (Math.random() < 0.12) {
+                    const entity = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 1.8), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                    entity.position.set(Math.random() > 0.5 ? -3.5 : 3.5, 1.0, z - Math.random() * 3);
+                    entity.lookAt(0, 1.0, z);
+                    entities.push(entity);
+                    scene.add(entity);
+                }
+            }
+
+            // PUERTA DEL FINAL (Dinámica Blanco/Naranja)
+            endDoor = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 0.5), new THREE.MeshLambertMaterial({color: 0xffffff}));
+            endDoor.position.set(0, 1.5, endZ);
+            scene.add(endDoor);
+            
+            const finalLight = new THREE.PointLight(0xffffff, 2, 20);
+            finalLight.position.set(0, 2, endZ - 10);
+            scene.add(finalLight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!gameStarted) return;
+
+            const delta = Math.min(clock.getDelta(), 0.1);
+
+            // Alternancia de color de la puerta final
+            if (endDoor) {
+                const factorLuz = (Math.sin(Date.now() * 0.003) + 1) / 2;
+                colorActualPuerta.copy(colorNaranja).lerp(colorBlanco, factorLuz);
+                endDoor.material.color.copy(colorActualPuerta);
+            }
+
+            if (isLocked && !isEnding) {
+                // Cálculo de velocidad actual basado en si el jugador está corriendo o no
+                const currentSpeed = isSprinting ? speed * 2.2 : speed;
+
+                // Físicas inerciales
+                velocity.x -= velocity.x * mass * delta;
+                velocity.z -= velocity.z * mass * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * currentSpeed * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * currentSpeed * delta;
+
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                right.y = 0; forward.y = 0; 
+                right.normalize(); forward.normalize();
+
+                camera.position.addScaledVector(right, -velocity.x * delta);
+                camera.position.addScaledVector(forward, -velocity.z * delta);
+                camera.position.x = Math.max(-3.5, Math.min(3.5, camera.position.x));
+
+                const progress = Math.min(1.0, Math.abs(camera.position.z) / corridorLength);
+
+                // Bobbing de pasos y sonido agua.mp3 (más rápido si corre)
+                if (moveForward || moveBackward || moveLeft || moveRight) {
+                    stepTimer += delta * (isSprinting ? 7 : 4);
+                    camera.position.y = 1.6 + Math.sin(stepTimer) * 0.06;
+                    
+                    if (sonidoPasos.paused) {
+                        let playPaso = sonidoPasos.play();
+                        if (playPaso !== undefined) {
+                            playPaso.catch(e => console.warn("Esperando agua.mp3..."));
+                        }
+                    }
+                } else {
+                    if (!sonidoPasos.paused) sonidoPasos.pause();
+                }
+
+                // Incremento de tensión visual y parpadeo físico de la lámpara
+                lights.forEach(l => {
+                    if (Math.random() < l.userData.flicker * progress * 0.05) {
+                        const isOn = Math.random() > 0.5;
+                        l.intensity = isOn ? l.userData.base : 0;
+                        
+                        if (l.userData.mesh) {
+                            // Se cambia el color de la lámpara a negro si está apagada para el efecto visual
+                            l.userData.mesh.material.color.setHex(isOn ? 0xffffff : 0x111111);
+                        }
+
+                        if(l.intensity === 0 && Math.random() < 0.05) playSpatialSound(sounds['foco'], l.position, 0.2);
+                    }
+                });
+
+                // LÓGICA DE PUERTAS Y BRAZOS
+                doors.forEach(d => {
+                    let distToPlayer = camera.position.z - d.position.z;
+                    
+                    // Activar ocasionalmente si el jugador se aproxima
+                    if (distToPlayer > -20 && distToPlayer < 40) {
+                        d.userData.timer -= delta;
+                        if (d.userData.timer <= 0) {
+                            d.userData.active = !d.userData.active;
+                            d.userData.timer = d.userData.active ? 1.5 + Math.random() * 2 : 2.5 + Math.random() * 4;
+                        }
+                    } else {
+                        d.userData.active = false;
+                    }
+
+                    // Animación fluida
+                    if (d.userData.active) {
+                        d.userData.arm.visible = true;
+                        d.userData.light.intensity += (2.5 - d.userData.light.intensity) * delta * 5;
+                        d.userData.arm.scale.x += (1 - d.userData.arm.scale.x) * delta * 8;
+                    } else {
+                        d.userData.light.intensity += (0 - d.userData.light.intensity) * delta * 5;
+                        d.userData.arm.scale.x += (0.01 - d.userData.arm.scale.x) * delta * 8;
+                        if (d.userData.arm.scale.x < 0.05) d.userData.arm.visible = false;
+                    }
+
+                    // BLOQUEO: Solo avanzar cuando no estén
+                    if (d.userData.arm.scale.x > 0.4 && distToPlayer > 0 && distToPlayer < 3) {
+                        if (velocity.z < 0) velocity.z = 0; // Impedir paso físico hacia adelante
+                    }
+                });
+
+                // Entidades: Desaparecen al verlas
+                const camDir = new THREE.Vector3();
+                camera.getWorldDirection(camDir);
+                entities.forEach(ent => {
+                    if(ent.visible) {
+                        const dirToEnt = new THREE.Vector3().subVectors(ent.position, camera.position).normalize();
+                        if (camDir.angleTo(dirToEnt) < 0.4) ent.visible = false;
+                    }
+                });
+
+                // Finalización al tocar la puerta final
+                if (camera.position.z <= endZ + 1.5) {
+                    triggerEnding();
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function triggerEnding() {
+            if (isEnding) return;
+            isEnding = true;
+            document.exitPointerLock();
+
+            // Detener audios
+            if(listener) listener.setMasterVolume(0);
+            sonidoPasos.pause();
+            audioElCan.pause();
+
+            // Configurar el fade a negro y los mensajes
+            const endScreen = document.getElementById('end-screen');
+            endScreen.classList.remove('hidden');
+            
+            // Forzar el fade in a negro
+            setTimeout(() => {
+                endScreen.style.opacity = '1';
+            }, 100);
+
+            // Secuencia de mensajes
+            const messages = [
+                "Las cosas cambian, es inevitable.",
+                "Aferrarse a lo que fue, solo prolonga la agonía.",
+                "Negarse al cambio es negarse a existir.",
+                "Quizás ya no está lo que pensabas que era...",
+                "y ahora nunca será de nuevo."
+            ];
+
+            const msgDiv = document.createElement('div');
+            msgDiv.style.color = '#ffffff';
+            msgDiv.style.fontSize = '2rem';
+            msgDiv.style.textAlign = 'center';
+            msgDiv.style.opacity = '0';
+            msgDiv.style.transition = 'opacity 2s ease-in-out';
+            msgDiv.style.textShadow = '0 0 10px rgba(255,255,255,0.4)';
+            msgDiv.style.maxWidth = '800px';
+            msgDiv.style.padding = '20px';
+            endScreen.appendChild(msgDiv);
+
+            let step = 0;
+
+            function showNextMessage() {
+                if (step >= messages.length) {
+                    // Cierra la pestaña/ventana al terminar en lugar de redirigir
+                    setTimeout(() => {
+                        window.close();
+                    }, 2000);
+                    return;
+                }
+
+                // Ocultar mensaje actual
+                msgDiv.style.opacity = '0';
+
+                // Mostrar siguiente mensaje después de que se oculte
+                setTimeout(() => {
+                    msgDiv.innerText = messages[step];
+                    msgDiv.style.opacity = '1';
+                    step++;
+                    
+                    // Tiempo que dura el mensaje en pantalla
+                    setTimeout(showNextMessage, 4500); 
+                }, 2000);
+            }
+
+            // Iniciar la secuencia de texto tras el fade a negro
+            setTimeout(showNextMessage, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lo raro</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* Evita seleccionar y copiar texto */
+    user-select: none; 
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+body {
+    overflow: hidden;
+    font-family: Courier New, monospace;
+    image-rendering: pixelated;
+    height: 100vh;
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.9)), url("fondiris.jpg") center center / cover no-repeat;
+    background-color: #000;
+}
+
+/* FUNDIDO EN NEGRO INICIAL */
+#blackScreen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 999999999;
+    transition: opacity 3s ease-in-out;
+    pointer-events: none;
+}
+
+/* VIÑETA PULSANTE */
+body::before {
+    content: "";
+    position: fixed;
+    inset: -10%; 
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 18%, rgba(0,0,0,.15) 30%, rgba(0,0,0,.4) 50%, rgba(0,0,0,.75) 75%, rgba(0,0,0,.97) 100%);
+    animation: vignettePulse 2.3s infinite ease-in-out, vignetteBlink 7s infinite;
+    mix-blend-mode: multiply;
+    z-index: 998;
+}
+
+@keyframes vignettePulse {
+    0% { transform: scale(1); opacity: .8; }
+    50% { transform: scale(1.04); opacity: 1; } 
+    100% { transform: scale(1); opacity: .8; }
+}
+
+@keyframes vignetteBlink {
+    95% { filter: brightness(1) }
+    96% { filter: brightness(.55) }
+    98% { filter: brightness(.25) }
+    100% { filter: brightness(1) }
+}
+
+/* GLITCH Y VHS */
+.glitchOverlay {
+    position: fixed !important;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999998 !important;
+    background: repeating-linear-gradient(90deg, rgba(255,0,120,.04) 0px, rgba(255,0,120,.04) 2px, rgba(0,255,255,.04) 3px, rgba(0,255,255,.04) 4px, transparent 6px, transparent 10px),
+                repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 2px, transparent 4px, transparent 6px);
+    background-size: 100% 100%, 100% 5px;
+    opacity: .8 !important;
+    mix-blend-mode: screen !important;
+    animation: glitchFlicker 2.8s infinite, vhsMove .08s infinite, rgbSplit .3s infinite !important;
+    filter: contrast(1.7) brightness(1.1) saturate(1.5) !important;
+}
+
+@keyframes vhsMove {
+    20% { transform: translate(-3px, 1px) }
+    40% { transform: translate(4px, -1px) }
+    60% { transform: translate(-4px, 2px) }
+    80% { transform: translate(2px, -2px) }
+}
+
+@keyframes rgbSplit {
+    50% { filter: contrast(2) hue-rotate(8deg) }
+}
+
+@keyframes glitchFlicker {
+    0% { opacity: 0.4; }
+    20% { opacity: 0.6; }
+    40% { opacity: 0.3; }
+    60% { opacity: 0.7; }
+    80% { opacity: 0.5; }
+    100% { opacity: 0.4; }
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 8px, transparent 9px);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    animation: crtMove 6s linear infinite !important;
+    z-index: 999997 !important;
+}
+
+@keyframes crtMove {
+    0% { transform: translateY(-20px) }
+    100% { transform: translateY(20px) }
+}
+
+body {
+    animation: vhsWarp 6s linear infinite;
+}
+
+@keyframes vhsWarp {
+    0%, 100% { filter: contrast(1) brightness(1) hue-rotate(0deg); }
+    25% { filter: contrast(1.05) brightness(.95) hue-rotate(1deg); }
+    50% { filter: contrast(1.1) brightness(1.02) hue-rotate(-1deg); }
+}
+
+/* BOTON VOLVER */
+.backButton {
+    position: fixed;
+    top: 35px; 
+    right: 35px; 
+    z-index: 99999999;
+    padding: 14px 24px;
+    background: linear-gradient(to bottom, #333, #0a0a0a);
+    border: 2px solid #555;
+    font-family: Courier New, monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ccc;
+    cursor: pointer;
+    text-shadow: 1px 1px 2px black;
+    box-shadow: 0 0 15px rgba(255,255,255,.05), 0 0 30px rgba(0,0,0,1);
+    animation: vhsMove .2s infinite, buttonFloatBack 2s infinite;
+    transition: 0.3s ease;
+    display: none; 
+}
+
+@keyframes buttonFloatBack {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+.backButton:hover {
+    transform: scale(1.05) rotate(-1deg);
+    color: #fff;
+    border-color: #888;
+    filter: brightness(1.3);
+}
+
+.backButton:active {
+    transform: scale(.95);
+}
+
+/* ATMOSFERA */
+.particles {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.02), transparent 1%),
+                radial-gradient(circle at 70% 40%, rgba(255,255,255,0.02), transparent 1%),
+                radial-gradient(circle at 50% 80%, rgba(255,255,255,0.02), transparent 1%);
+    animation: fog 10s linear infinite;
+}
+
+@keyframes fog {
+    0% { transform: translateX(0px); }
+    50% { transform: translateX(20px); }
+    100% { transform: translateX(0px); }
+}
+
+/* GIF */
+.topGif {
+    position: absolute;
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 520px;
+    filter: grayscale(0.5) brightness(0.7) contrast(1.2);
+    image-rendering: pixelated;
+    animation: floatGif 5s ease-in-out infinite;
+    z-index: 2;
+    pointer-events: none;
+}
+
+@keyframes floatGif {
+    0%, 100% { transform: translateX(-50%) translateY(0px); }
+    50% { transform: translateX(-50%) translateY(-12px); }
+}
+
+/* ESCENA 3D */
+.scene {
+    position: absolute;
+    bottom: -35%;
+    left: 50%;
+    transform: translateX(-50%) perspective(2500px) rotateX(58deg);
+    width: 1300px;
+    height: 850px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    transform-style: preserve-3d;
+}
+
+/* GLOW */
+.bookGlow {
+    position: absolute;
+    width: 1200px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(180,180,180,0.1) 0%, rgba(120,120,120,0.05) 30%, transparent 70%);
+    filter: blur(60px);
+    animation: glowPulse 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes glowPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+/* LIBRO 3D */
+.book {
+    position: relative;
+    width: 950px;
+    height: 560px;
+    transform-style: preserve-3d;
+    animation: bookFloat 6s ease-in-out infinite;
+}
+
+@keyframes bookFloat {
+    0%, 100% { transform: translateY(0px) rotateZ(-1deg) rotateX(0deg); }
+    50% { transform: translateY(-12px) rotateZ(1deg) rotateX(2deg); }
+}
+
+/* SOMBRA */
+.shadow {
+    position: absolute;
+    width: 140%;
+    height: 140%;
+    background: rgba(0,0,0,0.85);
+    border-radius: 50%;
+    filter: blur(90px);
+    top: 18%;
+    left: -20%;
+    transform: translateZ(-300px);
+    animation: shadowPulse 6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes shadowPulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+}
+
+/* GROSOR PROFESIONAL */
+.pageStack {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 3px solid #1a1a1a;
+    background: #e0e0e0;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    pointer-events: none;
+}
+
+.pageStack1 { top: 24px; left: 24px; background: #666; }
+.pageStack2 { top: 22px; left: 22px; background: #777; }
+.pageStack3 { top: 20px; left: 20px; background: #888; }
+.pageStack4 { top: 18px; left: 18px; background: #999; }
+.pageStack5 { top: 16px; left: 16px; background: #aaa; }
+.pageStack6 { top: 14px; left: 14px; background: #bbb; }
+.pageStack7 { top: 12px; left: 12px; background: #ccc; }
+.pageStack8 { top: 10px; left: 10px; background: #ddd; }
+.pageStack9 { top: 8px; left: 8px; }
+.pageStack10 { top: 6px; left: 6px; }
+.pageStack11 { top: 4px; left: 4px; }
+.pageStack12 { top: 2px; left: 2px; }
+
+/* PORTADA */
+.cover {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, #1f1f1f, #0d0d0d);
+    border: 6px solid #050505;
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.9), 0 0 80px rgba(255,255,255,0.03), inset 0 0 30px rgba(0,0,0,1);
+}
+
+/* PAGINAS INTERNAS */
+.leftPage, .rightPage {
+    width: 50%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.4);
+}
+
+.leftPage {
+    background: linear-gradient(to right, #b8b8b8, #e0e0e0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-right: 1px solid rgba(0,0,0,0.2);
+}
+
+.rightPage {
+    background: linear-gradient(to left, #b8b8b8, #eaeaea);
+    padding: 50px;
+    color: #1a1a1a;
+    font-size: 20px;
+    line-height: 1.7;
+    border-left: 1px solid rgba(255,255,255,0.5);
+}
+
+.rightPage h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #555;
+    padding-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+}
+
+/* CENTRO */
+.centerShadow {
+    position: absolute;
+    top: 0;
+    width: 50px;
+    height: 100%;
+    background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
+    z-index: 5;
+    pointer-events: none; 
+}
+.leftShadow { right: 0; background: linear-gradient(to left, rgba(0,0,0,0.4), transparent); }
+.rightShadow { left: 0; }
+
+/* IMAGEN */
+.pageImage {
+    width: 90%; 
+    height: 80%; 
+    object-fit: cover; 
+    border-radius: 4px; 
+    border: 4px solid #fff; /* Borde blanco */
+    cursor: pointer;
+    transition: filter 0.3s ease, box-shadow 0.3s ease; /* Quitada la transición de transformación */
+    filter: grayscale(0.3) contrast(1.15); 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+    position: relative; 
+    z-index: 50; 
+    pointer-events: auto; 
+}
+
+.pageImage:hover {
+    /* Quitada la escala y traslación para que no se mueva al intentar clickear */
+    filter: grayscale(0) contrast(1.2); 
+    box-shadow: 0 15px 30px rgba(0,0,0,0.8);
+}
+
+/* PAGINA VOLTEANDO */
+.flipPage {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to left, #b8b8b8, #f5f5f5);
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    display: none;
+    z-index: 100;
+    border-left: 2px solid rgba(0,0,0,0.3);
+    box-shadow: -15px 0px 40px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.2);
+    pointer-events: none;
+}
+
+/* BOTONES 3D */
+.bookButton {
+    position: absolute;
+    top: 50%;
+    width: 100px; 
+    height: 100px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(to bottom, #3a3a3a, #111);
+    border: 3px solid #555;
+    color: #bbb;
+    font-size: 34px;
+    transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.9), 0 15px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.05);
+    z-index: 200;
+    animation: buttonFloatBook 2.5s ease-in-out infinite;
+}
+
+@keyframes buttonFloatBook {
+    0%, 100% { transform: translateY(-50%) translateZ(80px) rotateX(-25deg) translateY(0px); }
+    50% { transform: translateY(-50%) translateZ(80px) rotateX(-25deg) translateY(-10px); }
+}
+
+.bookButton:hover {
+    color: #fff;
+    background: linear-gradient(to bottom, #4a4a4a, #1a1a1a);
+    box-shadow: 0 8px 0 rgba(0,0,0,0.9), 0 20px 30px rgba(255,255,255,0.1), inset 0 0 15px rgba(255,255,255,0.1);
+}
+
+.bookButton:active {
+    animation-play-state: paused;
+    transform: translateY(-50%) translateZ(80px) rotateX(-25deg) translateY(8px) !important;
+    box-shadow: 0 0px 0 rgba(0,0,0,0.9), 0 5px 10px rgba(0,0,0,0.8);
+}
+
+.leftBtn { left: -120px; }
+.rightBtn { right: -120px; }
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999999;
+    backdrop-filter: blur(8px);
+}
+
+.modal img {
+    max-width: 85%;
+    max-height: 85%;
+    border: 6px solid #444;
+    image-rendering: pixelated;
+    box-shadow: 0 0 50px rgba(0,0,0,1);
+}
+
+/* BOTON CERRAR MODAL */
+.closeModalBtn {
+    position: absolute;
+    top: 40px;
+    right: 50px;
+    font-size: 50px;
+    color: #aaa;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+    text-shadow: 0 0 10px black;
+    transition: 0.3s;
+    z-index: 10000000;
+}
+
+.closeModalBtn:hover {
+    color: #fff;
+    transform: scale(1.2);
+    text-shadow: 0 0 20px rgba(255,255,255,0.5);
+}
+
+/* DIALOGO RPG MEJORADO */
+.intro {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding-bottom: 80px;
+    z-index: 999999;
+    backdrop-filter: blur(10px);
+    transition: opacity 1s;
+}
+
+.introBox {
+    width: 900px;
+    background: rgba(20, 20, 20, 0.7);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-top: 2px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    padding: 40px;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 40px rgba(0,0,0,0.8);
+    backdrop-filter: blur(5px);
+    animation: dialogFloat 4s ease-in-out infinite;
+}
+
+.introBox::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1px solid rgba(255,255,255,0.05);
+    pointer-events: none;
+}
+
+.dialogName {
+    font-size: 22px;
+    color: #aaa;
+    margin-bottom: 15px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.dialogText {
+    font-size: 26px;
+    line-height: 1.6;
+    color: #e0e0e0;
+    text-shadow: 2px 2px 4px black;
+}
+
+.introBtn {
+    margin-top: 35px;
+    padding: 12px 30px;
+    font-size: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    cursor: pointer;
+    float: right;
+    transition: 0.3s;
+    font-family: Courier New, monospace;
+    backdrop-filter: blur(4px);
+}
+
+.introBtn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255,255,255,0.1);
+}
+
+@keyframes dialogFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+/* LLUVIA Y MENSAJES */
+.rain { position: fixed; inset: 0; pointer-events: none; z-index: 30; overflow: hidden; }
+.drop { position: absolute; width: 1px; height: 14px; background: rgba(220,220,255,.16); animation: rainFall linear infinite; }
+.spark { position: absolute; width: 2px; height: 2px; background: white; box-shadow: 0 0 6px white; animation: sparkle 2s linear infinite; opacity: .5; }
+
+@keyframes rainFall { from { transform: translateY(-100vh); } to { transform: translateY(100vh); } }
+@keyframes sparkle { 0%, 100% { opacity: 0; } 50% { opacity: .7; } }
+
+.sideMsg {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    color: rgba(255,255,255,.15); font-size: 22px; z-index: 99990;
+    max-width: 220px; font-family: Courier New, monospace;
+    opacity: 0; transition: 1.5s; text-shadow: 0 0 8px black; pointer-events: none;
+}
+.leftMsg { left: 20px; } .rightMsg { right: 20px; text-align: right; }
+.showMsg { opacity: 1; }
+
+/* TYPEWRITER CURSOR */
+.cursor {
+    display: inline-block;
+    width: 10px;
+    height: 20px;
+    background: #1a1a1a;
+    animation: blink 1s step-end infinite;
+    vertical-align: bottom;
+    margin-left: 2px;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+</style>
+</head>
+
+<body oncontextmenu="return false;">
+
+<div id="blackScreen"></div>
+
+<div class='rain' id='rain'></div>
+<div class='sideMsg leftMsg' id='leftMsg'></div>
+<div class='sideMsg rightMsg' id='rightMsg'></div>
+
+<div class="particles"></div>
+<div class="glitchOverlay"></div>
+
+<div class="intro" id="intro">
+    <div class="introBox">
+        <div class="dialogName">Iris:</div>
+        <div class="dialogText">
+            Mira, aquí está lo que te decía... Algunas páginas del fanzine fueron arrancadas, quizás están volando por ahí en la ciudad o perdidas esperando por alguien.<br><br>
+            <span style="font-size:18px; color:#888;">(Puedes clickear las fotos para verlas de cerca)</span>
+        </div>
+        <button class="introBtn" onclick="startExperience()">Mirar</button>
+    </div>
+</div>
+
+<audio id="bgMusic" loop>
+    <source src="libro.mp3" type="audio/mpeg">
+</audio>
+<audio id="typeSound" loop>
+    <source src="vic.mp3" type="audio/mpeg">
+</audio>
+
+<img class="topGif" src="lkm.gif" draggable="false">
+
+<div class="scene">
+    <div class="bookGlow"></div>
+    <div class="book">
+        <div class="shadow"></div>
+        <div class="pageStack pageStack1"></div>
+        <div class="pageStack pageStack2"></div>
+        <div class="pageStack pageStack3"></div>
+        <div class="pageStack pageStack4"></div>
+        <div class="pageStack pageStack5"></div>
+        <div class="pageStack pageStack6"></div>
+        <div class="pageStack pageStack7"></div>
+        <div class="pageStack pageStack8"></div>
+        <div class="pageStack pageStack9"></div>
+        <div class="pageStack pageStack10"></div>
+        <div class="pageStack pageStack11"></div>
+        <div class="pageStack pageStack12"></div>
+
+        <div class="cover">
+            <div class="leftPage">
+                <div class="centerShadow leftShadow"></div>
+                <!-- Ajustada la imagen inicial según el nuevo orden del script -->
+                <img id="pageImage" class="pageImage" src="f2.jpeg" onclick="openImage(this.src)" draggable="false">
+            </div>
+            <div class="rightPage">
+                <div class="centerShadow rightShadow"></div>
+                <h1 id="title">Contrato</h1>
+                <p id="text"></p>
+            </div>
+        </div>
+
+        <div id="flipPage" class="flipPage"></div>
+
+        <button class="bookButton leftBtn" onclick="prevPage()">◀</button>
+        <button class="bookButton rightBtn" onclick="nextPage()">▶</button>
+    </div>
+</div>
+
+<div id="modal" class="modal" onclick="closeImage()">
+    <div class="closeModalBtn" onclick="closeImage()">✖</div>
+    <img id="modalImg" draggable="false">
+</div>
+
+<button id="backBtn" class="backButton" onclick="window.close()">CERRAR</button>
+
+<script>
+// Fade-in inicial
+window.onload = () => {
+    setTimeout(() => {
+        document.getElementById('blackScreen').style.opacity = '0';
+    }, 300);
+};
+
+// Redacción liminal en tercera persona y orden completamente barajado
+const pages = [
+    {title:"Contrato", text:"Se firmó sin leer el nombre, ahora lo usa otra voz lejana. Promete continuidad a cambio de una forma estable; no se le puede ver, permanece agazapado en el segundo piso, esperando el momento exacto.", image:"f2.jpeg"},
+    {title:"Déjà vu", text:"La cordura comenzó a desmoronarse lentamente. Se pensó que todo había terminado, pero ¿este escenario ya se había visto antes? ¿Alguien más ya había estado aquí? Quizás solo es un residuo guardado en el lugar incorrecto.", image:"f0.jpg"},
+    {title:"Reemplazo", text:"Una mirada detenida al reflejo de la pantalla devolvió algo totalmente ajeno, una reescritura constante donde ya no se distingue la anomalía.", image:"obra2.jpg"},
+    {title:"Casa", text:"Aquel espacio no posee entrada ni salida reconocible, es solo la costumbre inerte de permanecer. Las sillas están ocupadas por versiones inacabadas de una misma silueta; la realidad parece probar configuraciones previas.", image:"f5.jpeg"},
+    {title:"Redención", text:"Un día, repentinamente todas las aves cayeron muertas sobre el pavimento. Entonces, astuta y vigorosa, la quietud ofrece un reinicio sin memoria y sin culpa. Pero desprovista de peso, esta respuesta es sólo otra manera de desaparecer.", image:"f1.jpeg"},
+    {title:"Foso", text:"Se acumuló tanto rastro del pasado que el peso colapsó el suelo. Ahora, en la profundidad del vacío, el hambre es la única certeza que queda, consumiendo todo lo que alguna vez se intentó retener.", image:"obra1.jpg"},
+    {title:"Mantenimiento", text:"Llegó la señal de una pausa breve. Durante ese intervalo de silencio, alguien ajusta las reacciones y pule los recuerdos demasiado ruidosos. Al volver, las funciones marchan mejor, pero queda la sospecha de una sustitución gradual.", image:"f3.jpeg"},
+    {title:"Estrella", text:"La puerta sellada por años finalmente cedió unos centímetros, revelando la estática pura de un ███████████████ que nadie debía observar.", image:"imagen1.png"},
+    {title:"Luz", text:"Una luna roja iluminó los contornos mientras símbolos antiguos aparecían sobre el papel. ¿Acaso era un nombre desconocido el que se escribía solo en la penumbra?", image:"f4.jpeg"},
+    {title:"Eco", text:"Cada rincón de este dominio fue diseñado minuciosamente, pero terminó completamente deshabitado. Las acciones pasadas aislaron los servidores de la red exterior, y ahora sólo la interferencia hace compañía.", image:"obra3.jpg"},
+    {title:"Amigo", text:"Se le vio arrastrándose por el borde de la calle. Hubo un instante de reconocimiento mutuo, pero al ocurrir, la figura giró la cabeza con extrañeza e intentó huir hacia la niebla.", image:"f6.jpeg"},
+    {title:"Salta", text:"El volumen se cerró definitivamente, sabiendo que el entorno y la silueta que lo observaba jamás volverían a ser los mismos.", image:"f8.jpeg"}
+];
+
+let current = 0;
+let typewriterInterval;
+
+function startExperience() {
+    const intro = document.getElementById("intro");
+    intro.style.opacity = "0";
+    setTimeout(() => { intro.style.display = "none"; }, 1000);
+    
+    // Aparecer botón cerrar
+    setTimeout(() => {
+        document.getElementById("backBtn").style.display = "block";
+    }, 2000);
+
+    // Audio BGM Smooth Fade-in
+    const bgm = document.getElementById("bgMusic");
+    bgm.volume = 0;
+    bgm.play();
+    let vol = 0;
+    let fadeAudio = setInterval(() => {
+        if (vol < 0.6) {
+            vol += 0.02;
+            bgm.volume = vol;
+        } else {
+            clearInterval(fadeAudio);
+        }
+    }, 150);
+
+    // Preparar audio de typeo
+    const ts = document.getElementById("typeSound");
+    ts.playbackRate = 1.8; 
+    ts.volume = 0.35; 
+
+    updatePage(); 
+}
+
+function typeWriterEffect(text) {
+    const textEl = document.getElementById("text");
+    const ts = document.getElementById("typeSound");
+    textEl.innerHTML = "";
+    
+    let i = 0;
+    if (typewriterInterval) clearInterval(typewriterInterval);
+    
+    // Iniciar sonido
+    ts.currentTime = 0;
+    ts.play().catch(e => console.log("Audio autoplay prevenido"));
+
+    typewriterInterval = setInterval(() => {
+        textEl.innerHTML = text.substring(0, i) + '<span class="cursor"></span>';
+        i++;
+        if (i > text.length) {
+            clearInterval(typewriterInterval);
+            textEl.innerHTML = text; 
+            ts.pause();
+        }
+    }, 35); 
+}
+
+function animateFlip(callback) {
+    const flip = document.getElementById("flipPage");
+    flip.style.display = "block";
+    flip.style.transform = "rotateY(0deg)";
+    flip.style.opacity = "1";
+    flip.innerHTML = `<div style="width:100%;height:100%;background:linear-gradient(to left,#9d9d9d,#efefef);position:absolute;"></div>`;
+
+    // Interrumpir tipeo anterior
+    if (typewriterInterval) clearInterval(typewriterInterval);
+    document.getElementById("typeSound").pause();
+    document.getElementById("text").innerHTML = "";
+
+    setTimeout(() => {
+        flip.style.transition = "1.5s cubic-bezier(.22,.61,.36,1)";
+        flip.style.transform = "rotateY(-180deg) translateX(-10px)";
+        flip.style.filter = "brightness(1.08)";
+    }, 30);
+
+    setTimeout(() => { flip.style.opacity = "0.4"; }, 900);
+
+    setTimeout(() => {
+        flip.style.display = "none";
+        flip.style.transition = "none";
+        flip.style.opacity = "1";
+        callback();
+    }, 1500);
+}
+
+function openImage(src) {
+    document.getElementById("modal").style.display = "flex";
+    document.getElementById("modalImg").src = src;
+    document.getElementById("backBtn").style.display = "none"; 
+}
+
+function closeImage() {
+    document.getElementById("modal").style.display = "none";
+    document.getElementById("backBtn").style.display = "block"; 
+}
+
+function updatePage() {
+    document.getElementById("title").innerText = pages[current].title;
+    document.getElementById("pageImage").src = pages[current].image;
+    typeWriterEffect(pages[current].text);
+}
+
+function nextPage() {
+    animateFlip(() => {
+        current++;
+        if (current >= pages.length) current = 0;
+        updatePage();
+    });
+}
+
+function prevPage() {
+    animateFlip(() => {
+        current--;
+        if (current < 0) current = pages.length - 1;
+        updatePage();
+    });
+}
+
+// LLUVIA Y MENSAJES BACKGROUND
+const rain = document.getElementById('rain');
+for(let i=0; i<90; i++){
+    let d = document.createElement('div');
+    d.className = 'drop';
+    d.style.left = Math.random() * 100 + '%';
+    d.style.animationDuration = (.7 + Math.random() * 1.8) + 's';
+    d.style.animationDelay = (Math.random() * 4) + 's';
+    rain.appendChild(d);
+}
+for(let i=0; i<12; i++){
+    let s = document.createElement('div');
+    s.className = 'spark';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.bottom = (Math.random() * 18) + '%';
+    s.style.animationDelay = (Math.random() * 5) + 's';
+    rain.appendChild(s);
+}
+
+const msgs = ['¿Por qué no puedo mirar a la gente a los ojos?','¿Cómo se supone que hago esto?','Todos parecen saber algo menos yo.','No recuerdo cuándo empezó esto.','Finjo entender para no preocupar a nadie.','Hay algo raro en mi voice hoy.'];
+function flashMsg() {
+    let l = document.getElementById('leftMsg'), r = document.getElementById('rightMsg');
+    l.innerText = msgs[Math.random() * msgs.length | 0];
+    r.innerText = msgs[Math.random() * msgs.length | 0];
+    l.classList.add('showMsg');
+    r.classList.add('showMsg');
+    setTimeout(() => { l.classList.remove('showMsg'); r.classList.remove('showMsg') }, 9000);
+}
+setInterval(flashMsg, 60000);
+
+</script>
+</body>
+</html>
