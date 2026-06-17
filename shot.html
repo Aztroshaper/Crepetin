@@ -3,113 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Construyendo sonrisas</title>
+    <title>Construyendo Sonrisas - Edición Pesadilla</title>
     <style>
         body, html {
             margin: 0; padding: 0; overflow: hidden;
             width: 100%; height: 100%;
-            background-color: #010102;
+            background-color: #030205;
             font-family: 'Courier New', monospace;
             user-select: none;
         }
-        #gameCanvas {
-            display: block; width: 100vw; height: 100vh;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
+        #viewport-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            /* Filtro estilo monitor CRT viejo y desgastado */
+            filter: contrast(1.3) brightness(0.85) saturate(1.1);
         }
-        /* Pantalla invisible inicial para interactuar con el audio del navegador */
+        #gameCanvas {
+            display: block; width: 100%; height: 100%;
+            image-rendering: pixelated;
+        }
+        /* Efecto de viñeta para mayor claustrofobia */
+        #vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.92) 95%);
+            pointer-events: none; z-index: 2;
+        }
         #audio-unlocker {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(3,2,5,0.99);
+            background-color: #050408;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #ff2222; z-index: 30; text-align: center; cursor: pointer;
+            color: #ff3333; z-index: 30; text-align: center; cursor: pointer;
         }
-        /* Contenedor RPG in-game corregido para evitar desborde */
         #rpg-dialogue-box {
             position: absolute; bottom: 40px; left: 50%;
             transform: translateX(-50%);
-            width: 85%; max-width: 750px; background-color: rgba(0, 0, 0, 0.9);
-            border: 4px double #ff2222; padding: 20px; z-index: 10;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            width: 85%; max-width: 800px; background-color: rgba(5, 4, 8, 0.95);
+            border: 3px solid #ff1111; padding: 25px; z-index: 10;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
             box-sizing: border-box;
-            /* Solución al desborde de texto */
-            white-space: normal;
-            word-wrap: break-word;
-            word-break: break-word;
         }
         #rpg-speaker {
-            color: #ffcc00; font-weight: bold; font-size: 18px; margin-bottom: 10px;
-            text-transform: uppercase; letter-spacing: 2px;
+            color: #ffaa00; font-weight: bold; font-size: 20px; margin-bottom: 12px;
+            text-transform: uppercase; letter-spacing: 3px; border-bottom: 1px dashed #ff1111;
+            padding-bottom: 5px;
         }
         #rpg-text {
-            color: #eee; font-size: 15px; line-height: 1.6; min-height: 70px;
-            white-space: normal;
-            word-wrap: break-word;
+            color: #ddd; font-size: 16px; line-height: 1.6; min-height: 80px;
         }
         #start-btn {
-            display: none; margin: 15px auto 0 auto; background-color: #aa0000; color: #fff;
-            border: 2px solid #ff2222; padding: 10px 24px; font-family: 'Courier New', monospace;
-            font-size: 14px; font-weight: bold; letter-spacing: 2px; cursor: pointer;
-            box-shadow: 0 0 10px rgba(255,0,0,0.5); animation: pulse 1.5s infinite;
+            display: none; margin: 20px auto 0 auto; background-color: #880000; color: #fff;
+            border: 2px solid #ff3333; padding: 12px 30px; font-family: 'Courier New', monospace;
+            font-size: 15px; font-weight: bold; letter-spacing: 3px; cursor: pointer;
+            box-shadow: 0 0 15px rgba(255,0,0,0.4); animation: pulse 1.5s infinite;
         }
-        #start-btn:hover { background-color: #ff2222; }
+        #start-btn:hover { background-color: #ff1111; }
         @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
+            0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; }
         }
         #ui {
-            position: absolute; top: 20px; left: 20px;
-            color: #fff; font-size: 20px; pointer-events: none; z-index: 5;
-            text-shadow: 2px 2px #000; letter-spacing: 1px;
-            display: none; /* Se muestra hasta que empiece la tormenta */
+            position: absolute; top: 30px; left: 30px;
+            color: #fff; font-size: 18px; pointer-events: none; z-index: 5;
+            text-shadow: 2px 2px #000; letter-spacing: 2px; display: none;
         }
         #radar-container {
-            position: absolute; top: 20px; right: 20px;
-            width: 140px; height: 140px; border: 3px solid #b30000;
-            border-radius: 0px; background-color: rgba(3,3,6,0.95);
-            overflow: hidden; z-index: 5;
-            box-shadow: 0 0 15px rgba(0,0,0,0.9);
-            display: none; /* Se oculta durante la introducción */
+            position: absolute; top: 30px; right: 30px;
+            width: 160px; height: 160px; border: 2px solid #ff1111;
+            background-color: rgba(3,2,6,0.9); z-index: 5;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); display: none;
         }
         #end-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 20; text-align: center;
+            z-index: 20; text-align: center; font-family: 'Courier New', monospace;
         }
     </style>
 </head>
 <body>
 
-    <!-- Activador de clics inicial -->
-    <div id="audio-unlocker" onclick="unlockAudioAndStartIntro()">
-        <h1 style="letter-spacing: 6px; text-shadow: 0 0 15px #aa0000;">CONSTRUYENDO SONRISAS</h1>
-        <h2 style="color: #ffcc00; letter-spacing: 3px; font-size: 16px; margin-top: 20px;">HAZ CLIC PARA ENLAZAR TRANSMISION</h2>
-    </div>
+    <div id="viewport-container">
+        <div id="vignette"></div>
+        
+        <div id="audio-unlocker" onclick="unlockAudioAndStartIntro()">
+            <h1 style="letter-spacing: 8px; text-shadow: 0 0 20px #ff0000; font-size: 36px;">CONSTRUYENDO SONRISAS</h1>
+            <h2 style="color: #ffaa00; letter-spacing: 4px; font-size: 14px; margin-top: 25px; animation: pulse 2s infinite;">[ CLICK PARA ENLAZAR TRANSMISIÓN SENSORIAL ]</h2>
+        </div>
 
-    <!-- Caja de Diálogo RPG integrada sobre el render 3D -->
-    <div id="rpg-dialogue-box" style="display: none;">
-        <div id="rpg-speaker">Arquitecto Burdo</div>
-        <div id="rpg-text"></div>
-        <button id="start-btn" onclick="releaseTheStorm()">INICIAR OPERATIVO</button>
-    </div>
+        <div id="rpg-dialogue-box" style="display: none;">
+            <div id="rpg-speaker">Arquitecto Burdo</div>
+            <div id="rpg-text"></div>
+            <button id="start-btn" onclick="releaseTheStorm()">INICIAR OPERATIVO URBANO</button>
+        </div>
 
-    <div id="end-screen">
-        <h1 id="end-title" style="font-size: 50px; letter-spacing: 6px;"></h1>
-        <p id="end-desc" style="color: #fff; font-size: 18px;"></p>
-    </div>
+        <div id="end-screen">
+            <h1 id="end-title" style="font-size: 55px; letter-spacing: 8px; text-shadow: 0 0 20px rgba(0,0,0,0.8);"></h1>
+            <p id="end-desc" style="color: #fff; font-size: 16px; max-width: 600px; line-height: 1.8; padding: 20px;"></p>
+        </div>
 
-    <div id="ui">
-        <div id="hearts">INTEGRIDAD: [IIIII]</div>
-        <div id="ammo" style="color: #ffcc00; margin-top: 5px;">MUNICION: 10</div>
-        <div id="score" style="color: #00ff66; margin-top: 5px;">ENTES DETENIDOS: 0 / 3</div>
-    </div>
+        <div id="ui">
+            <div id="hearts" style="color: #ff3333;">ESTADO CORPORAL: [IIIII]</div>
+            <div id="ammo" style="color: #ffaa00; margin-top: 8px;">CARTUCHOS: 10</div>
+            <div id="score" style="color: #00ff66; margin-top: 8px;">ANOMALÍAS DEPURADAS: 0 / 3</div>
+        </div>
 
-    <div id="radar-container">
-        <canvas id="radarCanvas" width="140" height="140"></canvas>
-    </div>
+        <div id="radar-container">
+            <canvas id="radarCanvas" width="160" height="160"></canvas>
+        </div>
 
-    <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas"></canvas>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -117,7 +119,7 @@
         const radarCanvas = document.getElementById('radarCanvas');
         const rCtx = radarCanvas.getContext('2d');
 
-        const PIXEL_SCALE = 4; 
+        const PIXEL_SCALE = 3; 
         function resize() {
             canvas.width = window.innerWidth / PIXEL_SCALE;
             canvas.height = window.innerHeight / PIXEL_SCALE;
@@ -125,27 +127,95 @@
         window.addEventListener('resize', resize);
         resize();
 
-        let player = { x: 35, y: 35, angle: 0.8, health: 5, ammo: 10, score: 0, z: 0, vSpeed: 0, isJumping: false };
-        const MAP_SIZE = 280; 
+        let player = { x: 40, y: 40, angle: 0.8, health: 5, ammo: 10, score: 0, z: 0, vSpeed: 0, isJumping: false };
+        const MAP_SIZE = 320; 
         let gameRunning = false;
-        let isIntroActive = false; // Estado de inmunidad antes de la tormenta
+        let isIntroActive = false;
         let damageFlashActive = 0;
         let bullets3D = [];
 
-        // TEXTOS DEL LORE
         let dialogueStep = 0;
         const dialogues = [
-            "Menos mal que llegas... La produccion de viviendas aca en Torreon't esta completamente paralizada. No podemos avanzar un solo bloque.",
-            "Hay un sujeto rondando el perimetro de construccion. Nadie sabe quien diablos es, de donde salio o que quiere... Anda completamente encuerado, sonrie como un maldito demente y es extremadamente agresivo.",
-            "Cada vez que enviamos cuadrillas a levantar fachadas, esa cosa los persigue y los deshace. Tu labor es limpiar el sector. Deshazte de el para que podamos seguir construyendo.",
-            "Lleva municion y cuida tu integridad. Si logras neutralizarlo 3 veces, el perimetro quedara asegurado. Entra de una vez, ya viene hacia aca..."
+            "Menos mal que logramos interceptar tu señal... La edificación de complejos habitacionales aquí en Torreon't se ha salido por completo de los márgenes geométricos.",
+            "Hay una entidad orgánica desplazándose sin patrón fijo por las inmediaciones del sector de construcción. No tiene registros biológicos, camina desnuda, posee una mandíbula hiper-extendida y su hostilidad es matemáticamente perfecta.",
+            "Nuestras cuadrillas de albañilería son desmanteladas en segundos cuando intentan levantar las fachadas. Tu única directiva es limpiar el perímetro. Extírpalo de la realidad para que podamos continuar la obra.",
+            "Llevas un rifle de choque cinético. Cuida tu integridad estructural. Si logras disolver su presencia 3 veces, el terreno quedará santificado para el uso del concreto. Muévete, ya olió tu frecuencia..."
         ];
 
         let textElement = document.getElementById('rpg-text');
         let charIndex = 0;
         let introMusicInterval = null;
 
-        // Máquina de escribir automática
+        // ELEMENTOS DE AUDIO REAL (Web Audio API Avanzado)
+        let audioCtx = null;
+        let sndSmile, sndGal, sndGal2;
+        let distortionNode, delayNode, feedbackNode;
+
+        function initAudioPipeline() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+         
+            sndSmile = new Audio('smile.wav');
+            sndGal = new Audio('gal.mp3');
+            sndGal.loop = true;
+            sndGal2 = new Audio('gal2.wav');
+
+            // Crear efectos para la Entidad (Distorsión + Eco)
+            distortionNode = audioCtx.createWaveShaper();
+            distortionNode.curve = makeDistortionCurve(120);
+            distortionNode.oversample = '4x';
+
+            delayNode = audioCtx.createDelay();
+            delayNode.delayTime.value = 0.35; // Tiempo del eco
+
+            feedbackNode = audioCtx.createGain();
+            feedbackNode.gain.value = 0.45; // Retroalimentación del eco
+
+            // Conectar el bucle de eco
+            delayNode.connect(feedbackNode);
+            feedbackNode.connect(delayNode);
+
+            // Enrutar smile.wav a través del procesador de horror
+            try {
+                let sourceSmile = audioCtx.createMediaElementSource(sndSmile);
+                sourceSmile.connect(distortionNode);
+                distortionNode.connect(delayNode);
+                distortionNode.connect(audioCtx.destination);
+                delayNode.connect(audioCtx.destination);
+            } catch(e) {
+                console.log("Audio Routing semi-bloqueado localmente. Usando fallback nativo.");
+            }
+        }
+
+        function makeDistortionCurve(amount) {
+            let k = typeof amount === 'number' ? amount : 50,
+                n_samples = 44100,
+                curve = new Float32Array(n_samples),
+                deg = Math.PI / 180, i = 0, x;
+            for ( ; i < n_samples; ++i ) {
+                x = ( i * 2 ) / n_samples - 1;
+                curve[i] = ( ( 3 + k ) * x * 20 * deg ) / ( Math.PI + k * Math.abs(x) );
+            }
+            return curve;
+        }
+
+        function playDistortedSmile() {
+            if (!audioCtx) return;
+            sndSmile.currentTime = 0;
+            sndSmile.volume = 0.9;
+            sndSmile.play().catch(()=>{});
+
+            // Disparar gal2.wav repentinamente "detrás" o desfasado con un pequeño retraso
+            setTimeout(() => {
+                if (monster.active) {
+                    sndGal2.currentTime = 0;
+                    sndGal2.volume = 0.85;
+                    sndGal2.play().catch(()=>{});
+                }
+            }, 300 + Math.random() * 400);
+        }
+
         function typeDialogue() {
             if (dialogueStep < dialogues.length) {
                 let currentText = dialogues[dialogueStep];
@@ -153,7 +223,7 @@
                     textElement.innerText += currentText.charAt(charIndex);
                     charIndex++;
                     playTypeClick();
-                    setTimeout(typeDialogue, 35);
+                    setTimeout(typeDialogue, 25);
                 } else {
                     dialogueStep++;
                     charIndex = 0;
@@ -161,20 +231,11 @@
                         setTimeout(() => {
                             textElement.innerText = "";
                             typeDialogue();
-                        }, 2500); // Pausa entre párrafos
+                        }, 3000);
                     } else {
-                        // Fin de diálogos: Muestra el botón de inicio de operativo
                         document.getElementById('start-btn').style.display = "block";
                     }
                 }
-            }
-        }
-
-        // AUDIO PROCEDURAL
-        let audioCtx = null;
-        function initAudio() {
-            if(!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
         }
 
@@ -183,465 +244,571 @@
             try {
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(130 + Math.random() * 30, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.03);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(80 + Math.random() * 40, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.02);
             } catch(e){}
         }
 
         function startIntroMusic() {
-            let notes = [100, 105, 115, 105, 100, 90, 85, 90];
-            let noteIdx = 0;
+            let notes = [70, 75, 70, 65, 70, 80, 60, 55];
+            let idx = 0;
             introMusicInterval = setInterval(() => {
-                if (!audioCtx || !isIntroActive) return;
+                if (!isIntroActive) return;
                 try {
                     let osc = audioCtx.createOscillator();
                     let gain = audioCtx.createGain();
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(notes[noteIdx], audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.55);
-                    noteIdx = (noteIdx + 1) % notes.length;
+                    osc.frequency.setValueAtTime(notes[idx], audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.75);
+                    idx = (idx + 1) % notes.length;
                 } catch(e){}
-            }, 600);
+            }, 700);
         }
 
         function unlockAudioAndStartIntro() {
-            initAudio();
+            initAudioPipeline();
             document.getElementById('audio-unlocker').style.display = 'none';
             document.getElementById('rpg-dialogue-box').style.display = 'block';
-            
-            // Forzar captura de pantalla para mirar alrededor con el mouse
             try { canvas.requestPointerLock(); } catch(e){}
-            
             isIntroActive = true;
             startIntroMusic();
             typeDialogue();
-        }
-
-        function playSynthSound(type, volume = 1.0) {
-            if (!audioCtx) return;
-            try {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                let filter = audioCtx.createBiquadFilter();
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                if (type === 'gun') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(350, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.12);
-                    filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(900, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(volume * 0.4, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.14);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-                } else if (type === 'smile') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(70, audioCtx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.4);
-                    osc.frequency.linearRampToValueAtTime(55, audioCtx.currentTime + 0.8);
-                    filter.type = 'peaking';
-                    filter.frequency.setValueAtTime(180, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
-                    gain.gain.linearRampToValueAtTime(volume * 0.35, audioCtx.currentTime + 0.2);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.85);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.9);
-                }
-            } catch(e) {}
         }
 
         let keys = {};
         window.addEventListener('keydown', e => {
             keys[e.code] = true;
             if (e.code === 'Space' && !player.isJumping && gameRunning) {
-                player.vSpeed = 12.0; 
-                player.isJumping = true;
+                player.vSpeed = 11.0; player.isJumping = true;
             }
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
-        window.addEventListener('mousemove', e => { 
-            // Permite mirar alrededor tanto en la introducción como en el juego
-            if (gameRunning || isIntroActive) player.angle += e.movementX * 0.0025; 
+        window.addEventListener('mousemove', e => {
+            if (gameRunning || isIntroActive) player.angle += e.movementX * 0.0022;
         });
-
-        // RE-CAPTURAR RATÓN SI EL USUARIO DA CLIC EN EL JUEGO
         canvas.addEventListener('click', () => {
-            if(gameRunning || isIntroActive) {
-                try { canvas.requestPointerLock(); } catch(e){}
-            }
+            if(gameRunning || isIntroActive) { try { canvas.requestPointerLock(); } catch(e){} }
         });
 
+        // ESTRUCTURAS DETALLADAS DEL ESCENARIO
         let houses = [];
         let lampposts = [];
-        let natureObjects = []; 
+        let natureObjects = [];
+        let debrisParticles = [];
 
-        function initNeighborhood() {
-            const spacing = 55; 
-            for (let x = 45; x < MAP_SIZE - 35; x += spacing) {
-                for (let y = 45; y < MAP_SIZE - 35; y += spacing) {
-                    if (Math.abs(x - 35) < 40 && Math.abs(y - 35) < 40) continue; 
+        function initEnvironment() {
+            const spacing = 70;
+            for (let x = 50; x < MAP_SIZE - 40; x += spacing) {
+                for (let y = 50; y < MAP_SIZE - 40; y += spacing) {
+                    if (Math.abs(x - 40) < 50 && Math.abs(y - 40) < 50) continue;
+
+                    let houseHeightVariation = 20 + Math.floor(Math.random() * 15);
+                    houses.push({
+                        x: x, y: y,
+                        w: 26, h: 26,
+                        roof: Math.random() > 0.4 ? 'pyramid' : 'wedge',
+                        height: houseHeightVariation,
+                        seed: Math.random()
+                    });
+
+                    // Decoraciones fijas (Postes y Farolas rotas)
+                    lampposts.push({ x: x - 6, y: y - 6 });
                     
-                    let roofType = Math.random() > 0.5 ? 'pyramid' : 'wedge';
-                    houses.push({ x: x, y: y, w: 22, h: 22, roof: roofType });
+                    // Escombros procedimentales en el piso
+                    for(let d=0; d<3; d++) {
+                        debrisParticles.push({
+                            x: x + Math.random()*40 - 20,
+                            y: y + Math.random()*40 - 20,
+                            w: 2 + Math.random()*3,
+                            h: 1 + Math.random()*2,
+                            col: Math.random() > 0.5 ? '#222' : '#3d2525'
+                        });
+                    }
 
-                    if (Math.random() > 0.6) lampposts.push({ x: x - 8, y: y - 8 });
-
-                    for(let k=0; k < 5; k++) {
-                        let offsetX = (Math.random() - 0.5) * 45;
-                        let offsetY = (Math.random() - 0.5) * 45;
-                        let type = Math.random() > 0.4 ? 'mc_tree' : 'mc_bush';
-                        let sizeScale = 0.5 + Math.random() * 0.7; 
-                        let radius = (type === 'mc_tree') ? 3.2 * sizeScale : 0;
-
-                        natureObjects.push({ 
-                            x: x + 25 + offsetX, 
-                            y: y + 25 + offsetY, 
-                            type: type, 
-                            rad: radius,
-                            scale: sizeScale
+                    // Vegetación marchita
+                    for (let k = 0; k < 6; k++) {
+                        let offsetX = (Math.random() - 0.5) * 55;
+                        let offsetY = (Math.random() - 0.5) * 55;
+                        let type = Math.random() > 0.5 ? 'dead_tree' : 'rubble_pile';
+                        let scale = 0.6 + Math.random() * 0.8;
+                        natureObjects.push({
+                            x: x + 30 + offsetX, y: y + 30 + offsetY,
+                            type: type, scale: scale, rad: type === 'dead_tree' ? 3 : 0
                         });
                     }
                 }
             }
         }
-        initNeighborhood();
+        initEnvironment();
 
         let ammoBoxes = [];
         function spawnAmmo() {
-            while(ammoBoxes.length < 5) {
-                let rh = houses[Math.floor(Math.random() * houses.length)];
-                ammoBoxes.push({ x: rh.x + 11, y: rh.y - 6 });
+            while(ammoBoxes.length < 6) {
+                let h = houses[Math.floor(Math.random() * houses.length)];
+                ammoBoxes.push({ x: h.x + 13, y: h.y - 8, seed: Math.random() });
             }
         }
         spawnAmmo();
 
-        let monster = { x: 0, y: 0, health: 3, active: false, timer: 0, state: 0, walkAnim: 0, rad: 5 };
-        
-        function updateMonster(delta) {
+        // INTELIGENCIA ARTIFICIAL DE ELEVADO RAZONAMIENTO
+        // Estados: 0 = Buscando, 1 = Acechando (Flanqueo encubierto), 2 = Carga Frenética
+        let monster = { 
+            x: 0, y: 0, health: 4, active: false, timer: 0, 
+            state: 0, walkAnim: 0, rad: 6, speed: 2.2, stalkAngle: 0 
+        };
+
+        function updateMonsterAI(delta) {
             if (!monster.active) {
                 monster.timer += delta;
-                if (monster.timer > 1500) { 
-                    let randomHouse = houses[Math.floor(Math.random() * houses.length)];
-                    let side = Math.floor(Math.random() * 4);
-                    if (side === 0) { monster.x = randomHouse.x - 12; monster.y = randomHouse.y + 11; }
-                    else if (side === 1) { monster.x = randomHouse.x + randomHouse.w + 12; monster.y = randomHouse.y + 11; }
-                    else if (side === 2) { monster.x = randomHouse.x + 11; monster.y = randomHouse.y - 12; }
-                    else { monster.x = randomHouse.x + 11; monster.y = randomHouse.y + randomHouse.h + 12; }
-
-                    monster.health = 3; monster.state = 2; monster.active = true; monster.timer = 0;
+                if (monster.timer > 2000) { // Respawn
+                    let rh = houses[Math.floor(Math.random() * houses.length)];
+                    monster.x = rh.x + 13 + (Math.random() > 0.5 ? 35 : -35);
+                    monster.y = rh.y + 13 + (Math.random() > 0.5 ? 35 : -35);
+                    monster.health = 4;
+                    monster.state = Math.random() > 0.5 ? 1 : 0; // Inicia buscando o acechando
+                    monster.active = true;
+                    monster.timer = 0;
+                    monster.speed = 2.1 + (4 - monster.health) * 0.4;
                     
-                    let dx = player.x - monster.x; let dy = player.y - monster.y; let dist = Math.sqrt(dx*dx + dy*dy);
-                    playSynthSound('smile', Math.max(0.3, 0.9 - (dist / 140)));
+                    playDistortedSmile();
                 }
             } else {
-                monster.timer += delta; monster.walkAnim += delta * 0.009; 
-                let dx = player.x - monster.x; let dy = player.y - monster.y; let dist = Math.sqrt(dx*dx + dy*dy);
+                monster.timer += delta;
+                monster.walkAnim += delta * 0.012;
+                
+                let dx = player.x - monster.x;
+                let dy = player.y - monster.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
 
-                if (monster.state === 2) {
-                    if (dist > 3) { 
-                        let stepX = (dx / dist) * 1.95; 
-                        let stepY = (dy / dist) * 1.95;
-                        let nextMonsterX = monster.x + stepX;
-                        let nextMonsterY = monster.y + stepY;
-
-                        let collidesX = false; let collidesY = false;
-                        let margin = monster.rad + 1.2;
-
-                        for (let h of houses) {
-                            if (nextMonsterX > h.x - margin && nextMonsterX < h.x + h.w + margin && monster.y > h.y - margin && monster.y < h.y + h.h + margin) collidesX = true;
-                            if (monster.x > h.x - margin && monster.x < h.x + h.w + margin && nextMonsterY > h.y - margin && nextMonsterY < h.y + h.h + margin) collidesY = true;
-                        }
-
-                        for (let n of natureObjects) {
-                            if (n.rad > 0) {
-                                let distNatX = Math.sqrt(Math.pow(nextMonsterX - n.x, 2) + Math.pow(monster.y - n.y, 2));
-                                if (distNatX < n.rad + monster.rad) collidesX = true;
-                                let distNatY = Math.sqrt(Math.pow(monster.x - n.x, 2) + Math.pow(nextMonsterY - n.y, 2));
-                                if (distNatY < n.rad + monster.rad) collidesY = true;
-                            }
-                        }
-
-                        if (nextMonsterX < 10 || nextMonsterX > MAP_SIZE - 10) collidesX = true;
-                        if (nextMonsterY < 10 || nextMonsterY > MAP_SIZE - 10) collidesY = true;
-
-                        if (!collidesX) monster.x = nextMonsterX;
-                        if (!collidesY) monster.y = nextMonsterY;
+                // Re-evaluar razonamiento de ruta cada 2 segundos
+                if (Math.floor(monster.timer) % 120 === 0) {
+                    let angleToPlayer = Math.atan2(dy, dx);
+                    let viewDiff = Math.abs(Math.atan2(Math.sin(player.angle - angleToPlayer), Math.cos(player.angle - angleToPlayer)));
+                    
+                    if (viewDiff < 0.6 && dist > 50) {
+                        // Si el jugador lo está mirando directamente de lejos, cambia a estado ACECHANDO Detrás de casas
+                        monster.state = 1; 
+                    } else if (monster.health < 2 || dist < 45) {
+                        // Si está herido o muy cerca, entra en furia total (Carga directa)
+                        monster.state = 2;
                     }
                 }
 
-                if (dist < 13 && player.z < 15) {
-                    player.health--; damageFlashActive = 5;
-                    
-                    let healthBar = "[";
-                    for(let h=0; h<5; h++) healthBar += (h < player.health) ? "I" : ".";
-                    healthBar += "]";
-                    document.getElementById('hearts').innerText = "INTEGRIDAD: " + healthBar;
-                    
-                    monster.active = false; monster.timer = 0;
-                    if (player.health <= 0) { endGame(false); }
+                let targetX = player.x;
+                let targetY = player.y;
+
+                if (monster.state === 1) { 
+                    // RAZONAMIENTO ELEVADO: Flanqueo circular usando coberturas estructurales
+                    monster.stalkAngle += 0.03;
+                    targetX = player.x + Math.cos(monster.stalkAngle) * 40;
+                    targetY = player.y + Math.sin(monster.stalkAngle) * 40;
                 }
-                if (monster.timer > 15000) { monster.active = false; monster.timer = 0; }
+
+                let tDx = targetX - monster.x;
+                let tDy = targetY - monster.y;
+                let tDist = Math.sqrt(tDx*tDx + tDy*tDy);
+
+                if (tDist > 2) {
+                    let moveStep = (monster.state === 2 ? monster.speed * 1.4 : monster.speed);
+                    let stepX = (tDx / tDist) * moveStep;
+                    let stepY = (tDy / tDist) * moveStep;
+
+                    let nextX = monster.x + stepX;
+                    let nextY = monster.y + stepY;
+                    let collides = false;
+
+                    // Colisión inteligente contra entorno
+                    for (let h of houses) {
+                        let m = monster.rad + 2;
+                        if (nextX > h.x - m && nextX < h.x + h.w + m && nextY > h.y - m && nextY < h.y + h.h + m) {
+                            collides = true;
+                        }
+                    }
+                    if (nextX < 15 || nextX > MAP_SIZE - 15 || nextY < 15 || nextY > MAP_SIZE - 15) collides = true;
+
+                    if (!collides) {
+                        monster.x = nextX;
+                        monster.y = nextY;
+                    } else {
+                        // Si choca, rompe el bloqueo moviéndose de lado de forma impredecible
+                        monster.x += Math.sin(monster.walkAnim) * 2;
+                        monster.y += Math.cos(monster.walkAnim) * 2;
+                    }
+                }
+
+                // Daño al jugador
+                if (dist < 14 && player.z < 18) {
+                    player.health--;
+                    damageFlashActive = 5;
+                    let hb = "[";
+                    for(let h=0; h<5; h++) hb += (h < player.health) ? "I" : ".";
+                    hb += "]";
+                    document.getElementById('hearts').innerText = "ESTADO CORPORAL: " + hb;
+                    
+                    monster.active = false;
+                    monster.timer = 0;
+                    if (player.health <= 0) endGame(false);
+                }
+
+                if (monster.timer > 22000) { monster.active = false; monster.timer = 0; }
             }
         }
 
         function movePlayer() {
             if (player.isJumping) {
                 player.z += player.vSpeed;
-                player.vSpeed -= 0.85; 
+                player.vSpeed -= 0.9;
                 if (player.z <= 0) { player.z = 0; player.vSpeed = 0; player.isJumping = false; }
             }
 
-            let moveX = 0, moveY = 0; let speed = 1.8;
+            let moveX = 0, moveY = 0;
+            let speed = keys['ShiftLeft'] ? 2.5 : 1.6;
+
             if (keys['KeyW']) { moveX += Math.cos(player.angle); moveY += Math.sin(player.angle); }
             if (keys['KeyS']) { moveX -= Math.cos(player.angle); moveY -= Math.sin(player.angle); }
             if (keys['KeyA']) { moveX += Math.sin(player.angle); moveY -= Math.cos(player.angle); }
             if (keys['KeyD']) { moveX -= Math.sin(player.angle); moveY += Math.cos(player.angle); }
 
-            let nextX = player.x + moveX * speed; let nextY = player.y + moveY * speed;
-            if (nextX < 10 || nextX > MAP_SIZE - 10) moveX = 0; if (nextY < 10 || nextY > MAP_SIZE - 10) moveY = 0;
+            let nx = player.x + moveX * speed;
+            let ny = player.y + moveY * speed;
 
+            let blocked = false;
             for (let h of houses) {
-                if (nextX > h.x - 3 && nextX < h.x + h.w + 3 && nextY > h.y - 3 && nextY < h.y + h.h + 3) { moveX = 0; moveY = 0; }
+                if (nx > h.x - 4 && nx < h.x + h.w + 4 && ny > h.y - 4 && ny < h.y + h.h + 4) blocked = true;
             }
+            if (nx < 12 || nx > MAP_SIZE - 12 || ny < 12 || ny > MAP_SIZE - 12) blocked = true;
 
-            player.x += moveX * speed; player.y += moveY * speed;
+            if (!blocked) { player.x = nx; player.y = ny; }
 
             for (let i = ammoBoxes.length - 1; i >= 0; i--) {
                 let b = ammoBoxes[i];
                 if (Math.sqrt(Math.pow(player.x - b.x, 2) + Math.pow(player.y - b.y, 2)) < 12) {
-                    player.ammo += 6; document.getElementById('ammo').innerText = "MUNICION: " + player.ammo;
-                    ammoBoxes.splice(i, 1); spawnAmmo();
+                    player.ammo += 5;
+                    document.getElementById('ammo').innerText = "CARTUCHOS: " + player.ammo;
+                    ammoBoxes.splice(i, 1);
+                    spawnAmmo();
                 }
             }
         }
 
-        function updateBullets(delta) {
-            for (let i = bullets3D.length - 1; i >= 0; i--) {
-                let b = bullets3D[i]; b.life -= delta; b.distance += 15.0;
-                if (b.life <= 0) bullets3D.splice(i, 1);
-            }
-        }
-
+        // MOTOR DE RENDERIZADO DETALLADO POR RAYCASTING
         let rain = [];
-        for(let i=0; i<80; i++) rain.push({ x: Math.random() * (window.innerWidth/PIXEL_SCALE), y: Math.random() * -(window.innerHeight/PIXEL_SCALE), v: Math.random() * 6 + 10, splash: 0 });
+        for(let i=0; i<90; i++) rain.push({ x: Math.random() * window.innerWidth, y: Math.random() * -window.innerHeight, v: Math.random()*7 + 12, splash: 0 });
 
         function render3DScene() {
-            ctx.fillStyle = '#010102'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Fondo abisal oscuro
+            ctx.fillStyle = '#020104';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            let fov = Math.PI / 3; let numRays = Math.min(160, Math.floor(canvas.width)); let rayStep = fov / numRays;
+            let fov = Math.PI / 2.8; 
+            let numRays = Math.min(220, Math.floor(canvas.width));
+            let rayStep = fov / numRays;
             let zBuffer = new Array(numRays).fill(Infinity);
-            let horizonShift = player.z * 0.4;
+            let horizonShift = player.z * 0.45;
 
+            // Render del plano del suelo y detalles pseudo-3D
             for (let i = 0; i < numRays; i++) {
                 let rayAngle = (player.angle - fov / 2) + i * rayStep;
-                let distance = 0; let hit = false; let wallType = 'none'; let hitX = 0; let hitY = 0; let targetHouse = null;
+                let distance = 0; let hit = false; let wallType = 'none';
+                let hitX = 0; let hitY = 0; let targetHouse = null;
 
-                while (distance < 180 && !hit) {
-                    distance += 1.2;
+                while (distance < 200 && !hit) {
+                    distance += 1.0;
                     hitX = player.x + Math.cos(rayAngle) * distance;
                     hitY = player.y + Math.sin(rayAngle) * distance;
 
-                    if (hitX <= 8 || hitX >= MAP_SIZE - 8 || hitY <= 8 || hitY >= MAP_SIZE - 8) { hit = true; wallType = 'boundary'; }
+                    if (hitX <= 10 || hitX >= MAP_SIZE - 10 || hitY <= 10 || hitY >= MAP_SIZE - 10) { hit = true; wallType = 'boundary'; }
                     for (let h of houses) {
                         if (hitX > h.x && hitX < h.x + h.w && hitY > h.y && hitY < h.y + h.h) { hit = true; wallType = 'house'; targetHouse = h; }
                     }
                 }
 
                 let correctedDist = distance * Math.cos(rayAngle - player.angle);
-                zBuffer[i] = correctedDist; 
+                zBuffer[i] = correctedDist;
 
                 let screenX = i * (canvas.width / numRays);
                 let rayWidth = Math.ceil(canvas.width / numRays) + 1;
-                let wallHeight = Math.min(canvas.height * 1.5, (canvas.height * 2.2) / correctedDist);
+                let wallHeight = Math.min(canvas.height * 2.0, (canvas.height * 2.4) / correctedDist);
                 let screenY = (canvas.height / 2) - wallHeight / 2 + horizonShift;
 
-                let fogFloor = Math.max(0, 1 - (correctedDist / 140));
+                let fogFloor = Math.max(0, 1 - (correctedDist / 160));
+
+                // Dibujar Piso con Texturizado de banquetas/grietas procedimentales
                 let isSidewalk = false;
-                if (targetHouse) {
-                    if (hitX >= targetHouse.x - 3.5 && hitX <= targetHouse.x + targetHouse.w + 3.5 && hitY >= targetHouse.y - 3.5 && hitY <= targetHouse.y + targetHouse.h + 3.5) isSidewalk = true;
+                if (targetHouse && hitX >= targetHouse.x - 4 && hitX <= targetHouse.x + targetHouse.w + 4 && hitY >= targetHouse.y - 4 && hitY <= targetHouse.y + targetHouse.h + 4) {
+                    isSidewalk = true;
                 }
 
                 if (isSidewalk) {
-                    ctx.fillStyle = `rgb(${Math.floor(24 * fogFloor)},${Math.floor(24 * fogFloor)},${Math.floor(26 * fogFloor)})`; 
-                } else if (Math.floor(hitX / 30) % 2 === 0 || Math.floor(hitY / 30) % 2 === 0) {
-                    ctx.fillStyle = `rgb(${Math.floor(16 * fogFloor)},${Math.floor(14 * fogFloor)},${Math.floor(13 * fogFloor)})`; 
+                    ctx.fillStyle = `rgb(${Math.floor(28 * fogFloor)},${Math.floor(25 * fogFloor)},${Math.floor(32 * fogFloor)})`;
                 } else {
-                    ctx.fillStyle = `rgb(${Math.floor(8 * fogFloor)},${Math.floor(10 * fogFloor)},${Math.floor(8 * fogFloor)})`; 
+                    // Patrón de cuadrícula áspera (Tierra baldía rota)
+                    let floorPattern = (Math.floor(hitX * 0.3) % 2 === 0 ^ Math.floor(hitY * 0.3) % 2 === 0);
+                    if (floorPattern) {
+                        ctx.fillStyle = `rgb(${Math.floor(14 * fogFloor)},${Math.floor(12 * fogFloor)},${Math.floor(16 * fogFloor)})`;
+                    } else {
+                        ctx.fillStyle = `rgb(${Math.floor(8 * fogFloor)},${Math.floor(8 * fogFloor)},${Math.floor(10 * fogFloor)})`;
+                    }
                 }
                 ctx.fillRect(screenX, canvas.height / 2 + horizonShift, rayWidth, canvas.height / 2 - horizonShift);
 
+                // Renderizado detallado de Muros
                 if (hit) {
-                    let fogFactor = Math.max(0, 1 - (correctedDist / 150)); 
-                    let flashlight = Math.max(0, 1 - (correctedDist / 100)); 
-                    let totalLight = Math.min(1, (0.04 * fogFactor) + (flashlight * 0.96));
+                    let fogFactor = Math.max(0, 1 - (correctedDist / 170));
+                    let flashlight = Math.max(0, 1 - (correctedDist / 110));
+                    let light = Math.min(1, (0.03 * fogFactor) + (flashlight * 0.97));
 
-                    let r = 50, g = 50, b = 55;
-                    if (wallType === 'boundary') { r = 60; g = 25; b = 25; }
-                    r = Math.floor(r * totalLight); g = Math.floor(g * totalLight); b = Math.floor(b * totalLight);
+                    let r = 40, g = 42, b = 50;
+                    if (wallType === 'boundary') { r = 70; g = 15; b = 15; } // Muros del fin del mundo
+                    
+                    r = Math.floor(r * light); g = Math.floor(g * light); b = Math.floor(b * light);
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    ctx.fillRect(screenX, screenY, rayWidth, wallHeight);
 
-                    ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fillRect(screenX, screenY, rayWidth, wallHeight);
-
+                    // Detalles de Casas (Ventanas malditas y Puertas desalineadas)
                     if (wallType === 'house' && targetHouse) {
-                        let textX = Math.abs(hitY - targetHouse.y) < 1.5 || Math.abs(hitY - (targetHouse.y + targetHouse.h)) < 1.5 ? (hitX - targetHouse.x) / targetHouse.w : (hitY - targetHouse.y) / targetHouse.h;
-                        
-                        if (textX < 0.06 || textX > 0.94) {
-                            ctx.fillStyle = `rgb(${Math.floor(32*totalLight)}, ${Math.floor(32*totalLight)}, ${Math.floor(36*totalLight)})`;
+                        let wallTexX = Math.abs(hitY - targetHouse.y) < 1.1 || Math.abs(hitY - (targetHouse.y + targetHouse.h)) < 1.1 ? (hitX - targetHouse.x) / targetHouse.w : (hitY - targetHouse.y) / targetHouse.h;
+
+                        // Columnas estructurales de esquinas
+                        if (wallTexX < 0.05 || wallTexX > 0.95) {
+                            ctx.fillStyle = `rgb(${Math.floor(20*light)}, ${Math.floor(20*light)}, ${Math.floor(25*light)})`;
                             ctx.fillRect(screenX, screenY, rayWidth, wallHeight);
                         }
-                        else if (textX > 0.38 && textX < 0.62) {
-                            ctx.fillStyle = `rgb(${Math.floor(14*totalLight)}, ${Math.floor(8*totalLight)}, ${Math.floor(5*totalLight)})`;
-                            ctx.fillRect(screenX, screenY + (wallHeight * 0.48), rayWidth, wallHeight * 0.52);
-                            if(textX < 0.41 || textX > 0.59) {
-                                ctx.fillStyle = `rgb(${Math.floor(5*totalLight)}, ${Math.floor(5*totalLight)}, ${Math.floor(5*totalLight)})`;
-                                ctx.fillRect(screenX, screenY + (wallHeight * 0.46), rayWidth, wallHeight * 0.05);
-                            }
-                        } 
-                        else if (textX > 0.14 && textX < 0.28) {
-                            ctx.fillStyle = `rgb(${Math.floor(10*totalLight)}, ${Math.floor(10*totalLight)}, ${Math.floor(15*totalLight)})`;
+                        // Ventanas iluminadas con destellos enfermos
+                        else if (wallTexX > 0.18 && wallTexX < 0.35) {
+                            let windowPulse = 0.4 + Math.sin(performance.now() * 0.005 + targetHouse.seed * 100) * 0.3;
+                            ctx.fillStyle = `rgba(${Math.floor(240 * light)}, ${Math.floor(140 * light)}, 0, ${windowPulse * fogFactor})`;
                             ctx.fillRect(screenX, screenY + (wallHeight * 0.25), rayWidth, wallHeight * 0.22);
-                            if(textX > 0.16 && textX < 0.26) {
-                                ctx.fillStyle = `rgba(245, 215, 110, ${0.5 * fogFactor})`;
-                                ctx.fillRect(screenX, screenY + (wallHeight * 0.27), rayWidth, wallHeight * 0.18);
-                            }
+                        }
+                        // Puertas de madera podrida
+                        else if (wallTexX > 0.55 && wallTexX < 0.75) {
+                            ctx.fillStyle = `rgb(${Math.floor(18*light)}, ${Math.floor(10*light)}, ${Math.floor(6*light)})`;
+                            ctx.fillRect(screenX, screenY + (wallHeight * 0.5), rayWidth, wallHeight * 0.5);
                         }
 
-                        let roofH = wallHeight * 0.28; ctx.fillStyle = `rgb(${Math.floor(30*totalLight)},${Math.floor(12*totalLight)},${Math.floor(12*totalLight)})`;
+                        // Techo detallado
+                        let roofHeight = wallHeight * 0.32;
+                        ctx.fillStyle = `rgb(${Math.floor(45*light)},${Math.floor(15*light)},${Math.floor(15*light)})`;
                         if (targetHouse.roof === 'pyramid') {
-                            let distFromCenter = Math.abs(textX - 0.5) * 2; let currentRoofY = screenY - (roofH * (1.0 - distFromCenter));
+                            let distCenter = Math.abs(wallTexX - 0.5) * 2;
+                            let currentRoofY = screenY - (roofHeight * (1.0 - distCenter));
                             ctx.fillRect(screenX, currentRoofY, rayWidth, screenY - currentRoofY);
-                        } else { ctx.fillRect(screenX, screenY - roofH, rayWidth, roofH); }
+                        } else {
+                            ctx.fillRect(screenX, screenY - roofHeight, rayWidth, roofHeight);
+                        }
                     }
                 }
             }
 
-            let sprites = [...lampposts.map(l => ({...l, type:'lamp', scale:1})), ...natureObjects, ...ammoBoxes.map(b => ({...b, type:'ammo', scale:1}))];
+            // SPRITES DEL MAPA (Decoraciones y consumibles)
+            let sprites = [
+                ...lampposts.map(l => ({...l, type:'lamp', scale:1.1})),
+                ...natureObjects,
+                ...ammoBoxes.map(b => ({...b, type:'ammo', scale: 0.9}))
+            ];
             sprites.forEach(s => { s.dist = Math.sqrt(Math.pow(s.x - player.x, 2) + Math.pow(s.y - player.y, 2)); });
             sprites.sort((a,b) => b.dist - a.dist);
 
             sprites.forEach(s => {
-                if (s.dist > 170 || s.dist < 5) return;
+                if (s.dist > 180 || s.dist < 6) return;
                 let angle = Math.atan2(s.y - player.y, s.x - player.x);
-                let diff = player.angle - angle; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                let diff = player.angle - angle;
+                diff = Math.atan2(Math.sin(diff), Math.cos(diff));
 
                 if (Math.abs(diff) < fov / 2) {
-                    let cDist = s.dist * Math.cos(diff); let h = (canvas.height * 1.3) / cDist;
-                    let rayIdx = Math.floor(((diff + (fov / 2)) / fov) * numRays); rayIdx = numRays - 1 - rayIdx;
+                    let cDist = s.dist * Math.cos(diff);
+                    let h = (canvas.height * 1.5) / cDist;
+                    let rayIdx = Math.floor(((diff + (fov / 2)) / fov) * numRays);
+                    rayIdx = numRays - 1 - rayIdx;
 
-                    if (rayIdx >= 0 && rayIdx < numRays && zBuffer[rayIdx] < cDist - 3.0) return;
+                    if (rayIdx >= 0 && rayIdx < numRays && zBuffer[rayIdx] < cDist - 2.0) return;
 
                     let sx = (canvas.width / 2) - (diff * (canvas.width / fov));
                     let baseY = (canvas.height / 2) + (h * 0.5) + horizonShift;
-                    let fog = Math.max(0, 1 - (cDist / 150)); let spriteWidth = h * 0.5 * s.scale;
+                    let fog = Math.max(0, 1 - (cDist / 160));
+                    let spriteW = h * 0.4 * s.scale;
 
-                    ctx.save(); ctx.beginPath(); ctx.rect(sx - spriteWidth, 0, spriteWidth * 2, canvas.height); ctx.clip();
+                    ctx.save();
+                    ctx.beginPath(); ctx.rect(sx - spriteW, 0, spriteW * 2, canvas.height); ctx.clip();
 
                     if (s.type === 'lamp') {
-                        let ly = baseY - h * 0.85; let lw = h * 0.025;
-                        ctx.fillStyle = `rgba(16,16,18,${fog})`; ctx.fillRect(sx - lw/2, ly, lw, h * 0.85);
-                        ctx.fillStyle = `rgba(255, 255, 170, ${0.6 * fog})`; ctx.fillRect(sx - h*0.02, ly - h*0.02, h*0.04, h*0.04);
+                        let ly = baseY - h * 0.9; let lw = Math.max(1, h * 0.03);
+                        ctx.fillStyle = `rgba(20,20,25,${fog})`; ctx.fillRect(sx - lw/2, ly, lw, h * 0.9);
+                        // Foco parpadeante
+                        let lampFlicker = Math.random() > 0.08 ? 1 : 0.2;
+                        ctx.fillStyle = `rgba(255, 235, 150, ${lampFlicker * 0.7 * fog})`;
+                        ctx.beginPath(); ctx.arc(sx, ly, h*0.04, 0, Math.PI*2); ctx.fill();
                     } 
-                    else if (s.type === 'mc_bush') {
-                        let bw = h * 0.15 * s.scale; ctx.fillStyle = `rgba(14, 32, 14, ${fog * 0.95})`;
-                        ctx.fillRect(sx - bw, baseY - (bw * 1.5), bw * 2, bw * 1.5);
+                    else if (s.type === 'rubble_pile') {
+                        ctx.fillStyle = `rgba(30, 25, 25, ${fog})`;
+                        ctx.beginPath(); ctx.moveTo(sx - spriteW*0.4, baseY); ctx.lineTo(sx, baseY - h*0.15); ctx.lineTo(sx + spriteW*0.4, baseY); ctx.closePath(); ctx.fill();
                     } 
-                    else if (s.type === 'mc_tree') {
-                        let trunkW = Math.max(1, h * 0.035 * s.scale); let leavesW = h * 0.26 * s.scale;
-                        ctx.fillStyle = `rgba(28, 18, 12, ${fog})`; ctx.fillRect(sx - trunkW/2, baseY - h * 0.55 * s.scale, trunkW, h * 0.55 * s.scale);
-                        ctx.fillStyle = `rgba(12, 38, 12, ${fog * 0.95})`; ctx.fillRect(sx - leavesW/2, baseY - h * 0.85 * s.scale, leavesW, h * 0.35 * s.scale);
+                    else if (s.type === 'dead_tree') {
+                        let trunkW = Math.max(1, h * 0.025 * s.scale);
+                        ctx.fillStyle = `rgba(22, 16, 16, ${fog})`;
+                        ctx.fillRect(sx - trunkW/2, baseY - h * 0.6 * s.scale, trunkW, h * 0.6 * s.scale);
+                        // Ramas filosas procedimentales fijas
+                        ctx.strokeStyle = `rgba(22, 16, 16, ${fog})`; ctx.lineWidth = trunkW*0.6;
+                        ctx.beginPath(); ctx.moveTo(sx, baseY - h*0.4); ctx.lineTo(sx - h*0.15, baseY - h*0.55); ctx.moveTo(sx, baseY - h*0.5); ctx.lineTo(sx + h*0.13, baseY - h*0.65); ctx.stroke();
                     }
                     else if (s.type === 'ammo') {
-                        let bw = h*0.08; ctx.fillStyle = `rgba(170, 110, 0, ${fog})`; ctx.fillRect(sx - bw/2, baseY - bw * 0.6, bw, bw*0.6);
+                        let bw = h*0.09;
+                        ctx.fillStyle = `rgba(190, 130, 10, ${fog})`; ctx.fillRect(sx - bw/2, baseY - bw * 0.7, bw, bw*0.7);
+                        ctx.fillStyle = `#000`; ctx.fillRect(sx - bw*0.2, baseY - bw*0.5, bw*0.4, bw*0.1);
                     }
                     ctx.restore();
                 }
             });
 
-            // Solo se renderiza el monstruo si el juego está corriendo activamente (no en intro)
+            // RENDERIZADO AVANZADO DE LA CRIATURA (Glitches, deformaciones y espasmos)
             if (monster.active && gameRunning) {
-                let dx = monster.x - player.x; let dy = monster.y - player.y; let dist = Math.sqrt(dx*dx + dy*dy);
-                let angle = Math.atan2(dy, dx); let diff = player.angle - angle; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                let dx = monster.x - player.x;
+                let dy = monster.y - player.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                let angle = Math.atan2(dy, dx);
+                let diff = player.angle - angle;
+                diff = Math.atan2(Math.sin(diff), Math.cos(diff));
 
-                if (Math.abs(diff) < fov / 2 && dist < 160) {
+                if (Math.abs(diff) < fov / 2 && dist < 170) {
                     let mDist = dist * Math.cos(diff);
-                    let rayIdx = Math.floor(((diff + (fov / 2)) / fov) * numRays); rayIdx = numRays - 1 - rayIdx;
+                    let rayIdx = Math.floor(((diff + (fov / 2)) / fov) * numRays);
+                    rayIdx = numRays - 1 - rayIdx;
 
                     if (rayIdx >= 0 && rayIdx < numRays && zBuffer[rayIdx] > mDist) {
-                        let mHeight = (canvas.height * 1.4) / mDist; 
-                        let mx = (canvas.width / 2) - (diff * (canvas.width / fov)) - (mHeight / 4);
-                        let baseY = (canvas.height / 2) + (mHeight * 0.5) + horizonShift; 
-
-                        let fog = Math.max(0, 1 - (mDist / 140)); let flash = Math.max(0, 1 - (mDist / 95));
-                        let light = Math.min(1, (0.04 * fog) + (flash * 0.96));
-
-                        let colRosaSucia = `rgba(${Math.floor(155 * light)}, ${Math.floor(95 * light)}, ${Math.floor(100 * light)}, ${fog})`;
-                        let colSangreSeca = `rgba(${Math.floor(90 * light)}, ${Math.floor(12 * light)}, ${Math.floor(18 * light)}, ${fog})`;
-                        let colMateriaGris = `rgba(${Math.floor(40 * light)}, ${Math.floor(32 * light)}, ${Math.floor(32 * light)}, ${fog})`;
-
-                        if (monster.health === 1) { colRosaSucia = `rgba(${Math.floor(70*light)},0,0,${fog})`; colSangreSeca = `rgba(${Math.floor(35*light)},0,0,${fog})`; }
-
-                        let t = performance.now();
-                        let jitter = (Math.random() - 0.5) * (mHeight * 0.022) * (monster.health === 1 ? 2.0 : 0.8);
-                        let swayX = Math.sin(monster.walkAnim * 1.8) * (mHeight * 0.08);
-                        let waveY = Math.cos(monster.walkAnim * 2.5) * (mHeight * 0.03);
-
-                        let torsoWidth = mHeight * 0.32; let pelvicY = baseY - (mHeight * 0.45);
-                        let chestX = mx + swayX + jitter + (mHeight * 0.12); let chestY = pelvicY - (mHeight * 0.32) + waveY;
-
-                        ctx.lineWidth = Math.max(1, mHeight * 0.022); ctx.strokeStyle = colSangreSeca;
-                        let cycle = Math.sin(monster.walkAnim * 2.0);
-
-                        let kneyLX = mx + (mHeight * 0.05) + Math.cos(monster.walkAnim * 2)*6; let kneyLY = pelvicY + (mHeight * 0.2);
-                        ctx.beginPath(); ctx.moveTo(mx + mHeight * 0.06, pelvicY); ctx.lineTo(kneyLX, kneyLY); ctx.lineTo(mx + mHeight * 0.03 + cycle * (mHeight * 0.08), baseY); ctx.stroke();
-
-                        let kneyRX = mx + (mHeight * 0.25) - Math.cos(monster.walkAnim * 2)*6; let kneyRY = pelvicY + (mHeight * 0.2);
-                        ctx.beginPath(); ctx.moveTo(mx + mHeight * 0.26, pelvicY); ctx.lineTo(kneyRX, kneyRY); ctx.lineTo(mx + mHeight * 0.29 - cycle * (mHeight * 0.08), baseY); ctx.stroke();
-
-                        ctx.fillStyle = colMateriaGris; ctx.fillRect(mx + swayX + jitter, pelvicY, torsoWidth, mHeight * 0.08);
-                        ctx.fillStyle = colRosaSucia; ctx.beginPath(); ctx.moveTo(mx + swayX + jitter, pelvicY); ctx.lineTo(mx + swayX + jitter + torsoWidth, pelvicY); ctx.lineTo(chestX + torsoWidth * 0.8, chestY); ctx.lineTo(chestX, chestY); ctx.closePath(); ctx.fill();
-
-                        ctx.strokeStyle = colRosaSucia; let armSwing = Math.sin(monster.walkAnim * 1.8);
-                        let elbowLX = chestX - (mHeight * 0.08) + armSwing * 4; let elbowLY = chestY + (mHeight * 0.22);
-                        ctx.beginPath(); ctx.moveTo(chestX, chestY + mHeight * 0.05); ctx.lineTo(elbowLX, elbowLY); ctx.lineTo(elbowLX - 3, elbowLY + (mHeight * 0.25)); ctx.stroke();
-
-                        let elbowRX = chestX + torsoWidth + (mHeight * 0.08) - armSwing * 4; let elbowRY = chestY + (mHeight * 0.22);
-                        ctx.beginPath(); ctx.moveTo(chestX + torsoWidth * 0.8, chestY + mHeight * 0.05); ctx.lineTo(elbowRX, elbowRY); ctx.lineTo(elbowRX + 3, elbowRY + (mHeight * 0.25)); ctx.stroke();
-
-                        let hX = chestX + (torsoWidth * 0.4); let hY = chestY - (mHeight * 0.1);
-                        ctx.fillStyle = colRosaSucia; ctx.beginPath(); ctx.arc(hX, hY, mHeight * 0.11, Math.PI, 0); ctx.fill();
+                        let mHeight = (canvas.height * 1.55) / mDist;
                         
-                        let jawSwingX = Math.cos(t * 0.02) * (mHeight * 0.022); let jawSwingY = Math.sin(t * 0.016) * (mHeight * 0.03) + (mHeight * 0.02);
-                        ctx.fillStyle = colMateriaGris; ctx.beginPath(); ctx.moveTo(hX - mHeight * 0.1, hY); ctx.lineTo(hX + mHeight * 0.1, hY); ctx.lineTo(hX + mHeight * 0.07 + jawSwingX, hY + mHeight * 0.15 + jawSwingY); ctx.lineTo(hX - mHeight * 0.07 + jawSwingX, hY + mHeight * 0.15 + jawSwingY); ctx.closePath(); ctx.fill();
+                        // EFECTO CREEPY: Deformación por asimetría y distorsión de escala corporal
+                        let breathScale = 1.0 + Math.sin(performance.now() * 0.015) * 0.06;
+                        let monsterJitter = (Math.random() - 0.5) * (mHeight * (monster.state === 2 ? 0.07 : 0.025));
+                        
+                        let mx = (canvas.width / 2) - (diff * (canvas.width / fov)) - (mHeight / 4) + monsterJitter;
+                        let baseY = (canvas.height / 2) + (mHeight * 0.5) + horizonShift;
 
-                        ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(hX - mHeight * 0.04, hY - mHeight * 0.02, mHeight * 0.024, 0, Math.PI * 2); ctx.arc(hX + mHeight * 0.04, hY - mHeight * 0.02, mHeight * 0.024, 0, Math.PI * 2); ctx.fill();
-                        ctx.strokeStyle = '#000000'; ctx.lineWidth = Math.max(1, mHeight * 0.012); ctx.beginPath(); ctx.arc(hX + jawSwingX * 0.3, hY + mHeight * 0.01 + jawSwingY * 0.4, mHeight * 0.075, 0.1, Math.PI - 0.1); ctx.stroke();
+                        let fog = Math.max(0, 1 - (mDist / 150));
+                        let flash = Math.max(0, 1 - (mDist / 100));
+                        let light = Math.min(1, (0.03 * fog) + (flash * 0.97));
+
+                        // Paleta de colores orgánicos corruptos
+                        let colBody = `rgba(${Math.floor(135 * light)}, ${Math.floor(80 * light)}, ${Math.floor(85 * light)}, ${fog})`;
+                        let colTentacle = `rgba(${Math.floor(65 * light)}, ${Math.floor(10 * light)}, ${Math.floor(15 * light)}, ${fog})`;
+                        let colGlow = `rgba(255, 255, 255, ${fog})`;
+
+                        if (monster.health <= 2) { // Tonalidad de agonía violenta
+                            colBody = `rgba(${Math.floor(55 * light)}, 5, 5, ${fog})`;
+                        }
+
+                        // Animación de Extremidades Quebradas / Araña humana
+                        let t = performance.now();
+                        let spineSway = Math.sin(monster.walkAnim * 1.6) * (mHeight * 0.09);
+                        let pelvisY = baseY - (mHeight * 0.42);
+                        let chestX = mx + spineSway + (mHeight * 0.1);
+                        let chestY = pelvisY - (mHeight * 0.3) * breathScale;
+                        let torsoW = mHeight * 0.28;
+
+                        ctx.lineWidth = Math.max(1.5, mHeight * 0.02);
+                        ctx.strokeStyle = colTentacle;
+
+                        // Pierna Izquierda Quebrada
+                        let legCycleL = Math.sin(monster.walkAnim * 2.2);
+                        let kneeLX = mx + (mHeight * 0.04) + legCycleL * 8;
+                        let kneeLY = pelvisY + (mHeight * 0.18);
+                        ctx.beginPath();
+                        ctx.moveTo(mx + mHeight * 0.05, pelvisY);
+                        ctx.lineTo(kneeLX, kneeLY);
+                        ctx.lineTo(mx - (monster.state === 2 ? 10 : 0) + legCycleL * 15, baseY);
+                        ctx.stroke();
+
+                        // Pierna Derecha (Asimétrica y más larga)
+                        let legCycleR = Math.cos(monster.walkAnim * 2.2);
+                        let kneeRX = mx + torsoW - (mHeight * 0.04) - legCycleR * 6;
+                        let kneeRY = pelvisY + (mHeight * 0.22);
+                        ctx.beginPath();
+                        ctx.moveTo(mx + torsoW - mHeight * 0.05, pelvisY);
+                        ctx.lineTo(kneeRX, kneeRY);
+                        ctx.lineTo(mx + torsoW + 5 - legCycleR * 12, baseY);
+                        ctx.stroke();
+
+                        // Tronco Corpóreo
+                        ctx.fillStyle = colBody;
+                        ctx.beginPath();
+                        ctx.moveTo(mx, pelvisY); ctx.lineTo(mx + torsoW, pelvisY);
+                        ctx.lineTo(chestX + torsoW * 0.8, chestY); ctx.lineTo(chestX, chestY);
+                        ctx.closePath(); ctx.fill();
+
+                        // Brazos Largos arrastrándose en ángulos creepies
+                        let armSway = Math.sin(monster.walkAnim * 1.5);
+                        ctx.beginPath();
+                        ctx.moveTo(chestX, chestY + 5);
+                        ctx.lineTo(chestX - h*0.08, chestY + mHeight * 0.2 + armSway*6);
+                        ctx.lineTo(chestX - h*0.12, baseY - 2); // Toca el suelo
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.moveTo(chestX + torsoW * 0.8, chestY + 5);
+                        ctx.lineTo(chestX + torsoW + h*0.08, chestY + mHeight * 0.2 - armSway*6);
+                        ctx.lineTo(chestX + torsoW + h*0.14, baseY - 5);
+                        ctx.stroke();
+
+                        // Cabeza e hiper-extensión de la mandíbula (Efecto Smile.wav)
+                        let headX = chestX + (torsoW * 0.45);
+                        let headY = chestY - (mHeight * 0.12);
+                        let headRad = mHeight * 0.12;
+
+                        ctx.fillStyle = colBody;
+                        ctx.beginPath();
+                        ctx.arc(headX, headY, headRad, Math.PI, 0);
+                        ctx.fill();
+
+                        // Mandíbula descolgada desencadenada por cercanía
+                        let jawExt = (monster.state === 2 ? mHeight * 0.18 : mHeight * 0.09) + Math.sin(t*0.03)*3;
+                        ctx.fillStyle = '#0a0505';
+                        ctx.beginPath();
+                        ctx.moveTo(headX - headRad, headY);
+                        ctx.lineTo(headX + headRad, headY);
+                        ctx.lineTo(headX + headRad * 0.6, headY + jawExt);
+                        ctx.lineTo(headX - headRad * 0.6, headY + jawExt);
+                        ctx.closePath(); ctx.fill();
+
+                        // Ojos Blancos Brillantes sin pupilas
+                        ctx.fillStyle = colGlow;
+                        ctx.beginPath();
+                        ctx.arc(headX - headRad * 0.35, headY - headRad * 0.15, headRad * 0.2, 0, Math.PI * 2);
+                        ctx.arc(headX + headRad * 0.35, headY - headRad * 0.15, headRad * 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Sonrisa Demente Estirada con dientes negros expuestos
+                        ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, mHeight * 0.015);
+                        ctx.beginPath();
+                        ctx.arc(headX, headY + jawExt * 0.3, headRad * 0.7, 0.1, Math.PI - 0.1);
+                        ctx.stroke();
                     }
                 }
             }
 
+            // Balas del jugador
             bullets3D.forEach(b => {
-                let bulletSize = Math.max(1, (canvas.height * 0.03) / b.distance);
-                let bx = canvas.width / 2; let by = (canvas.height / 1.7) + (horizonShift * 0.5) - (b.distance * 0.15);
-                if (by > 0 && b.distance < 160) {
-                    ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(bx, by, bulletSize, 0, Math.PI * 2); ctx.fill();
+                let size = Math.max(1.5, (canvas.height * 0.04) / b.distance);
+                let bx = canvas.width / 2;
+                let by = (canvas.height / 1.7) + (horizonShift * 0.5) - (b.distance * 0.18);
+                if (by > 0 && b.distance < 180) {
+                    ctx.fillStyle = '#ff3300'; ctx.beginPath(); ctx.arc(bx, by, size, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(bx, by, size*0.5, 0, Math.PI * 2); ctx.fill();
                 }
             });
 
             drawRain();
 
+            // Flash de impactos o daño
             if (damageFlashActive > 0) {
-                ctx.fillStyle = damageFlashActive === 5 ? 'rgba(140,0,0,0.4)' : (damageFlashActive === 2 ? 'rgba(255,255,255,0.25)' : 'rgba(255,200,150,0.05)');
-                ctx.fillRect(0,0,canvas.width,canvas.height); damageFlashActive = 0;
+                ctx.fillStyle = damageFlashActive === 5 ? 'rgba(180,0,0,0.5)' : (damageFlashActive === 2 ? 'rgba(0,255,100,0.2)' : 'rgba(255,255,255,0.12)');
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                damageFlashActive = 0;
             }
         }
 
@@ -649,102 +816,118 @@
             ctx.lineWidth = 1;
             for(let r of rain) {
                 if(r.splash > 0) {
-                    ctx.strokeStyle = `rgba(110,120,140,${r.splash * 0.12})`;
-                    ctx.beginPath(); ctx.ellipse(r.x, canvas.height - 10, r.splash * 1.5, r.splash * 0.4, 0, 0, Math.PI*2); ctx.stroke();
-                    r.splash -= 0.2;
-                    if(r.splash <= 0) { r.y = Math.random() * -100; r.x = Math.random() * canvas.width; }
+                    ctx.strokeStyle = `rgba(130,120,150,${r.splash * 0.15})`;
+                    ctx.beginPath(); ctx.ellipse(r.x/PIXEL_SCALE, (canvas.height - 8), r.splash * 1.8, r.splash * 0.4, 0, 0, Math.PI*2); ctx.stroke();
+                    r.splash -= 0.25;
+                    if(r.splash <= 0) { r.y = Math.random() * -80; r.x = Math.random() * window.innerWidth; }
                 } else {
-                    ctx.strokeStyle = 'rgba(105,115,135,0.15)';
-                    ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x, r.y + 6); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(110,105,135,0.18)';
+                    let rx = r.x / PIXEL_SCALE; let ry = r.y / PIXEL_SCALE;
+                    ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 1, ry + 7); ctx.stroke();
                     r.y += r.v;
-                    if (r.y > canvas.height - 15) { r.splash = 2.0; }
+                    if (r.y > window.innerHeight - 20) { r.splash = 2.5; }
                 }
             }
         }
 
         function drawRadar() {
-            rCtx.clearRect(0,0,140,140); const scale = 140 / MAP_SIZE;
-            rCtx.fillStyle = '#1b1b22';
+            rCtx.clearRect(0,0,160,160);
+            const scale = 160 / MAP_SIZE;
+            
+            // Casas en radar
+            rCtx.fillStyle = '#251a2e';
             for(let h of houses) rCtx.fillRect(h.x * scale, h.y * scale, h.w * scale, h.h * scale);
             
-            rCtx.fillStyle = '#113c11';
-            for(let n of natureObjects) { rCtx.fillRect(n.x * scale - 1, n.y * scale - 1, 1.5, 1.5); }
-
-            rCtx.fillStyle = '#cc8800';
-            for(let b of ammoBoxes) { rCtx.beginPath(); rCtx.arc(b.x * scale, b.y * scale, 1.2, 0, Math.PI*2); rCtx.fill(); }
-            if (monster.active && Math.floor(performance.now() / 200) % 2 === 0) {
-                rCtx.fillStyle = '#ff0000'; rCtx.beginPath(); rCtx.arc(monster.x * scale, monster.y * scale, 3.0, 0, Math.PI*2); rCtx.fill();
+            // Consumibles
+            rCtx.fillStyle = '#ddaa00';
+            for(let b of ammoBoxes) rCtx.fillRect(b.x * scale - 1, b.y * scale - 1, 3, 3);
+            
+            // Alarma de Entidad parpadeante
+            if (monster.active && Math.floor(performance.now() / 150) % 2 === 0) {
+                rCtx.fillStyle = '#ff0033'; rCtx.beginPath(); rCtx.arc(monster.x * scale, monster.y * scale, 4, 0, Math.PI*2); rCtx.fill();
             }
-            rCtx.fillStyle = '#00ff00'; rCtx.save(); rCtx.translate(player.x * scale, player.y * scale); rCtx.rotate(player.angle);
-            rCtx.beginPath(); rCtx.moveTo(5, 0); rCtx.lineTo(-3, -2.5); rCtx.lineTo(-3, 2.5); rCtx.closePath(); rCtx.fill(); rCtx.restore();
+            
+            // Jugador
+            rCtx.fillStyle = '#00ff66'; rCtx.save(); rCtx.translate(player.x * scale, player.y * scale); rCtx.rotate(player.angle);
+            rCtx.beginPath(); rCtx.moveTo(6, 0); rCtx.lineTo(-4, -3.5); rCtx.lineTo(-4, 3.5); rCtx.closePath(); rCtx.fill(); rCtx.restore();
         }
 
         window.addEventListener('mousedown', () => {
             if (!gameRunning || player.ammo <= 0 || player.health <= 0) return;
-            player.ammo--; document.getElementById('ammo').innerText = "MUNICION: " + player.ammo;
+            player.ammo--;
+            document.getElementById('ammo').innerText = "CARTUCHOS: " + player.ammo;
             
-            playSynthSound('gun', 0.85);
-            bullets3D.push({ distance: 10.0, life: 250 });
+            playWeaponSound();
+            bullets3D.push({ distance: 8.0, life: 200 });
 
             let hit = false;
             if (monster.active) {
-                let angleToMonster = Math.atan2(monster.y - player.y, monster.x - player.x);
-                let diff = player.angle - angleToMonster; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-                let dx = player.x - monster.x; let dy = player.y - monster.y; let dist = Math.sqrt(dx*dx + dy*dy);
+                let angleMonster = Math.atan2(monster.y - player.y, monster.x - player.x);
+                let diff = player.angle - angleMonster;
+                diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                let dist = Math.sqrt(Math.pow(player.x - monster.x, 2) + Math.pow(player.y - monster.y, 2));
 
-                if (Math.abs(diff) < 0.26 && dist < 150) {
-                    hit = true; monster.health--; monster.state = 2; 
+                if (Math.abs(diff) < 0.28 && dist < 160) {
+                    hit = true; monster.health--;
+                    monster.state = 2; // Obligar a cargar con furia si es golpeado
                     if (monster.health <= 0) {
-                        player.score++; 
-                        document.getElementById('score').innerText = "ENTES DETENIDOS: " + player.score + " / 3";
-                        monster.active = false; monster.timer = 0; 
-                        
-                        if (player.score >= 3) {
-                            endGame(true);
-                            return;
-                        } else {
-                            ammoBoxes.push({ x: monster.x, y: monster.y }); 
-                        }
+                        player.score++;
+                        document.getElementById('score').innerText = "ANOMALÍAS DEPURADAS: " + player.score + " / 3";
+                        monster.active = false; monster.timer = 0;
+                        if (player.score >= 3) endGame(true);
+                        else ammoBoxes.push({ x: monster.x, y: monster.y, seed: Math.random() });
                     }
                 }
             }
-            damageFlashActive = hit ? 2 : 1; 
+            damageFlashActive = hit ? 2 : 1;
         });
+
+        function playWeaponSound() {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.17);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.18);
+            } catch(e){}
+        }
 
         function releaseTheStorm() {
             if(introMusicInterval) clearInterval(introMusicInterval);
             isIntroActive = false;
             
-            // Ocultar caja de diálogo RPG
             document.getElementById('rpg-dialogue-box').style.display = 'none';
-            
-            // Mostrar interfaz HUD de combate y radar
             document.getElementById('ui').style.display = 'block';
             document.getElementById('radar-container').style.display = 'block';
             
+            // Disparar música gal.wav en bucle infinito de fondo
+            sndGal.volume = 0.5;
+            sndGal.play().catch(()=>{});
+
             try { canvas.requestPointerLock(); } catch(e){}
-            
-            gameRunning = true; 
+            gameRunning = true;
             lastTime = performance.now();
         }
 
         function endGame(victory) {
             gameRunning = false;
+            sndGal.pause();
             document.exitPointerLock();
             const screen = document.getElementById('end-screen');
             const title = document.getElementById('end-title');
             const desc = document.getElementById('end-desc');
             
             if (victory) {
-                screen.style.backgroundColor = "rgba(0, 20, 5, 0.98)";
-                title.style.color = "#00ff66";
-                title.innerText = "PERIMETRO ASEGURADO";
-                desc.innerText = "Arquitecto Burdo: Excelente trabajo. El sujeto agresivo fue neutralizado. La produccion de casas en Torreon't se reanuda inmediatamente. Presiona F5 para reiniciar.";
+                screen.style.backgroundColor = "rgba(4, 25, 12, 0.98)";
+                title.style.color = "#00ff66"; title.innerText = "TERRENO ASEGURADO";
+                desc.innerText = "Arquitecto Burdo: Impresionante. Has disuelto la distorsión biológica. El concreto hidráulico y las varillas ya vienen en camino a Torreon't. La producción se normaliza. Presiona F5 para re-evaluar sectores.";
             } else {
-                screen.style.backgroundColor = "rgba(25, 0, 0, 0.99)";
-                title.style.color = "#ff0000";
-                title.innerText = "FIN DEL PROTOCOLO";
-                desc.innerText = "Fuiste despedazado por el intruso encuerado. La produccion queda cancelada de forma indefinida. Presiona F5 para reintentar.";
+                screen.style.backgroundColor = "rgba(28, 3, 6, 0.99)";
+                title.style.color = "#ff1111"; title.innerText = "CONTRATO RESCINDIDO";
+                desc.innerText = "Tu estructura colapsó ante las fauces de la entidad. Las casas jamás serán terminadas. Tu liquidación fue procesada en el vacío. Presiona F5 para revocar el despido.";
             }
             screen.style.display = 'flex';
         }
@@ -752,21 +935,14 @@
         let lastTime = performance.now();
         function loop() {
             let now = performance.now(); let delta = now - lastTime; lastTime = now;
-            
-            // El motor 3D renderiza SIEMPRE para que puedas ver el entorno en la intro
-            if (gameRunning && player.health > 0) { 
-                movePlayer(); 
-                updateMonster(delta); 
-                updateBullets(delta);
+            if (gameRunning && player.health > 0) {
+                movePlayer();
+                updateMonsterAI(delta);
             }
-            
-            // Renderizado visual continuo (Funciona en Intro e In-game)
-            render3DScene(); 
+            render3DScene();
             if (gameRunning) drawRadar();
-            
             requestAnimationFrame(loop);
         }
-
         requestAnimationFrame(loop);
     </script>
 </body>
