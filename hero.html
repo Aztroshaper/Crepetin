@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STAR HERO</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Montserrat', sans-serif;
+            color: #fff;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            position: absolute;
+            z-index: 1;
+        }
+        #ui {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 5;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            padding: 30px 50px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+        .score-box {
+            color: #ffe600;
+            text-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 15px;
+            background: linear-gradient(transparent, rgba(10, 10, 0, 0.8));
+            color: #666;
+        }
+        .footer span { color: #ffe600; }
+        
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #050505;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+        h1 {
+            font-size: 72px;
+            font-weight: 900;
+            letter-spacing: 10px;
+            margin-bottom: 40px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        .accent { color: #ffe600; }
+
+        /* Barra de carga */
+        #loader-container {
+            width: 300px;
+            text-align: center;
+        }
+        #loader-text {
+            font-size: 12px;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            color: #888;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        #progress {
+            width: 0%;
+            height: 100%;
+            background: #ffe600;
+            box-shadow: 0 0 10px #ffe600;
+            transition: width 0.2s;
+        }
+
+        #start-btn {
+            display: none;
+            padding: 15px 50px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            background-color: transparent;
+            color: #ffe600;
+            border: 2px solid #ffe600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        #start-btn:hover {
+            background-color: #ffe600;
+            color: #000;
+            box-shadow: 0 0 20px rgba(255, 230, 0, 0.4);
+        }
+
+        .hit-feedback {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #fff;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui">
+        <div class="header">
+            <div>STAR <span class="accent">HERO</span></div>
+            <div class="score-box">SCORE: <span id="score">0</span></div>
+        </div>
+        <div class="hit-feedback" id="feedback">PERFECT</div>
+        <div class="footer">
+            <span>A</span> &nbsp;&nbsp; <span>S</span> &nbsp;&nbsp; <span>D</span> &nbsp;&nbsp; <span>F</span>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1>STAR <span class="accent">HERO</span></h1>
+        
+        <div id="loader-container">
+            <div id="loader-text">ANALIZANDO AUDIO...</div>
+            <div id="progress-bar"><div id="progress"></div></div>
+        </div>
+
+        <button id="start-btn">INICIAR PISTA</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- CONFIGURACIÓN THREE.JS ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 4, 8);
+        camera.lookAt(0, -1, -20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- ILUMINACIÓN Y ENTORNO ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); 
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffe600, 1.5);
+        dirLight.position.set(0, 10, 5);
+        scene.add(dirLight);
+
+        // Cuadrícula dinámica (se moverá en el render loop)
+        const gridHelper = new THREE.GridHelper(60, 60, 0x333300, 0x1a1a1a);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+
+        // Zona de impacto visualmente más limpia
+        const hitZoneGeometry = new THREE.PlaneGeometry(16, 2);
+        const hitZoneMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xffe600, 
+            transparent: true, 
+            opacity: 0.1,
+            side: THREE.DoubleSide
+        });
+        const hitZone = new THREE.Mesh(hitZoneGeometry, hitZoneMaterial);
+        hitZone.rotation.x = -Math.PI / 2;
+        hitZone.position.set(0, -0.4, 4);
+        scene.add(hitZone);
+
+        // Línea brillante en la zona de impacto
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-8, -0.4, 4), new THREE.Vector3(8, -0.4, 4)]);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xffe600 });
+        scene.add(new THREE.Line(lineGeo, lineMat));
+
+        // --- GEOMETRÍA DE LA ESTRELLA ---
+        function createStarGeometry() {
+            const pts = [];
+            for (let i = 0; i < 10; i++) {
+                const l = i % 2 == 1 ? 0.4 : 1.2;
+                const a = (i / 5) * Math.PI;
+                pts.push(new THREE.Vector2(Math.cos(a) * l, Math.sin(a) * l));
+            }
+            return new THREE.ExtrudeGeometry(new THREE.Shape(pts), { depth: 0.2, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05 });
+        }
+        const starGeometry = createStarGeometry();
+        const starMaterial = new THREE.MeshStandardMaterial({ color: 0xffe600, emissive: 0x554400, roughness: 0.3, metalness: 0.8 });
+
+        // --- LÓGICA DEL JUEGO Y SINCRONIZACIÓN ---
+        let audioCtx, audioBuffer, audioSource;
+        let isPlaying = false;
+        let score = 0;
+        
+        const lanes = [-4.5, -1.5, 1.5, 4.5];
+        const spawnZ = -50;
+        const hitZ = 4;
+        const travelTime = 1.5; // Segundos que tarda la estrella en llegar
+        const starSpeed = Math.abs(spawnZ - hitZ) / travelTime; // Unidades por segundo
+        
+        let beatTimestamps = []; // Aquí guardaremos los tiempos exactos de los golpes
+        let activeStars = []; // Array de objetos { mesh, targetTime, lane }
+        let startTime = 0;
+
+        const clock = new THREE.Clock();
+
+        // --- CARGA Y ANÁLISIS AUTOMÁTICO ---
+        async function loadAndAnalyzeAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            try {
+                // 1. Descargar el archivo
+                document.getElementById('loader-text').innerText = "DESCARGANDO PISTA...";
+                const response = await fetch('hero.mp3');
+                if (!response.ok) throw new Error("No se encontró hero.mp3");
+                
+                const contentLength = response.headers.get('content-length');
+                const reader = response.body.getReader();
+                let receivedLength = 0;
+                let chunks = [];
+
+                while(true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    receivedLength += value.length;
+                    if(contentLength) {
+                        const percent = (receivedLength / contentLength) * 50; // Hasta el 50%
+                        document.getElementById('progress').style.width = percent + '%';
+                    }
+                }
+
+                let arrayBuffer = new Uint8Array(receivedLength);
+                let position = 0;
+                for(let chunk of chunks) {
+                    arrayBuffer.set(chunk, position);
+                    position += chunk.length;
+                }
+
+                // 2. Decodificar
+                document.getElementById('loader-text').innerText = "DECODIFICANDO...";
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.buffer);
+                document.getElementById('progress').style.width = '80%';
+
+                // 3. Pre-calcular los beats
+                document.getElementById('loader-text').innerText = "MAPEANDO RITMO...";
+                analyzeBeats(audioBuffer);
+                document.getElementById('progress').style.width = '100%';
+
+                // Mostrar botón de inicio
+                setTimeout(() => {
+                    document.getElementById('loader-container').style.display = 'none';
+                    document.getElementById('start-btn').style.display = 'block';
+                }, 500);
+
+            } catch (err) {
+                document.getElementById('loader-text').innerText = "ERROR. ¿ESTÁS USANDO LIVE SERVER?";
+                document.getElementById('loader-text').style.color = "red";
+                console.error(err);
+            }
+        }
+
+        // Algoritmo para encontrar picos de volumen en el archivo antes de que suene
+        function analyzeBeats(buffer) {
+            const rawData = buffer.getChannelData(0); 
+            const sampleRate = buffer.sampleRate;
+            const blockSize = Math.floor(sampleRate / 10); // Bloques de 100ms
+            
+            for (let i = 0; i < rawData.length; i += blockSize) {
+                let peak = 0;
+                for (let j = 0; j < blockSize && i + j < rawData.length; j++) {
+                    if (Math.abs(rawData[i + j]) > peak) peak = Math.abs(rawData[i + j]);
+                }
+                
+                // Si el pico es alto, registramos un "beat" en ese segundo
+                if (peak > 0.8) {
+                    const time = i / sampleRate;
+                    // Evitar que salgan estrellas amontonadas (mínimo 0.25s de separación)
+                    if (beatTimestamps.length === 0 || time - beatTimestamps[beatTimestamps.length-1].time > 0.25) {
+                        beatTimestamps.push({ time: time, spawned: false });
+                    }
+                }
+            }
+        }
+
+        // Iniciar el proceso de carga al abrir la página
+        window.onload = loadAndAnalyzeAudio;
+
+        // Botón de jugar
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-screen').style.opacity = '0';
+            setTimeout(() => document.getElementById('start-screen').style.display = 'none', 500);
+            
+            // Iniciar pista
+            audioSource = audioCtx.createBufferSource();
+            audioSource.buffer = audioBuffer;
+            audioSource.connect(audioCtx.destination);
+            
+            startTime = audioCtx.currentTime;
+            audioSource.start(0);
+            isPlaying = true;
+            clock.start();
+        });
+
+        // --- SONIDO SINTÉTICO (COIN) ---
+        function playHitSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(987.77, audioCtx.currentTime); 
+            osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.1); 
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        // --- DETECCIÓN DE GOLPES ---
+        window.addEventListener('keydown', (e) => {
+            if (!isPlaying) return;
+            const key = e.key.toLowerCase();
+            let laneIndex = -1;
+
+            if (key === 'a') laneIndex = 0;
+            else if (key === 's') laneIndex = 1;
+            else if (key === 'd') laneIndex = 2;
+            else if (key === 'f') laneIndex = 3;
+
+            if (laneIndex !== -1) checkHit(laneIndex);
+        });
+
+        function checkHit(laneIndex) {
+            const currentTime = audioCtx.currentTime - startTime;
+            const hitWindow = 0.25; // Margen de error en segundos (muy preciso)
+
+            for (let i = 0; i < activeStars.length; i++) {
+                const starObj = activeStars[i];
+                if (starObj.lane === laneIndex) {
+                    // ¿El tiempo actual está cerca del tiempo objetivo del beat?
+                    const timeDiff = Math.abs(starObj.targetTime - currentTime);
+                    
+                    if (timeDiff <= hitWindow) {
+                        // ¡ACIERTO PERFECTO!
+                        scene.remove(starObj.mesh);
+                        activeStars.splice(i, 1);
+                        score += 100;
+                        document.getElementById('score').innerText = score;
+                        playHitSound();
+                        showFeedback();
+                        break;
+                    }
+                }
+            }
+        }
+
+        function showFeedback() {
+            const fb = document.getElementById('feedback');
+            fb.style.opacity = 1;
+            setTimeout(() => { fb.style.opacity = 0; }, 150);
+        }
+
+        // --- BUCLE DE RENDERIZADO ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+
+            // Animación del entorno para dar sensación de avance
+            gridHelper.position.z += 10 * dt;
+            if (gridHelper.position.z > 2) gridHelper.position.z -= 2;
+
+            if (isPlaying) {
+                const currentTime = audioCtx.currentTime - startTime;
+
+                // 1. Spawner de estrellas (Aparecen antes del golpe real)
+                for (let i = 0; i < beatTimestamps.length; i++) {
+                    const beat = beatTimestamps[i];
+                    // Si faltan exactamente "travelTime" segundos para que suene la nota, generamos la estrella lejos
+                    if (!beat.spawned && currentTime >= beat.time - travelTime) {
+                        spawnStar(beat.time);
+                        beat.spawned = true;
+                    }
+                }
+
+                // 2. Mover estrellas usando tiempo real (independiente de los FPS)
+                for (let i = activeStars.length - 1; i >= 0; i--) {
+                    const starObj = activeStars[i];
+                    // Movemos hacia Z positivo
+                    starObj.mesh.position.z += starSpeed * dt;
+                    starObj.mesh.rotation.z -= 3 * dt;
+
+                    // Si la estrella pasó la cámara (Fallo)
+                    if (starObj.mesh.position.z > 8) {
+                        scene.remove(starObj.mesh);
+                        activeStars.splice(i, 1);
+                        // Opcional: reiniciar racha aquí
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function spawnStar(targetTime) {
+            const mesh = new THREE.Mesh(starGeometry, starMaterial);
+            const randomLane = Math.floor(Math.random() * 4);
+            mesh.position.set(lanes[randomLane], 0.5, spawnZ);
+            scene.add(mesh);
+            
+            // Guardamos la estrella con el tiempo en el que DEBERÍA ser presionada
+            activeStars.push({
+                mesh: mesh,
+                lane: randomLane,
+                targetTime: targetTime
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
