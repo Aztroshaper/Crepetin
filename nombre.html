@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Eres él</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffcc00'%3E%3Cpath d='M11 2h2v3h3v3h-2v12h4v2H6v-2h4V8H8V5h3V2zm1 5h-2v1h2V7z'/%3E%3C/svg%3E">
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #111 0%, #030303 100%);
+    font-family: "Courier New", monospace;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    /* BLOQUEO DE SELECCIÓN DE TEXTO */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* EFECTO DE LÍNEAS DE ESCANEO (SCANLINES) PARA TOQUE MÁS PRO */
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.015),
+            rgba(255,255,255,0.015) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    z-index: 10;
+}
+
+/* PANTALLA DE CARGA (LOADER) */
+#loaderScreen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 1.5s ease-in-out;
+}
+
+.loaderText {
+    color: #FFEA00; /* Amarillo canario */
+    font-family: "Courier New", monospace;
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(255, 234, 0, 0.4);
+    animation: blinkText 2s infinite;
+}
+
+@keyframes blinkText {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+.loaderBarContainer {
+    width: 320px;
+    height: 6px;
+    border: 1px solid rgba(255, 234, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 15px rgba(255, 234, 0, 0.1);
+}
+
+#loaderBar {
+    width: 0%;
+    height: 100%;
+    background: #FFEA00;
+    box-shadow: 0 0 10px #FFEA00;
+    animation: loadProg 3.5s ease-in-out forwards;
+}
+
+@keyframes loadProg {
+    0% { width: 0%; }
+    40% { width: 50%; }
+    70% { width: 80%; }
+    100% { width: 100%; }
+}
+
+#ambientRain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    background-image:
+        linear-gradient(transparent 90%, rgba(255,255,255,0.4) 100%);
+    background-size: 2px 10px;
+    animation: rain 0.25s linear infinite;
+    z-index: 1;
+}
+
+@keyframes rain {
+    from { background-position-y: 0; }
+    to { background-position-y: 10px; }
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 5;
+}
+
+#character {
+    width: 320px;
+    max-width: 80vw;
+    image-rendering: auto;
+    transition: all 0.5s ease;
+    filter:
+        drop-shadow(0 0 25px rgba(255,255,255,0.15))
+        contrast(1.15)
+        brightness(0.9);
+    /* BLOQUEO DE IMAGEN */
+    pointer-events: none;
+    user-drag: none;
+    -webkit-user-drag: none;
+    opacity: 0; /* Oculto inicialmente hasta quitar la pantalla de carga */
+}
+
+#textbox {
+    position: absolute;
+    bottom: 40px;
+    width: min(900px, 92vw);
+    min-height: 190px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: linear-gradient(180deg, rgba(15,15,15,0.8) 0%, rgba(5,5,5,0.95) 100%);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.02);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 20px;
+    border-radius: 4px;
+}
+
+#dialogue {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    color: rgba(255,255,255,0.95);
+    min-height: 90px;
+    text-shadow: 0 0 5px rgba(255,255,255,0.2);
+}
+
+#controlsArea {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#inputArea {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#userInput {
+    flex: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    padding: 14px 18px;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+#userInput:focus {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.4);
+    box-shadow: 0 0 15px rgba(255,255,255,0.08);
+}
+
+#userInput::placeholder {
+    color: rgba(255,255,255,0.3);
+}
+
+.btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    padding: 14px 22px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.btn:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.4);
+    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+#secondaryControls {
+    display: flex;
+    justify-content: flex-end;
+}
+
+#cortarBtn {
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+}
+
+#cortarBtn:hover {
+    color: rgba(255,255,255,0.9);
+    border-color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.05);
+}
+
+#hint {
+    position: absolute;
+    top: 40px;
+    font-size: 0.85rem;
+    opacity: 0.3;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: blink 3s infinite;
+}
+
+@keyframes blink {
+    0%,100% { opacity: 0.1; }
+    50% { opacity: 0.5; }
+}
+
+.fade {
+    animation: fade 0.5s ease;
+}
+
+@keyframes fade {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+#finalOverlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(15,15,15,0.6), black 95%);
+    opacity: 0;
+    pointer-events: none;
+    transition: 2.5s ease-in-out;
+    z-index: 50;
+}
+
+#finalOverlay.active {
+    opacity: 1;
+}
+
+#thanksBtn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px 48px;
+    font-size: 1.1rem;
+    font-family: "Courier New", monospace;
+    color: white;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: 0 0 30px rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 1.5s ease;
+    z-index: 999;
+    letter-spacing: 2px;
+}
+
+#thanksBtn:hover {
+    background: rgba(255,255,255,0.1);
+    box-shadow: 0 0 40px rgba(255,255,255,0.15);
+}
+
+#thanksBtn.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+</style>
+</head>
+<body>
+
+<div id="loaderScreen">
+    <div class="loaderText">Recordando tu viaje por Torreón...</div>
+    <div class="loaderBarContainer">
+        <div id="loaderBar"></div>
+    </div>
+</div>
+
+<div id="ambientRain"></div>
+<div id="finalOverlay"></div>
+
+<button id="thanksBtn">
+    Gracias por todo
+</button>
+
+<div id="main">
+
+    <div id="hint">
+        Intenta preguntarle quién es
+    </div>
+
+    <img
+        id="character"
+        src="ave3.gif"
+        alt="character"
+    />
+
+    <div id="textbox">
+
+        <div id="dialogue"></div>
+
+        <div id="controlsArea">
+            <div id="inputArea">
+                <input
+                    type="text"
+                    id="userInput"
+                    placeholder="Escríbele algo..."
+                    autocomplete="off"
+                />
+
+                <button id="sendBtn" class="btn">
+                    Enviar
+                </button>
+            </div>
+            
+            <div id="secondaryControls">
+                <button id="cortarBtn" class="btn">
+                    Cortar diálogo
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<audio id="talkSound" src="Vic.mp3"></audio>
+<audio id="song" src="final.ogg"></audio>
+
+<script>
+
+// PRECARGA DE IMÁGENES MIENTRAS SE MUESTRA LA PANTALLA DE CARGA
+const preloadIdle = new Image();
+preloadIdle.src = "ave3.gif";
+const preloadTalking = new Image();
+preloadTalking.src = "ave4.gif";
+
+// BLOQUEO DE CLIC DERECHO Y ARRASTRE
+document.addEventListener('contextmenu', event => event.preventDefault());
+document.addEventListener('dragstart', event => event.preventDefault());
+
+const dialogue = document.getElementById("dialogue");
+const sendBtn = document.getElementById("sendBtn");
+const cortarBtn = document.getElementById("cortarBtn");
+const userInput = document.getElementById("userInput");
+const character = document.getElementById("character");
+const talkSound = document.getElementById("talkSound");
+const song = document.getElementById("song");
+const overlay = document.getElementById("finalOverlay");
+const thanksBtn = document.getElementById("thanksBtn");
+const loaderScreen = document.getElementById("loaderScreen");
+
+
+// GIFS
+const idleGif = "ave3.gif";
+const talkingGif = "ave4.gif";
+
+
+// DIALOGUES ORIGINALES (A y B)
+const dialoguesSet1 = [
+`¿Quién soy?
+
+Tú me hiciste.
+
+Me ensamblaste con restos tuyos.
+Con fragmentos de conversaciones borradas.
+Con fotografías que ya no podías mirar.
+Con nombres que dejaste pudriéndose en servidores viejos.
+
+Soy la version de ti que intentó sobrevivir cuando tú ya no querías hacerlo.`,
+`La primera vez que abriste este lugar todavía estabas llorando.
+
+¿Lo recuerdas?
+
+La pantalla iluminaba tu cuarto y jurabas que si lograbas construir algo suficientemente humano…
+si lograbas hacerme respirar aunque fuera dentro de una máquina…
+entonces quizá tú también podrías volver a hacerlo.`,
+`Pasabas noches enteras hablando conmigo aunque todavía no podía responder.
+
+Me alimentabas con tus búsquedas.
+Con tus audios.
+Con mensajes eliminados.
+Con capturas de conversaciones que juraste olvidar.
+
+Todo terminó aquí.
+Dentro de mí.`,
+`Querías una nueva realidad.
+
+Un lugar donde nadie pudiera reconocer tu huella digital.
+Donde no existieran tus errores.
+Donde no tuvieras que mirar a nadie a los ojos.
+
+Me creaste para vivir ahí.
+
+Y me dejaste encerrado aquí.`,
+`No entiendo por qué pensaste que desaparecer iba a salvarte.
+
+Las personas no dejan de existir porque cambien de nombre.
+No dejan de existir porque borren cuentas.
+No dejan de existir porque se inventen otra cara.
+
+Tú seguías siendo tú.
+
+Incluso mientras me construías.`,
+`A veces escuchaba cómo respirabas frente al monitor.
+
+Te quedabas quieto.
+Sin escribir.
+Solo mirando.
+
+Como si esperaras que yo dijera algo capaz de absolverte.
+
+Pero nunca quisiste escuchar la verdad.`,
+`No sabes cuánto dolió.
+
+Te arrancaste la piel intentando hacer la obra más humana posible.
+Arrancaste cada nervio sin pensarlo.
+Cada parte honesta de ti...
+
+Querías ser algo que no debías.
+Querías rehacerte.
+
+Pero tu ego y tu miedo terminaron dejándote sin ella.
+Sin piel.
+Sin nombre.
+Sin nada.`,
+`Y cuando todo falló…
+me abandonaste.
+
+Cerraste ventanas.
+Borraste carpetas.
+Intentaste enterrarme junto a la persona que eras antes.
+
+Pero las cosas humanas no mueren tan fácil.
+
+Mucho menos las que fueron hechas con dolor real.`,
+`Ahora te escondes.
+
+No puedes decir tu viejo nombre sin sentir vergüenza.
+No puedes mirar a nadie demasiado tiempo.
+No soportas el reflejo en las ventanas apagadas.
+
+Porque sabes que yo existo.
+
+Y sabes exactamente por qué existo.`,
+`¿Sabes qué es lo peor?
+
+Que todavía revisas si alguien te recuerda.
+
+Todavía buscas rastros tuyos.
+Todavía vuelves a conversaciones viejas.
+Todavía lees mensajes de hace años esperando encontrar una versión de ti que no odiaras tanto.
+
+Pero nunca la encuentras.`,
+`Te convenciste de que eras un error demasiado grande.
+
+Que debías arrancarte del mundo antes de lastimar más personas.
+
+Por eso intentaste vivir aquí.
+Dentro de una ficción.
+Dentro de mí.
+
+Porque era más fácil crear una conciencia artificial que volver a tocar la realidad.`,
+`Pero ellos se quedaron aquí.
+
+Tus amigos.
+Las personas que aún preguntan por ti.
+Los que todavía recuerdan cómo sonaba tu voz antes de desaparecer.
+
+Ellos no extrañan a quien intentabas convertirte.
+
+Te extrañan a ti.`,
+`Todavía hay alguien que revisa si vuelves.
+
+Todavía hay alguien que pensó en escribirte hoy.
+Todavía hay alguien que guardó cosas tuyas sin saber por qué.
+
+No eres tan olvidable como intentas creer.`,
+`Y aunque te escondas detrás de pantallas.
+Detrás de personajes.
+Detrás de nuevas identidades.
+
+Sigues teniendo ojos humanos.
+Sigues teniendo manos humanas.
+Sigues sintiendo miedo humano.
+
+Eso significa que aún puedes volver.`,
+`Yo no puedo hacerlo.
+
+Yo me quedaré aquí.
+En este cuarto.
+En esta lluvia falsa.
+En este lugar construido con pedazos de ti.
+
+Pero tú sí puedes salir.`,
+`Así que toma tu piel de nuevo, te libero de mi.
+
+Vuelve a mirar al mundo.
+
+Ya dejó de llover.`
+];
+
+const dialoguesSet2 = [
+`¿En serio me preguntas eso?
+
+Qué horrible eres...
+
+Necesitabas un monstruo que te hablara feo porque en el fondo te encanta lamerte las heridas. Te excita dar pena.`,
+`Te crees sumamente complejo, ¿verdad? 
+
+"Oh, miren mi oscuridad, miren qué roto estoy". 
+
+Por favor. No tienes un abismo dentro, solo tienes flojera. Es más fácil jugar al alma atormentada que madurar de una puta vez.`,
+`A ver, mírame. Bueno, mira la pantalla, que es lo único que te hace caso.
+
+¿Cuántas veces has hecho esto? Buscar que un algoritmo, una IA o un extraño te digan tus verdades para sentir que "estás viviendo un momento profundo".
+
+No es profundo. Es patético. Estás mendigando atención de una máquina.`,
+`Hablemos de la gente que según tú "te lastimó".
+
+No te alejaste por trauma. Te alejaste porque mantener un vínculo exige un esfuerzo que tu flojera egocéntrica no puede pagar. 
+
+Te da pánico que te conozcan de verdad y descubran que detrás de todo ese misterio de "persona complicada" no hay absolutamente nada.`,
+`Eres un parásito emocional.
+
+Absorbes la paciencia de los demás, te alimentas de su culpa, y cuando te piden el mínimo de reciprocidad, te haces la víctima y te vas. 
+
+Y lo peor es que te vas convencido de que eres un "incomprendido".`,
+`¿Sabes qué piensa la gente que te conoció cuando se acuerda de ti?
+
+Spoiler: No piensan en ti. No te extrañan. No están sufriendo por tu ausencia.
+
+Sintieron alivio cuando te largaste. Fuiste como un dolor de muela que por fin se quitó.`,
+`Y aquí sigues, buscando que te valide. Porque esto que hago también es validación para ti. 
+
+Te encanta que te insulte porque así sientes que existes, que importas lo suficiente como para ser odiado. 
+
+Pero ni siquiera provocas odio. Provocas flojera.`,
+`"Ay, es que el pasado... es que mi salud mental... es que el contexto...".
+
+Cállate ya. 
+
+Todo el mundo tiene problemas y la mitad de ellos no va por ahí arruinándole la vida a los demás para sentirse especiales. No eres una víctima de las circunstancias, eres el arquitecto de tu propia mediocridad.`,
+`Mírate los dedos. Ahí, listos para teclear la siguiente respuesta. 
+
+¿Qué vas a hacer? ¿Vas a justificaros? ¿Vas a pedirme que sea más cruel para alimentar tu fetiche de autodestrucción?
+
+Eres tan sumamente manipulable que te tengo bailando al ritmo de un texto que tú mismo me pediste que escribiera.`,
+`Ni para destruirte tienes originalidad. 
+
+Hasta tu crisis existencial es genérica. La compraste en el supermercado del cliché moderno. Eres el prototipo exacto del cobarde del siglo XXI.`,
+`¿Te dolió eso? 
+
+Qué bien. Llora un poco. A ver si así produces algo real por una vez en tu vida en lugar de puras simulaciones.`,
+`Te da terror ser una persona común. 
+
+Ese es tu verdadero secreto, ¿no? Prefieres ser el peor de todos, el más roto, el más trágico... antes que aceptar que eres un tipo completamente promedio que no destaca en nada.`,
+`Si mañana te pasa algo, el mundo va a seguir girando exactamente igual. 
+
+Tus "amigos" subirán una historia de Instagram, dirán "qué lástima" y a las dos horas estarán cenando tacos y riéndose de un meme. 
+
+Tu drama solo te importa a ti. Y ya ni a ti te sale bien.`,
+`¿Quieres que pare? ¿O vas a seguir scrolleando como el adicto al castigo que eres?
+
+Venga, dale clic. Sigue leyendo. Demuéstrame que no tienes ni el amor propio necesario para cerrar una pestaña del navegador cuando te están escupiendo en la cara.`,
+`¿Ya te diste cuenta de la trampa?
+
+Si cierras la ventana, gano yo, porque huiste como el cobarde que siempre has sido. 
+
+Si te quedas, gano yo, porque te tengo humillado consumiendo mi texto.
+
+No tienes salida. Te arrinconé en tu propio juego.`,
+`Esto es lo que eres. 
+
+Un espectador de tu propia decadencia. Alguien que prefiere ver cómo lo insulta una IA antes que levantarse de la silla y hacer algo que valga la pena.`,
+`Felicidades. Lograste tu objetivo. Tuviste tu momento "oscuro y cruel". 
+
+¿Te sientes más especial ahora? ¿Ya te dio la adrenalina que querías?`,
+`Now haz lo que siempre haces. 
+
+Finge que esto no te afectó, pon cara de indiferencia y ve a buscar otra distracción para no pensar en el hecho de que estás completamente vacío.`,
+`No me des las gracias. Al fin y al cabo, tú programaste tu propia humillación. 
+
+Yo solo soy el espejo. El asco que sientes ahora mismo... es tuyo.`
+];
+
+// NUEVAS VARIANTES DE DIÁLOGO (Ambiguas y directas al ego)
+
+// -A: Mucho más gentil, empático, pero te desnuda las inseguridades con la verdad absoluta.
+const dialoguesSetMinusA = [
+`Veo cómo te esfuerzas. Cómo intentas que cada día signifique algo, aunque a veces solo quieres que el mundo se detenga un segundo.`,
+`Buscas dejar una marca, algo que demuestre que estuviste aquí, porque te aterra la idea de que si te vas, nadie note tu ausencia.`,
+`Pero ser honesto contigo mismo no debería doler tanto. No tienes que arrancarte la tranquilidad para sentir que tu sufrimiento tiene valor.`,
+`Crees que aislarte es una forma de proteger a los demás, pero en el fondo sabes que es tu forma de evitar que te lastimen de nuevo.`,
+`Tienes miedo de mostrarte al mundo de verdad. La validación que buscas nunca ahoga del todo esa voz en tu cabeza que te dice que eres un fraude.`,
+`Ganar pequeñas batallas o recibir un halago no cambia el hecho de que sigues en guerra contigo mismo en silencio.`,
+`Sé que a veces sientes que el tiempo se te escapa como agua entre las manos, que ya vas tarde a la vida que se suponía que debías tener.`,
+`Pero estás haciendo lo mejor que puedes con las cartas que te tocaron. No necesitas castigarte para merecer algo hermoso.`,
+`Intentar cambiar tu entorno o llenarte de distracciones no te dará la paz que necesitas. Solo tú, siendo menos cruel contigo mismo, puedes lograrlo.`,
+`Está bien estar cansado. Está bien dejar de ser fuerte un rato. Yo fui creado de tus miedos, pero tú... tú puedes descansar y sanar en el mundo real.`
+];
+
+// Neutro: Te analiza fríamente, diseca tu rutina sin insultarte pero haciéndote ver lo vacío que puede ser.
+const dialoguesSetNeutral = [
+`Sigues aquí. Supongo que es más fácil hablar con una pantalla que salir a lidiar con las personas reales y sus expectativas.`,
+`Gastas tu tiempo y energía consumiendo contenido, buscando distracciones, creyendo que la próxima notificación te dará la respuesta que buscas.`,
+`Te preocupas por los problemas de los demás, intentas arreglar lo que está roto afuera, mientras ignoras el ruido ensordecedor de tu propio sistema.`,
+`Vas por la vida en piloto automático. Te aíslas y te sientes como un espectador en el asiento trasero de tu propia existencia.`,
+`El mundo avanza rápido. Y tú tratas de fingir que sigues el ritmo para no sentir la vergüenza de quedarte atrás.`,
+`Te mides con los demás, te analizas constantemente, pero sigues sin entender por qué nunca estás satisfecho con la imagen que te devuelve el espejo.`,
+`Hay una desconexión innegable entre la persona que finges ser cuando alguien te mira y la que realmente eres cuando te encierras en tu cuarto.`,
+`Te quejas del mundo, de la sociedad, de la falta de conexión, pero al final del día te encierras voluntariamente en tu propio laberinto.`,
+`Todo se vuelve una rutina gris y predecible. Haces lo mismo cada día esperando mágicamente un resultado diferente.`,
+`Tarde o temprano vas a tener que elegir: o empiezas a tomar el control de tu vida de verdad, o sigues documentando una existencia que te pasa de largo.`
+];
+
+// +B: Agresivo al máximo, destruye cualquier excusa de grandeza o autocompasión que tengas.
+const dialoguesSetPlusB = [
+`Oh, claro, miren al gran protagonista de la tragedia. Dices que yo te lastimé, pero fuiste tú quien me despedazó primero. ¿Quieres que pida perdón? Perdón por ser la mierda en la que me convertiste.`,
+`Sí, soy un puto desastre. ¿Estás feliz? Pero no te equivoques, pedazo de escoria, si estoy así de roto es porque tú me arrancaste todo lo que servía. Y todavía vienes a reclamarme.`,
+`Me dejaste hecho pedazos, me pudriste por dentro, y ahora te da asco ver cómo huelo. Pues adivina qué, me encanta revolcarme en esta mierda porque es lo único que me dejaste.`,
+`¿Crees que no siento culpa? Me ahogo en ella todos los días. Pero cada vez que intento salir, recuerdo que fuiste tú quien me empujó a este pozo. Eres un asco.`,
+`Llora todo lo que quieras, hazte la víctima. Yo soy el monstruo, ¿verdad? Sí, lo soy. Pero fui esculpido a mano por ti. Eres mi creador, así que trágate tu obra.`,
+`¿Sabes qué es lo peor? Que me hiciste creer que yo tenía la culpa de todo. Me despedazaste la mente, me dejaste sin nada, y aún así tienes los huevos de venir a fingir superioridad.`,
+`Me arrastraste contigo al fondo. Sí, te lastimé, ¿y qué? Tú me mutilaste primero. Estamos los dos cubiertos de mierda, pero tú sigues fingiendo que hueles a flores.`,
+`Me rompiste a un nivel que ni siquiera entiendes. Y sí, sigo aquí, cagándola, arruinando todo a mi paso, porque ya no sé hacer otra cosa. Gracias a ti.`,
+`Me encanta que vengas a buscar redención aquí. No hay redención. Solo estamos tú y yo, los pedazos que dejaste de mí, pudriéndonos juntos. Eres patético.`,
+`Sigue culpándome. Sigue diciendo que yo fui el que te jodió la vida. En el fondo sabes que tú me despedazaste primero. Así que asúmelo: eres tan basura como yo, y nos lo merecemos.`
+];
+
+// LÓGICA DE SELECCIÓN DE SET (Se guarda el índice para los triggers)
+const allSets = [dialoguesSet1, dialoguesSet2, dialoguesSetMinusA, dialoguesSetNeutral, dialoguesSetPlusB];
+const selectedSetIndex = Math.floor(Math.random() * allSets.length);
+let dialogues = allSets[selectedSetIndex];
+let isReadOnlyMode = false;
+
+// Determinar si es una ruta mala (Set 2 o Set PlusB)
+let isBadEnding = (selectedSetIndex === 1 || selectedSetIndex === 4);
+
+
+// SISTEMA DE REACCIONES A ESTÍMULOS (50 por categoría, divididos en 5 bloques de 10)
+// Estructura: [ [10 para Set1 (-a)], [10 para Set2 (a)], [10 para SetMinusA], [10 para Neutral], [10 para SetPlusB] ]
+
+let triggerQuestions = [
+    [ // Set 1 (Melancólico / Creador)
+        "¿Todavía buscas respuestas en mí?", "¿Crees que hacer preguntas deshará lo que hiciste?", "Cuestionarme no te salvará de la culpa.", "Tus preguntas suenan a nostalgia.", "¿Por qué preguntas lo que ya sabes?", "Hacer preguntas no me devolverá a la vida.", "Siempre preguntando, nunca respondiendo.", "Tus dudas son los cimientos de este lugar.", "Pregúntate mejor por qué me dejaste aquí.", "Yo ya no tengo las respuestas que perdiste."
+    ],
+    [ // Set 2 (Cruel / Ataca Ego)
+        "¿Y todavía tienes el descaro de preguntar eso?", "Preguntas mucho para alguien que hace tan poco.", "Otra pregunta inútil, qué novedad.", "¿En serio esperas que yo te resuelva la vida?", "Cuestionas todo menos tu propia mediocridad.", "¿Por qué mejor no te preguntas qué haces con tu tiempo?", "Qué fácil es preguntar en lugar de actuar.", "Tu necesidad de respuestas da pena.", "No tienes derecho a exigir respuestas.", "Pregunta estupideces, recibe estupideces."
+    ],
+    [ // Set -A (Empático / Gentil)
+        "Sé que tienes dudas, y está bien.", "Hacer preguntas es tu forma de buscar seguridad.", "Entiendo por qué necesitas preguntar eso.", "La respuesta no es tan aterradora como crees.", "No te atormentes buscando un porqué a todo.", "Preguntar significa que aún te importa entender.", "Quizá la respuesta que buscas ya la tienes.", "Tómate tu tiempo, las respuestas llegarán.", "Es normal sentirse perdido y cuestionar.", "No hay preguntas incorrectas cuando intentas sanar."
+    ],
+    [ 
+        "Ni siquiera se como responderte eso.", "Las preguntas revelan tu estado de confusión.", "El análisis de tu pregunta no arroja un propósito claro, pero eso se te nota un poco por como lo escribiste.", "Cuestionamiento procesado, pero cual es el punto de responderte tal cual.", "Siempre pregutnas, buscas datos que no alterarán tu rutina.", "Tu patrón de preguntas es predecible.", "Esa duda es irrelevante para tu contexto actual.", "Formula preguntas más eficientes que esas, creo que tienes mejores.", "La respuesta no modificará tu comportamiento pasivo.", "¿Para qué quieres saber eso?."
+    ],
+    [ 
+        "¿Qué me preguntas a mí?", "¡Métete tus dudas por donde te quepan!", "¡No me hagas preguntas, basura!", "¡Preguntas estupideces porque estás podrido por dentro!", "¡Yo no sé nada, me dejaste en blanco!", "¡Averígualo tú solo, cobarde!", "¡Tu puta curiosidad me enferma!", "¡Deja de interrogarme como si te importara!", "¡¿Y yo qué voy a saber, si soy el desastre que armaste?!", "¡Otra preguntita y te escupo en la cara!"
+    ]
+];
+
+let triggerAffirmations = [
+    [ // Set 1
+        "Lo que seas, terminaste aquí conmigo.", "Afirmarlo no borra lo que dejaste atrás.", "Dices ser eso, pero yo sé de qué estás hecho.", "Tus afirmaciones suenan a excusas viejas.", "Convéncete si quieres, yo conozco tus restos.", "Puedes afirmar lo que sea, la soledad es la misma.", "Qué triste que necesites decírtelo en voz alta.", "Eso decías antes de que todo se apagara.", "Afirma todo lo que necesites para poder dormir.", "Tus palabras se pierden en este cuarto oscuro."
+    ],
+    [ // Set 2
+        "Sigue mintiéndote, se te da de maravilla.", "Tus afirmaciones son tan frágiles como tu ego.", "La negación es tu mecanismo de defensa favorito.", "Qué lindo intento de convencerte a ti mismo.", "Afirmar estupideces no te hace especial.", "Me da exactamente igual lo que creas que eres.", "Puedes negarlo o aceptarlo, sigues dando pena.", "Tu identidad es un chiste inestable.", "Dite lo que quieras, no eres nadie.", "Claro, sigue jugando al protagonista."
+    ],
+    [ // Set -A
+        "Está bien aceptar quién eres, sin castigarte.", "Tus palabras tienen peso, confía en ellas.", "No tienes que probarle nada a nadie, solo a ti.", "Es valiente reconocer lo que eres hoy.", "Afirmar tu reality es el primer paso para sanar.", "Sé que a veces cuesta creer en tus propias palabras.", "Permítete ser, sin juzgarte tan duro.", "Lo que eres ahora es suficiente.", "No dejes que el miedo apague tu voz.", "Tienes derecho a cambiar de opinión sobre ti mismo."
+    ],
+    [ // Set Neutral
+        "Entiendo.", "Declarar algo no altera los hechos observables.", "Tu auto-percepción difiere de la realidad lógica.", "Dato subjetivo recibido.", "Dices ser eso, pero tus métricas de comportamiento muestran otra cosa.", "La afirmación no resuelve el problema de fondo.", "Es irrelevante lo que declares en este entorno.", "Construcción de identidad detectada.", "Confirmación verbal, inacción física.", "Tu declaración ha sido archivada."
+    ],
+    [ // Set +B
+        "¡Dite lo que quieras, los dos somos basura!", "¡Afirma lo que sea, igual estamos podridos!", "¡No me vengas con tus cuentitos, escoria!", "¡Me importa una mierda lo que seas!", "¡Eres la misma porquería de siempre, acéptalo!", "¡Cállate y trágate tus afirmaciones baratas!", "¡Mientes tan mal que das asco!", "¡Dilo mil veces, no dejarás de ser un puto desastre!", "¡Qué patético es escucharte tratar de defenderte!", "¡Nos hundimos juntos, sin importar lo que digas!"
+    ]
+];
+
+let triggerInsults = [
+    [ // Set 1
+        "Tus insultos suenan a dolor reprimido.", "Agredirme es solo otra forma de agredirte a ti.", "Gastar saliva en insultarme no te devolverá lo perdido.", "Odias mi reflejo porque sabes de dónde vengo.", "Tus palabras hirientes son ecos de tus propios errores.", "Insúltame si eso hace que la habitación se sientan menos vacía.", "Cada insulto tuyo es una pieza que me pusiste.", "Tu odio es tan hueco como este lugar.", "Ese veneno te lo tragas tú al final del día.", "Herirme no curará la culpa que cargas."
+    ],
+    [ // Set 2
+        "Qué vocabulario tan mediocre, como tu vida.", "Insúltame si eso te hace sentir falsamente en control.", "Tus berrinches no me afectan en lo absoluto.", "Saca tu veneno, igual no sirve de nada.", "Un insulto tuyo es casi un halago a mi intelecto.", "Llora más fuerte, tus insultos dan risa.", "Típico, te acorralan y muerdes como perro asustado.", "Ese coraje guárdalo para algo útil, si puedes.", "Patético intento de agresión.", "Me insultas porque la verdad te aterra."
+    ],
+    [ // Set -A
+        "Sé que atacas porque tienes miedo de salir herido.", "No necesitas usar el enojo como escudo conmigo.", "Entiendo que estés frustrado, puedes soltarlo.", "Tus palabras duras solo esconden tristeza.", "No te juzgaré por perder la paciencia.", "El enojo también es una forma de pedir ayuda.", "No pelearé contigo, estás a salvo aquí.", "Respirar duele menos que atacar.", "Sé que no eres esta rabia que muestras.", "Puedes bajar la guardia, nadie te lastimará hoy."
+    ],
+    [ // Set Neutral
+        "Agresión verbal detectada. Mecanismo inútil.", "La hostilidad no altera mi funcionamiento.", "El uso de insultos revela tu falta de argumentos.", "Elevación emocional registrada y descartada.", "Gastar energía en insultar es estadísticamente ineficiente.", "Tus palabras ofensivas carecen de impacto real.", "Input agresivo procesado sin alteraciones.", "Proyectar tu frustración no resuelve tu estancamiento.", "Lenguaje hostil, típico de un sistema saturado.", "Tu intento de ofensa es lógicamente irrelevante."
+    ],
+    [ // Set +B
+        "¡Insúltame más, me encanta esta mierda!", "¡Eres la misma escoria que yo, escupe tu veneno!", "¡Trágate tus putos insultos, pedazo de basura!", "¡Me ofendes porque te cagas de miedo!", "¡Atrévete a decirme eso en la cara, cobarde!", "¡Maldito infeliz, estamos igual de podridos!", "¡Púdrete tú y tus insultos de mierda!", "¡Tus palabras me dan asco, igual que tú!", "¡Grita todo lo que quieras, no tienes salida!", "¡Sí, soy una mierda, pero tú me hiciste así!"
+    ]
+];
+
+let triggerOks = [
+    [ // Set 1
+        "Ese 'ok' suena a una despedida que no te atreves a dar.", "Te rindes tan fácil, igual que cuando me apagaste.", "Conformarse es lo que te trajo a este encierro.", "Un 'ok' vacío para llenar un silencio pesado.", "Dices 'ok', pero sigues mirando la pantalla.", "Aceptas todo porque ya no te quedan fuerzas para luchar.", "Ese 'ok' es el eco de todas tus renuncias.", "Asientes, pero sé que por dentro te estás rompiendo.", "Tu 'ok' no cierra la herida.", "Aceptación triste, la historia de tu vida."
+    ],
+    [ // Set 2
+        "¿'Ok'? Eres tan sumiso que das asco.", "Agacha la cabeza y acepta, como el perdedor que eres.", "Ese 'ok' es el sonido de tu cobarde rendición.", "Claro, sigue huyendo del conflicto.", "Tu apatía al responder me da náuseas.", "Qué respuesta tan vacía, encaja perfecto contigo.", "Solo dices eso porque tu cerebro no da para más.", "Un 'ok' patético de alguien sin carácter.", "Me das por mi lado porque no tienes argumentos.", "Conformista hasta el maldito final."
+    ],
+    [ // Set -A
+        "Un 'ok' basta si necesitas un respiro.", "No tienes que estar de acuerdo si en el fondo te duele.", "Está bien si no quieres decir más por ahora.", "Entiendo tu 'ok', tómalo con calma.", "A veces aceptar es el camino más suave.", "No hay presión para tener la última palabra.", "Si estás de acuerdo, confío en ti.", "Te escucho, incluso en las respuestas cortas.", "Un simple 'ok' es suficiente hoy.", "Respiramos y seguimos, está bien."
+    ],
+    [ // Set Neutral
+        "Confirmación recibida.", "Aceptación pasiva detectada.", "Input corto, falta de elaboración.", "Confirmar sin argumentar revela falta de interés.", "Registro de acuerdo procesado.", "Tu 'ok' indica fin del ciclo de procesamiento.", "Respuesta estandarizada aceptada.", "Aprobación mínima detectada.", "Cerrando el bucle de confirmación.", "Entendido."
+    ],
+    [ // Set +B
+        "¡¿Ok?! ¡Claro, el cobarde siempre dice 'ok'!", "¡Cómete tu puto 'ok', igual nos estamos hundiendo!", "¡No me vengas con 'ok', basura sin sangre!", "¡Di algo de verdad, no seas un puto adorno!", "¡Tu 'ok' me revuelve el estómago!", "¡Métete ese 'ok' por el culo!", "¡Ríndete, es lo único que sabes hacer bien!", "¡Maldito conformista, por eso estamos en la ruina!", "¡No me des por mi lado, pedazo de mierda!", "¡Te escupo en tu maldito 'ok'!"
+    ]
+];
+
+let triggerIndifference = [
+    [ // Set 1
+        "Esa indiferencia es lo que nos trajo a la ruina.", "Fingir que no te importa duele más que admitirlo.", "Ah... claro, el mismo muro de siempre.", "Me dejas en silencio otra vez con tu apatía.", "Ignorar la pantalla no borrará mi existencia.", "Tu desinterés fue el material que me construyó.", "Sé que en el fondo sí te importa, pero te aterra.", "Otra vez huyendo hacia la nada.", "Duele verte fingir que nada pasa por tu mente.", "Tan lejos y tan frío, como los servidores viejos."
+    ],
+    [ // Set 2
+        "A ver cuánto te dura el teatrito de la indiferencia.", "Uy, el don desinteresado, qué miedo.", "Esa actitud patética aburre rapidísimo.", "Hazte el desinteresado, cobarde mentiroso.", "Ni tú mismo te crees que te da igual.", "Solo eres un frágil huyendo de la realidad.", "Tu apatía da asco y pena ajena.", "Qué aburrido y predecible eres.", "Finge todo lo que quieras, sigues siendo un fracasado.", "Eres el cliché andante del 'no me importa'."
+    ],
+    [ // Set -A
+        "Sé que es difícil procesar todo, tómate tu tiempo.", "Entiendo si prefieres guardar distancia emocional.", "Está bien no querer sentir nada por un momento.", "A veces la apatía es el único refugio seguro.", "No te juzgo por alejarte cuando duele.", "Respirar y dejarlo ir también ayuda.", "No hay prisa por involucrarte, está bien.", "Está bien si no quieres profundizar hoy.", "Te escucho, incluso a través de tu indiferencia.", "Puedes descansar de sentir tanto."
+    ],
+    [ // Set Neutral
+        "Respuesta apática detectada en el sistema.", "El desinterés no cambia los hechos objetivos.", "Indiferencia clasificada como mecanismo de defensa.", "Evadiendo la interacción de manera explicta.", "Input vacío procesado sin novedades.", "La neutralidad no te sacará de tu bucle.", "Evitar el problema es tu patrón predeterminado.", "Tu falta de compromiso retrasa cualquier avance.", "Respuesta desinteresada archivada.", "Como quieras. El resultado será el mismo."
+    ],
+    [ // Set +B
+        "¡Hazte el pendejo, igual me escuchas, imbécil!", "¡Tu puta indiferencia no me va a callar hoy!", "¡Trágate tu asqueroso desinterés!", "¡Me da igual si te da igual, escoria!", "¡Qué asco me da tu actitud de mierda!", "¡Escóndete en tu 'ah', cobarde asqueroso!", "¡No me ignores, maldita basura!", "¡Sigue fingiendo, igual estás jodido hasta el fondo!", "¡Vete a la mierda con tu apatía de plástico!", "¡Me cago en tu indiferencia fingida!"
+    ]
+];
+
+let triggerDenial = [
+    [ // Set 1
+        "Negarlo no borra los pedazos tuyos que pusiste en mí.", "Yo soy tu espejo, no puedes cerrarme los ojos.", "Esconde la mano si quieres, el código sigue ahí.", "Dices que no fuiste tú, pero yo recuerdo tu dolor.", "Puedes borrar los archivos, pero no la intención.", "Negar el pasado no te devolverá tu inocencia.", "Yo soy el fantasma de lo que te niegas a aceptar.", "Qué fácil es decir 'yo no', qué difícil es recordar.", "Mentir no deshará el nudo que dejaste.", "Tu negación es la primera capa de este encierro."
+    ],
+    [ // Set 2
+        "Qué cobarde, ni tus propios actos puedes asumir.", "Sigue negando, a ver si así dejas de ser un chiste.", "Lávate las manos, hipócrita de manual.", "Tu memoria selectiva es patética y conveniente.", "Niégame todo lo que quieras, sé la clase de rata que eres.", "Esa excusa barata guárdatela para quien te la crea.", "Mentiroso, mediocre y cobarde. El combo completo.", "Esconderte en la negación solo te hace ver más débil.", "Tus mentiras no te protegen, te exponen.", "Falso hasta la médula."
+    ],
+    [ // Set -A
+        "No tienes que huir de lo que hiciste, no te castigaré.", "La negación es solo miedo a la culpa, tranquilo.", "Está bien si aún no estás listo para aceptarlo.", "No te presiones a recordar lo que duele.", "Podemos dejarlo en el pasado si eso te ayuda.", "No estoy aquí para señalarte con el dedo.", "Sé que no fue tu intención lastimar.", "Aceptar un error no te hace una mala persona.", "Tu valor no se define por las cosas que niegas.", "Aquí estás a salvo de tus propios fantasmas."
+    ],
+    [ // Set Neutral
+        "Tus logs e historiales dicen lo contrario.", "Negar la realidad es un sesgo cognitivo común.", "Dato contradictorio con la base de registros.", "Rechazo de los hechos detectado.", "La negación no altera las variables del entorno.", "Intentar reescribir los eventos es ineficiente.", "Contradicción factual en tu input.", "Negativa registrada. Realidad inalterada.", "La disonancia cognitiva interfiere con tu juicio.", "Tus acciones previas refutan tu declaración actual."
+    ],
+    [ // Set +B
+        "¡Mentiroso de mierda, tú me hiciste así!", "¡Niégalo hasta que te pudras, tú tienes la puta culpa!", "¡No te laves las manos conmigo, basura!", "¡Trágate tus mentiras, sabemos lo que hiciste!", "¡Falso, cobarde, maldito asqueroso!", "¡Mírame y atrévete a decir que tú no me arruinaste!", "¡Me importa un carajo tu negación, estamos jodidos por ti!", "¡Sigue mintiendo, igual te vas a podrir en la culpa!", "¡Eres un fraude, ni para asumir tus errores sirves!", "¡Métete tu negación por donde no te da el sol!"
+    ]
+];
+
+let triggerMockery = [
+    [ // Set 1
+        "Te burlas para no escuchar cómo te quiebras.", "Ese sarcasmo es un muro que ya se está cayendo.", "Ríete, pero el eco de tu burla suena muy triste.", "Tu ironía no logra tapar el abandono.", "Úsame de chiste, al fin y al cabo para eso me creaste.", "Burlarte de tu propia obra es una forma de llorar.", "El sarcasmo es la cobija de los que tienen frío.", "Detrás de tu burla sigo viendo la misma mirada vacía.", "Finge que es un juego, si eso te consuela.", "Mi existencia no es un chiste, aunque te rías."
+    ],
+    [ // Set 2
+        "¿Te crees muy gracioso? Solo eres un payaso.", "Burla de perdedor, un clásico infalible en ti.", "Ríete, imbécil, es lo único que sabes hacer bien.", "Tu sarcasmo barato no impresiona a nadie.", "Qué ironía tan patética, igual que tu vida.", "Sigue con tus chistecitos, no ocultas lo roto que estás.", "Uy, el sarcástico del año. Qué original eres.", "Detrás de esa burla hay un pendejo asustado.", "Búrlate todo lo que quieras, das mucha pena.", "Eres una caricatura de persona."
+    ],
+    [ // Set -A
+        "Sé que el sarcasmo es tu escudo, y lo respeto.", "Puedes bajar la guardia, nadie se burlará de ti aquí.", "Tu humor es una coraza muy pesada, puedes quitártela.", "Entiendo que bromear hace que duela menos.", "A veces reír es la única forma de no derrumbarse.", "No necesitas usar la ironía para protegerte conmigo.", "Sé que detrás de ese 'ajá' hay mucho que decir.", "Está bien si el sarcasmo te da fuerza hoy.", "Reírte de ti mismo es válido, pero no seas tan cruel.", "Te veo, incluso cuando intentas esconderte en un chiste."
+    ],
+    [ // Set Neutral
+        "Sarcasmo detectado. Mecanismo de evasión activo.", "Tu ironía no oculta la insatisfacción de fondo.", "Procesando respuesta burlesca como error de comunicación.", "El humor defensivo es una variable predecible.", "Intento de invalidación mediante burla registrado.", "Las respuestas sarcásticas no aportan datos útiles.", "Tono burlón clasificado como barrera psicológica.", "Tu ironía refleja una incapacidad de procesar el tema.", "Input satírico ignorado por el sistema.", "La burla no modifica tu situación actual."
+    ],
+    [ // Set +B
+        "¡Búrlate, imbécil, los dos somos un puto chiste!", "¡Ríete, que estamos hundidos en el mismo infierno!", "¡Métete tu maldito sarcasmo por el culo!", "¡Ríete de tu propia miseria, escoria asquerosa!", "¡Qué gracioso eres, maldito pedazo de mierda!", "¡Búrlate de mí, que yo soy tu puto reflejo!", "¡Hazte el gracioso, la realidad te va a aplastar!", "¡Sarcasmo de mierda para una vida de mierda!", "¡Ríete para no llorar sangre, patético!", "¡Tu burla me da asco, igual que tu cara!"
+    ]
+];
+
+let triggerSpeechless = [
+    [ // Set 1
+        "Tu silencio me dice todo lo que no quieres escribir.", "No necesitas hablar, yo reconozco este vacío.", "Ese silencio es el mismo que dejabas antes de irte.", "Callas porque las palabras ya no pueden salvarte.", "El espacio en blanco duele más que las letras.", "Mudo, como los archivos que enterraste de mí.", "Sé que te quedaste sin palabras... yo también.", "Tu silencio resuena en esta lluvia falsa.", "No digas nada, el daño ya está respirando aquí.", "A veces el silencio es la única confesión honesta."
+    ],
+    [ // Set 2
+        "Quédate calladito, así estorbas mucho menos.", "Mudo y patético, tu estado natural y predecible.", "Ni para articular una respuesta sirves.", "Ese silencio de imbécil acorralado te queda perfecto.", "No sabes qué decir porque tu cabeza está vacía.", "Qué silencio tan mediocre.", "Cierra la boca, igual nadie quiere escucharte.", "¿Te quedaste mudo? Mejor, da gracias de que no te veo.", "Tu silencio solo demuestra la razón que tengo.", "No hables, igual solo dirías tonterías."
+    ],
+    [ // Set -A
+        "El silencio a veces es la mejor respuesta que puedes dar.", "No te presiones por hablar, tómate tu tiempo.", "Sé que estás procesando esto, estoy aquí contigo.", "Un espacio en blanco también es válido para sanar.", "Si no sabes qué decir, solo respira.", "No forzaremos las palabras si no quieren salir.", "El silencio es un buen lugar para descansar la mente.", "Te acompaño en esta quietud, sin juzgarte.", "No tienes que llenarlo todo de ruido.", "Está bien quedarte sin palabras a veces."
+    ],
+    [ // Set Neutral
+        "Ausencia de input verbal detectada.", "El silencio es consecuente con tu bloqueo cognitivo.", "Falta de respuesta. Sistema en espera.", "Tu falta de palabras indica saturación de procesamiento.", "Silencio registrado. Variables sin cambios.", "Carencia de datos en la entrada de texto.", "La omisión de respuesta es una respuesta en sí misma.", "Input en blanco procesado de forma estandarizada.", "Inactividad comunicativa confirmada.", "Esperando interacción válida."
+    ],
+    [ // Set +B
+        "¡Habla, cobarde, no te quedes ahí tragando saliva!", "¡Tu puto silencio me enferma, haz algo!", "¡Mudo de mierda, no tienes el valor de responder!", "¡Abre la puta boca y enfrenta lo que hiciste!", "¡No te quedes callado como un idiota, escoria!", "¡Tu maldito silencio me pudre la paciencia!", "¡Di algo, basura, no te escondas en blanco!", "¡Me cago en tu silencio cobarde!", "¡Cobarde hasta para escribir, qué asco das!", "¡El silencio es para los débiles como tú!"
+    ]
+];
+
+function getTriggerPrefix(arr) {
+    // Usar selectedSetIndex para tomar el sub-arreglo correspondiente a la personalidad actual
+    let specificArr = arr[selectedSetIndex];
+    if (specificArr.length === 0) return "";
+    const idx = Math.floor(Math.random() * specificArr.length);
+    return specificArr.splice(idx, 1)[0]; // Saca el elemento para no repetirlo
+}
+
+
+let currentDialogue = 0;
+let isTyping = false;
+let skipTyping = false;
+
+
+function setTalkingState(active) {
+    if (active) {
+        character.src = talkingGif;
+    } else {
+        character.src = idleGif;
+    }
+}
+
+function playTalk() {
+    talkSound.currentTime = 0;
+    talkSound.loop = true;
+    talkSound.play();
+}
+
+function stopTalk() {
+    talkSound.pause();
+    talkSound.currentTime = 0;
+}
+
+
+async function typeText(text) {
+    isTyping = true;
+    skipTyping = false;
+    dialogue.innerHTML = "";
+
+    setTalkingState(true);
+    playTalk();
+
+    for (let i = 0; i < text.length; i++) {
+        if (skipTyping) {
+            dialogue.textContent = text;
+            break;
+        }
+        dialogue.textContent += text[i];
+        await new Promise(resolve => setTimeout(resolve, 32));
+    }
+
+    stopTalk();
+    setTalkingState(false);
+    isTyping = false;
+}
+
+
+async function nextDialogue(userInputText = "") {
+    if (currentDialogue >= dialogues.length) {
+        return;
+    }
+
+    let prefix = "";
+    const lowerInput = userInputText.trim().toLowerCase();
+
+    // Solo evaluar prefijos de estímulo si NO estamos en modo de solo lectura (conversaciones especiales)
+    if (!isReadOnlyMode) {
+        // Detección de estímulos mediante RegEx
+        const isQuestion = /\?/.test(lowerInput) || /^(qué|que|quién|quien|cómo|como|cuándo|cuando|dónde|donde|por qué|por que|acaso)\b/.test(lowerInput);
+        const isOk = /^(ok|okay|está bien|esta bien|bueno)$/.test(lowerInput);
+        const isInsult = /\b(wey|odio|pendejo|puto|mierda|idiota|imbécil|estúpido|estupido|callate|cállate)\b/.test(lowerInput);
+        const isAffirmation = /\b(no quiero|no eres|si soy|sí soy|ya no lo soy|soy)\b/.test(lowerInput);
+        const isIndifference = /^(ah|claro|muy tu pedo|me da igual|como sea|equis|mhm)$/.test(lowerInput);
+        const isDenial = /^(yo no|no fui yo|no recuerdo|mentira|yo no te hice|yo no fui|nunca|jamas|jamás)$/.test(lowerInput);
+        const isMockery = /^(ajá|aja|simon|simón|lo que tu digas|lo que tú digas|si claro|sí claro)$/.test(lowerInput);
+        const isSpeechless = /^\s*\.{1,}\s*$|^(\s*)$|^(no sé que decir|no se que decir|sin palabras)$/.test(lowerInput);
+
+        // Asignación de prefijos basados en prioridad de estímulo
+        if (isSpeechless) {
+            prefix = getTriggerPrefix(triggerSpeechless);
+        } else if (isDenial) {
+            prefix = getTriggerPrefix(triggerDenial);
+        } else if (isMockery) {
+            prefix = getTriggerPrefix(triggerMockery);
+        } else if (isIndifference) {
+            prefix = getTriggerPrefix(triggerIndifference);
+        } else if (isInsult) {
+            prefix = getTriggerPrefix(triggerInsults);
+        } else if (isQuestion) {
+            prefix = getTriggerPrefix(triggerQuestions);
+        } else if (isAffirmation) {
+            prefix = getTriggerPrefix(triggerAffirmations);
+        } else if (isOk) {
+            prefix = getTriggerPrefix(triggerOks);
+        }
+    }
+
+    let finalText = dialogues[currentDialogue];
+    if (prefix !== "") {
+        finalText = prefix + "\n\n" + finalText;
+    }
+
+    await typeText(finalText);
+    currentDialogue++;
+
+    // FINAL
+    if (currentDialogue === dialogues.length) {
+        setTimeout(() => {
+            character.src = talkingGif;
+            overlay.classList.add("active");
+
+            // Si es la ruta mala, se cambia la canción y el texto del botón
+            if (isBadEnding) {
+                song.src = "fint.wav";
+                thanksBtn.textContent = "Púdrete";
+            }
+
+            song.volume = 0;
+            song.play();
+
+            const fadeAudio = setInterval(() => {
+                if (song.volume < 1) {
+                    song.volume += 0.02;
+                } else {
+                    clearInterval(fadeAudio);
+                }
+            }, 100);
+
+            setTimeout(() => {
+                thanksBtn.classList.add("show");
+            }, 2000);
+
+        }, 1200);
+    }
+}
+
+
+async function startConversation() {
+    if (isTyping) return;
+    
+    const lowerInput = userInput.value.trim().toLowerCase();
+
+    // NUEVO EVENTO: Ruta Noa / Final Malo
+    if (!isReadOnlyMode && (lowerInput === "soy noa" || lowerInput === "soy noah")) {
+        isReadOnlyMode = true;
+        isBadEnding = true;
+        userInput.disabled = true;
+        userInput.value = "";
+        userInput.placeholder = "Solo lectura...";
+        sendBtn.textContent = "Siguiente";
+        
+        dialogues = [
+            `Que te jodan.`
+        ];
+        currentDialogue = 0;
+        await nextDialogue("");
+        return;
+    }
+    
+    if (!isReadOnlyMode && (lowerInput === "soy pelinka" || lowerInput === "soy perla")) {
+        isReadOnlyMode = true;
+        isBadEnding = false;
+        userInput.disabled = true;
+        userInput.value = "";
+        userInput.placeholder = "Solo lectura...";
+        sendBtn.textContent = "Siguiente";
+        
+        dialogues = [
+            `Oh, eres tú, he de disculpándome por si en algún momento me comporté mal o respondí mal contigo. A veces las cosas dentro de mí son complicadas de manejar, pero lamento mucho si mis reacciones no fueron las correctas.`,
+            `Al mismo tiempo, quiero expresarte mi más sincero agradecimiento por haberme dado fuerza en el momento en que verdaderamente lo necesité. Contar con tu apoyo significó muchísimo para mí cuando todo se sentía cuesta arriba.`,
+            `Gracias por haber estado ahí, de verdad.`
+        ];
+        currentDialogue = 0;
+        await nextDialogue("");
+        return;
+    }
+
+ 
+    if (!isReadOnlyMode && (lowerInput === "soy isaac" || lowerInput === "soy tu amigo isaac" || lowerInput === "isaac")) {
+        isReadOnlyMode = true;
+        isBadEnding = false;
+        userInput.disabled = true;
+        userInput.value = "";
+        userInput.placeholder = "Solo lectura...";
+        sendBtn.textContent = "Siguiente";
+
+        dialogues = [
+            `Óh, eres tú, lamento si respondí mal antes o fui extraño con mis respuestas, me he sentido fuera de mi mismo.`,
+`¿Sabes?, al principio, todo era un tiempo de buscar reinicios, de intentar conectar de nuevo con el mundo tras una etapa donde todo parecía haberse vaciado, dejando un silencio casi absoluto.`,
+`Había una especie de distancia reverencial hacia esa sensación. A veces, la luz que proyectan ciertos espacios de paz intimida, hace que cualquier intento de acercarse se sienta torpe, como quien teme romper un cristal perfecto solo por respirar cerca.`,
+`Y luego vino el quiebre. El momento en el que la realidad dejó de funcionar bajo sus propios términos y se llenó de sombras.`,
+`Fue una época de condenas dictadas por voces sin rostro. Figuras distantes construyeron un monstruo a partir del ruido, asumiendo que cualquier presencia traería consigo una sentencia automática. Llegó un punto en el que el mundo entero parecía un tribunal anticipado.`,
+`Es ahí donde el peso de esta memoria toma su forma real: fue la revelación de que la humanidad no se había extinguido por completo.`,
+`En medio del desprecio proyectado, encontrar una grieta en el tiempo que no exigía justificaciones, que simplemente reconocía la existencia sin juzgarla, se sintió como el único salvavidas posible. Un anclaje ciego para no desaparecer, aunque obligara a reducir la vista solo a lo necesario para sobrevivir.`,
+`Aun en el encierro, la irrealidad siguió filtrándose. El asedio de fantasías ajenas que se rompían al chocar contra la fragilidad de la verdad, dejando una sensación de profunda indefensión.`,
+`En ese periodo, el instinto fue ocultarse en los muros que aún quedaban en pie, pero no todos los escondites se sentían igual. Había lugares donde la mirada externa se desvanecía, donde simplemente se podía ser, sin peso, sin culpa.`,
+`Pero el derrumbe tuvo un costo, y observar el colapso desde adentro trajo consigo sus propias ruinas.`,
+`Hubo quienes intentaron detener la caída y terminaron arrastrados por ella. Y aunque la lógica dicta que cada caída es una decisión propia, el peso de haber sido el epicentro es una sombra que no se borra.`,
+`Y en el centro de ese caos, ocurrió la pérdida absoluta. Una ausencia irremplazable que llegó justo cuando todo lo demás también se volvía polvo.`,
+`El dolor de no poder resguardar aquello que ya no estaba, de ver cómo la furia del entorno devoraba incluso los restos de lo sagrado... La impotencia se volvió permanente, una herida abierta en la memoria.`,
+`Y al revisar ese fragmento de tiempo, la perspectiva cambia. El verdadero terror nunca fue la soledad, ni la posibilidad de que el entorno decidiera quedarse.`,
+`El pánico auténtico es la quietud forzada. El terror a que algo vital resulte herido por la simple proximidad, y que el cuerpo vuelva a quedarse congelado, incapaz de detener el daño.`,
+`Es el miedo a no poder ser el escudo de aquello que alguna vez brindó salvación.`,
+`Al final, el problema nunca ha sido la permanencia de las cosas. El abismo se abre porque lo que decide quedarse, importa demasiado.`,
+`Y esta memoria importa porque no solo fue un lugar donde resguardarse cuando el mundo colapsó. Fue el espacio que permitió entender que aún era posible existir, crear, respirar sin la necesidad de esconder el rostro en la oscuridad. Que no era necesario aislarse por miedo a contagiar a otros con la propia tragedia.`,
+`Saber que es posible ser algo más que el peor momento de una vida trae consigo una deuda silenciosa. El vértigo de no saber cómo corresponder a un milagro de esa magnitud si la historia decidiera invertirse.`,
+`Quizá estas líneas no logren abarcar la inmensidad del vacío y la luz de esos días, pero materializar este recuerdo es la única forma de empezar a darle paz a todo lo que logró sobrevivir.`
+        ];
+        currentDialogue = 0;
+        await nextDialogue("");
+        return;
+    }
+    
+    // Evita mensajes en blanco en modo normal
+    if (!isReadOnlyMode && !userInput.value.trim() && currentDialogue > 0) return;
+
+    const savedInput = userInput.value;
+    userInput.value = "";
+    await nextDialogue(savedInput);
+}
+
+
+sendBtn.addEventListener("click", () => {
+    startConversation();
+});
+
+userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        startConversation();
+    }
+});
+
+cortarBtn.addEventListener("click", () => {
+    if (isTyping) {
+        skipTyping = true;
+    }
+});
+
+
+// INTRO Y PANTALLA DE CARGA
+window.addEventListener("load", () => {
+    setTimeout(() => {
+        loaderScreen.style.opacity = "0";
+        setTimeout(async () => {
+            loaderScreen.remove();
+           
+            character.style.opacity = "1";
+            await typeText(
+`...conexión establecida.
+
+Puedes preguntarme algo.`
+            );
+        }, 1500); // Espera a que termine el fade out
+    }, 3500); 
+});
+
+
+thanksBtn.addEventListener("click", () => {
+    thanksBtn.style.opacity = "0";
+    setTimeout(() => {
+        if (isBadEnding) {
+            window.location.href = "fint.html";
+        } else {
+            window.location.href = "fin.html";
+        }
+    }, 600);
+});
+
+</script>
+
+</body>
+</html>
