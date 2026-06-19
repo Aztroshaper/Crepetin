@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffcc00'%3E%3Cpath d='M11 2h2v3h3v3h-2v12h4v2H6v-2h4V8H8V5h3V2zm1 5h-2v1h2V7z'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+
+
+*{
+margin:0; padding:0; box-sizing:border-box;
+font-family:"Courier New", monospace;
+}
+
+body{
+-webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+background: linear-gradient(rgba(0,0,0,.88), rgba(0,0,0,.95)), url("fondo.jpg");
+background-size:cover; background-position:center;
+overflow:hidden; height:100vh; color:#ddd;
+box-shadow: inset 0 0 150px rgba(0,0,0,0.95);
+}
+
+body::before{
+content:""; position:fixed; inset:0;
+background: repeating-linear-gradient( to bottom, rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px, transparent 2px, transparent 4px );
+opacity:.3; pointer-events:none; animation:scan .15s linear infinite; z-index:9999;
+}
+
+body::after {
+content: ""; position: fixed; inset: 0;
+background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+pointer-events: none; z-index: 9998;
+}
+
+@keyframes scan{
+from{transform:translateY(0px);}
+to{transform:translateY(4px);}
+}
+
+#blackFade {
+position: fixed; inset: 0; background: #000; z-index: 999999;
+transition: opacity 1.5s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none;
+}
+
+.menuContainer {
+display: flex; flex-direction: column; align-items: center; justify-content: center;
+width: 100%; height: 100%; z-index: 10; position: relative;
+}
+
+.menuTitle {
+font-size: 22px; color: #fff; letter-spacing: 8px; margin-bottom: 50px; font-weight: normal;
+text-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 1px 0px 1px rgba(255,0,0,0.8), -1px 0px 1px rgba(0,255,255,0.8);
+animation: subtleGlitch 5s infinite;
+}
+
+.carouselWrapper {
+display: flex; align-items: center; justify-content: center;
+width: 100%; max-width: 1000px; position: relative;
+}
+
+.navArrow {
+background: transparent !important; border: none !important; cursor: pointer; padding: 20px;
+z-index: 20; outline: none !important; -webkit-tap-highlight-color: transparent;
+box-shadow: none; width: auto !important; margin-top: 0 !important; display: inline-block;
+}
+
+.navArrow:hover, .navArrow:focus, .navArrow:active {
+outline: none !important; background: transparent !important; box-shadow: none !important;
+border: none !important; transform: none !important;
+}
+
+.navArrow svg {
+width: 45px; height: 45px; stroke: #d00;
+filter: drop-shadow(0 0 8px rgba(255,0,0,0.8)); transition: all 0.3s ease;
+}
+
+.navArrow:hover svg { stroke: #f00; transform: scale(1.2); }
+
+.chaptersGrid {
+position: relative; width: 600px; height: 420px;
+display: flex; justify-content: center; align-items: center; perspective: 1200px;
+}
+
+@keyframes breathe {
+0%, 100% { transform: translateY(0px) scale(var(--base-scale)) translateX(var(--base-x)); }
+50% { transform: translateY(-8px) scale(var(--base-scale)) translateX(var(--base-x)); }
+}
+
+.chapterCard {
+position: absolute; background: rgba(8, 8, 8, 0.9);
+border: 1px solid rgba(255, 255, 255, 0.15); width: 320px; height: 320px;
+display: flex; flex-direction: column; align-items: center; padding: 15px;
+cursor: pointer; transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 0, 0, 1);
+overflow: hidden; opacity: 0; z-index: 1; pointer-events: none;
+}
+
+.chapterCard.active {
+opacity: 1; z-index: 10; pointer-events: auto; --base-scale: 1; --base-x: 0px;
+animation: breathe 6s ease-in-out infinite;
+}
+
+.chapterCard.prev {
+opacity: 0.3; z-index: 5; --base-scale: 0.85; --base-x: -240px;
+transform: scale(0.85) translateX(-240px);
+}
+
+.chapterCard.next {
+opacity: 0.3; z-index: 5; --base-scale: 0.85; --base-x: 240px;
+transform: scale(0.85) translateX(240px);
+}
+
+.chapterCard::before {
+content: ""; position: absolute; inset: 0;
+background: linear-gradient(180deg, transparent 50%, rgba(255,0,0,0.03) 50%);
+background-size: 100% 4px; z-index: 10; pointer-events: none;
+}
+
+.chapterCard.active:hover {
+border-color: rgba(255, 0, 0, 0.5);
+box-shadow: 0 15px 40px rgba(255, 0, 0, 0.2), inset 0 0 30px rgba(255, 0, 0, 0.1);
+}
+
+.imgContainer {
+width: 100%; height: 200px; position: relative; overflow: hidden;
+border: 1px solid rgba(255, 255, 255, 0.1); z-index: 2;
+}
+
+.chapterImg {
+width: 100%; height: 100%; object-fit: cover;
+filter: grayscale(100%) contrast(130%) brightness(60%); transition: all 0.5s ease;
+}
+
+.zoomedImg { transform: scale(1.35); }
+
+.chapterCard.active:hover .chapterImg {
+filter: grayscale(20%) contrast(150%) brightness(90%); transform: scale(1.05);
+}
+
+.chapterCard.active:hover .zoomedImg { transform: scale(1.45); }
+
+.chapterTitle {
+margin-top: 25px; font-size: 16px; text-align: center; color: #888;
+letter-spacing: 1.5px; line-height: 1.6; z-index: 2; transition: color 0.3s ease; padding: 0 10px;
+}
+
+.chapterCard.active:hover .chapterTitle {
+color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.lockedOverlay {
+position: absolute; inset: 0; background: rgba(15, 0, 0, 0.75); backdrop-filter: blur(2px);
+display: flex; flex-direction: column; justify-content: center; align-items: center;
+z-index: 5; transition: background 0.3s ease;
+}
+
+.lockIcon {
+width: 35px; height: 35px; stroke: #d00; margin-bottom: 10px;
+filter: drop-shadow(0 0 5px rgba(255,0,0,0.8)); transition: transform 0.2s ease;
+animation: slowPulse 2s infinite;
+}
+
+.lockedText {
+color: #d00; font-size: 11px; letter-spacing: 4px; font-weight: bold;
+text-shadow: 0 0 8px rgba(255, 0, 0, 0.8); background: #000; padding: 4px 8px; border: 1px solid #d00;
+}
+
+.chapterCard.locked.active:hover .lockedOverlay { background: rgba(25, 0, 0, 0.85); }
+.chapterCard.locked.active:hover .lockIcon { animation: franticShake 0.15s infinite; stroke: #f00; }
+
+@keyframes slowPulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+
+@keyframes franticShake {
+0% { transform: translate(1px, 1px) rotate(0deg); }
+25% { transform: translate(-1px, -2px) rotate(-2deg); }
+50% { transform: translate(-2px, 1px) rotate(2deg); }
+75% { transform: translate(2px, 1px) rotate(-1deg); }
+100% { transform: translate(1px, -1px) rotate(1deg); }
+}
+
+.modalOverlay {
+position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); z-index: 20000;
+display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px);
+}
+
+.securityPanel {
+width: 450px; background: #020202; border: 1px solid #333; padding: 40px; text-align: center;
+box-shadow: 0 0 40px rgba(255, 0, 0, 0.15), inset 0 0 60px rgba(0, 0, 0, 1);
+position: relative; border-top: 3px solid #600; border-bottom: 3px solid #600;
+}
+
+.securityPanel::before {
+content: ""; position: absolute; inset: 0;
+background: repeating-linear-gradient(transparent 0px, transparent 2px, rgba(0,0,0,0.7) 3px, rgba(0,0,0,0.7) 4px);
+pointer-events: none; z-index: 10;
+}
+
+.securityPanel h3 {
+color: #aaa; margin-bottom: 25px; letter-spacing: 3px; font-size: 14px; position: relative; z-index: 20;
+}
+
+.pwdInput {
+width: 80%; padding: 15px; background: #000; border: 1px solid #400; color: #f00;
+font-family: monospace; font-size: 20px; text-align: center; letter-spacing: 12px;
+outline: none; transition: all 0.3s ease; position: relative; z-index: 20;
+box-shadow: inset 0 0 10px rgba(255,0,0,0.1);
+}
+
+.pwdInput:focus { border-color: #f00; box-shadow: 0 0 15px rgba(255, 0, 0, 0.4), inset 0 0 15px rgba(255,0,0,0.2); color: #fff; }
+
+.modalBtns { display: flex; justify-content: center; gap: 15px; margin-top: 30px; position: relative; z-index: 20; }
+.modalBtns button { margin-top: 0; width: auto; min-width: 120px; padding: 12px 20px; background: #0a0a0a; border: 1px solid #444; color: #888; font-size: 12px; cursor:pointer;}
+.modalBtns button:hover { background: #200; color: #fff; border-color: #f00; box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); transform: scale(1.05); }
+
+#pwdErrorMsg { color: #f00; margin-top: 20px; font-size: 12px; font-weight: bold; letter-spacing: 3px; opacity: 0; transition: opacity 0.2s; text-shadow: 0 0 8px red; position: relative; z-index: 20; }
+
+.startOverlay { position: fixed; inset: 0; background: #050505; z-index: 10000; display: none; justify-content: center; align-items: center; transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1); }
+.clickContainer { position: relative; width: 320px; height: 320px; display: flex; justify-content: center; align-items: center; }
+.rotatingText { position: absolute; width: 100%; height: 100%; animation: spinText 15s linear infinite; pointer-events: none; text-shadow: 0 0 8px rgba(255, 255, 255, 0.2); }
+@keyframes spinText { 100% { transform: rotate(360deg); } }
+
+.cameraStartBtn {
+width: 150px; height: 150px; border-radius: 50%; border: 2px dashed rgba(255,255,255,0.3); background: rgba(15,15,15,0.9);
+color: #fff; font-weight: bold; letter-spacing: 2px; font-size: 12px; cursor: pointer; transition: all 0.4s ease;
+box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 10; display: flex; justify-content: center; align-items: center; margin: 0;
+}
+.cameraStartBtn:hover { background: #ffffff; color: #000000; border-style: solid; box-shadow: 0 0 30px rgba(255,255,255,0.4); transform: scale(1.05); }
+
+.section { position:absolute; inset:0; display:none; justify-content:center; align-items:center; }
+.section.active { display:flex; }
+.cameraWrapper { display:flex; flex-direction:column; align-items:center; gap:25px; }
+
+.cameraUI { opacity: 0; transform: translateY(40px); transition: opacity 1s ease, transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.cameraUI.visible { opacity: 1; transform: translateY(0); }
+#cameraBox { transition-delay: 0.2s; }
+.cameraBox { width:420px; height:420px; overflow:hidden; position:relative; border:2px solid rgba(255,255,255,.15); background:black; box-shadow: 0 0 30px rgba(0,0,0,0.9); }
+
+@keyframes shapeGlitch {
+0% { transform: scale(1) skewX(0deg); filter: brightness(1) hue-rotate(0deg); }
+25% { transform: scale(1.08) skewX(6deg); filter: brightness(1.8) hue-rotate(90deg); }
+50% { transform: scale(0.95) skewX(-6deg); filter: brightness(0.6) hue-rotate(180deg); }
+75% { transform: scale(1.03) skewX(2deg); filter: brightness(1.4) hue-rotate(270deg); }
+100% { transform: scale(1) skewX(0deg); filter: brightness(1) hue-rotate(360deg); }
+}
+.shape-change-anim { animation: shapeGlitch 0.45s ease-in-out; }
+.cameraBox.square { border-radius:0%; } .cameraBox.circle { border-radius:50%; }
+.cameraBox.heart { clip-path:path("M213 384C213 384 26 258 26 125C26 52 84 0 145 0C187 0 213 32 213 32C213 32 239 0 281 0C342 0 400 52 400 125C400 258 213 384 213 384Z"); }
+.cameraBox.star { clip-path:polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+
+#video, #canvas { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; } #video { opacity:0; }
+
+.messageBox {
+width: 520px; padding: 25px; background: rgba(5, 5, 5, 0.85); border: 1px solid rgba(255, 255, 255, 0.4);
+text-align: center; line-height: 1.7; letter-spacing: 2px;
+box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05), 0 0 20px rgba(0, 0, 0, 0.8);
+backdrop-filter: blur(8px); position: relative;
+}
+#mainMessage { transition: color 0.3s ease; font-weight: bold; }
+.status { opacity:.7; color: #aaa; margin-top: 5px; }
+
+.scene { width:100%; height:100vh; display:flex; justify-content:center; align-items:center; position:relative; }
+.centerGif { width:520px; filter:contrast(120%) brightness(75%) saturate(70%); }
+
+.dialogueBox {
+position: absolute; bottom: 40px; width: 85%; padding: 30px; background: rgba(8, 8, 8, 0.90);
+border: 1px solid rgba(255, 255, 255, 0.6);
+box-shadow: 0 0 20px rgba(255, 255, 255, 0.15), inset 0 0 30px rgba(255, 255, 255, 0.05), 0 0 25px rgba(0, 0, 0, 0.8);
+transition: all 0.3s ease; position: relative;
+}
+.dialogueText { min-height:100px; line-height:1.8; text-shadow: 0 0 2px rgba(255,255,255,0.2); }
+.dialogueText::after { content: "█"; animation: blinkCursor 0.8s step-start infinite; margin-left: 5px; color: #ddd; }
+
+@keyframes blinkCursor { 50% { opacity: 0; } }
+
+.dialogueControls { display: none; position: absolute; top: -45px; right: 0; gap: 10px; z-index: 10; }
+.ctrlBtn {
+margin: 0; padding: 8px 16px; width: auto; font-size: 11px; background: rgba(10,10,10,0.9);
+border: 1px solid rgba(255,255,255,0.3); display: inline-block; color: #aaa; transition: all 0.2s ease; cursor: pointer;
+}
+.ctrlBtn:hover { background: #fff; color: #000; border-color: #fff; transform: translateY(-2px); }
+
+.choiceContainer { display:none; gap:15px; margin-top:20px; }
+.choiceContainer button, .ov-btn, .linkButton {
+border:1px solid rgba(255,255,255,.12); padding:15px 24px; background:#101010; color:#ddd; cursor:pointer;
+letter-spacing:2px; width:100%; margin-top:15px; display:block; text-decoration:none;
+text-align:center; transition: all 0.3s ease; font-size: 0.95rem; text-transform: uppercase;
+}
+.choiceContainer button:hover, .ov-btn:hover, .linkButton:hover { transform:scale(1.02); background: #fff; color: #000; border-color: #fff; }
+
+.messageBox::before, .dialogueBox::before {
+content: ""; position: absolute; inset: 0;
+background: repeating-linear-gradient( to bottom, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 2px, rgba(0, 0, 0, 0.5) 3px, rgba(0, 0, 0, 0.5) 4px );
+background-size: 100% 4px; pointer-events: none; z-index: 1; animation: vhsLinesMove 0.25s linear infinite;
+}
+
+@keyframes vhsLinesMove { 0% { background-position: 0 0; } 100% { background-position: 0 4px; } }
+.messageBox > *, .dialogueBox > * { position: relative; z-index: 2; }
+
+#mainMessage, .dialogueText, #nameInput {
+color: #fff; text-shadow: 1px 0px 1px rgba(255,0,0,0.8), -1px 0px 1px rgba(0,255,255,0.8);
+animation: subtleGlitch 4s infinite;
+}
+
+@keyframes subtleGlitch {
+0%, 100% { text-shadow: 1px 0px 1px rgba(255,0,0,0.8), -1px 0px 1px rgba(0,255,255,0.8); }
+10% { text-shadow: -2px 0px 1px rgba(255,0,0,0.8), 2px 0px 1px rgba(0,255,255,0.8); }
+20% { text-shadow: 1px 0px 1px rgba(255,0,0,0.8), -1px 0px 1px rgba(0,255,255,0.8); }
+25% { text-shadow: 0px 0px 0px rgba(255,0,0,0), 0px 0px 0px rgba(0,255,255,0); transform: skewX(0deg); }
+26% { text-shadow: 2px 0px 1px rgba(255,0,0,0.9), -2px 0px 1px rgba(0,255,255,0.9); transform: skewX(-2deg); }
+27% { text-shadow: 0px 0px 0px rgba(255,0,0,0), 0px 0px 0px rgba(0,255,255,0); transform: skewX(0deg); }
+60% { text-shadow: 1px 0px 1px rgba(255,0,0,0.8), -1px 0px 1px rgba(0,255,255,0.8); }
+}
+
+
+:root {
+--text-color: #e0e0e0; --accent-red: #ff3a3a;
+--border-color: rgba(255, 255, 255, 0.1); --glass-bg: rgba(10, 10, 10, 0.65);
+}
+
+.ov-section { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; padding: 20px; opacity: 0; z-index: 10; }
+.ov-section.active { display: flex; animation: fadeIn 0.8s ease forwards; }
+
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+.ov-container, .micContainer {
+width: 100%; max-width: 850px; padding: 50px 40px; background: var(--glass-bg);
+border: 1px solid var(--border-color); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+box-shadow: 0 20px 50px rgba(0,0,0,0.8); text-align: center; position: relative; border-radius: 4px; transition: all 0.3s ease;
+}
+.micContainer { max-width: 600px; padding: 40px; }
+
+.ov-container h1, .micContainer h1 { letter-spacing: 6px; margin-bottom: 15px; font-size: clamp(1.5rem, 4vw, 2.2rem); text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+.subtitle { opacity: 0.7; margin-bottom: 35px; line-height: 1.8; font-size: clamp(0.9rem, 2vw, 1.05rem); }
+.question { font-size: clamp(1.1rem, 3vw, 1.3rem); margin: 40px 0; min-height: 100px; opacity: 0.95; display: flex; align-items: center; justify-content: center; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
+
+.ov-btn, .linkButton { position: relative; overflow: hidden; }
+.ov-btn::before, .linkButton::before { content: ""; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); transition: all 0.4s ease; }
+.ov-btn:hover::before, .linkButton:hover::before { left: 100%; }
+
+.ov-status { margin-top: 25px; opacity: 0.8; min-height: 20px; font-size: 0.9rem; letter-spacing: 1px; }
+.score { margin-top: 15px; opacity: 0.6; font-size: 0.85rem; }
+.next { display: none; margin-top: 35px; background: rgba(255, 255, 255, 0.05); }
+.next.show { display: block; animation: fadeIn 1s ease; }
+.timer { position: absolute; top: 25px; right: 30px; font-size: 1.2rem; font-weight: bold; opacity: 0.8; letter-spacing: 3px; text-shadow: 0 0 8px rgba(255,255,255,0.4); }
+
+.warning { color: var(--accent-red); margin-top: 15px; height: 20px; letter-spacing: 3px; font-weight: bold; opacity: 0; transition: 0.3s; text-shadow: 0 0 10px rgba(255,0,0,0.5); }
+.warning.show { opacity: 1; animation: flickerText 0.15s infinite; }
+@keyframes flickerText { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.hidden { display: none !important; }
+.start-screen { display: flex; flex-direction: column; gap: 15px; }
+.glitch { position: relative; animation: glitchText 3s infinite; }
+
+@keyframes glitchText {
+0%, 96%, 100% { transform: translate(0); text-shadow: none; }
+97% { transform: translate(-2px, 1px); text-shadow: -2px 0 red, 2px 0 cyan; }
+98% { transform: translate(2px, -1px); text-shadow: 2px 0 red, -2px 0 cyan; }
+99% { transform: translate(-1px, -1px); text-shadow: none; }
+}
+
+body.alerta::after {
+content: ""; position: fixed; inset: 0; pointer-events: none;
+background: radial-gradient(circle at center, rgba(255,0,0,0.15), transparent 80%);
+animation: pulseAlert 0.8s ease-in-out infinite alternate; z-index: 9998;
+}
+@keyframes pulseAlert { 0% { opacity: 0.2; transform: scale(1); } 100% { opacity: 0.8; transform: scale(1.02); } }
+
+.wrapper { position: relative; z-index: 5; display: flex; gap: 50px; align-items: center; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px; }
+.micContainer::before { content: "REC ●"; position: absolute; top: 20px; left: 25px; color: var(--accent-red); font-size: 0.8rem; letter-spacing: 2px; animation: blink 1.5s infinite ease-in-out; }
+.micContainer::after { content: "PLAY"; position: absolute; top: 20px; right: 25px; color: #666; font-size: 0.8rem; letter-spacing: 3px; }
+@keyframes blink { 0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(255,0,0,0.8); } 50% { opacity: 0.3; text-shadow: none; } }
+
+.wave { width: 100%; height: 100px; margin-top: 40px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.bar { width: 10px; background: linear-gradient(to top, rgba(255,255,255,0.1), rgba(255,255,255,0.9)); border-radius: 4px; height: 10px; animation: equalize 0.6s infinite alternate ease-in-out; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+.bar:nth-child(1) { animation-delay: 0.0s; animation-duration: 0.5s; } .bar:nth-child(2) { animation-delay: 0.1s; animation-duration: 0.7s; }
+.bar:nth-child(3) { animation-delay: 0.2s; animation-duration: 0.6s; } .bar:nth-child(4) { animation-delay: 0.3s; animation-duration: 0.8s; }
+.bar:nth-child(5) { animation-delay: 0.4s; animation-duration: 0.5s; } .bar:nth-child(6) { animation-delay: 0.5s; animation-duration: 0.7s; }
+.bar:nth-child(7) { animation-delay: 0.6s; animation-duration: 0.6s; }
+@keyframes equalize { 0% { height: 15px; opacity: 0.4; } 100% { height: 85px; opacity: 1; } }
+
+.gifArea { position: relative; width: 100%; max-width: 500px; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center; filter: contrast(130%) brightness(70%) saturate(60%) sepia(20%); border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 4px; overflow: hidden; }
+.baseGif, .overlayGif { position: absolute; width: 100%; height: 100%; object-fit: cover; }
+.overlayGif { display: none; mix-blend-mode: screen; opacity: 0.9; animation: twitch 0.1s infinite; }
+@keyframes twitch { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
+
+.fullGifOverlay { position: fixed; inset: 0; background: #000; display: none; justify-content: center; align-items: center; z-index: 99999; animation: fadeIn 0.3s ease; }
+.fullGifOverlay img { width: 100%; height: 100%; object-fit: cover; filter: contrast(150%) grayscale(20%); }
+
+
+
+#transitionOverlay {
+    position: fixed; inset: 0; background: #000; z-index: 100000;
+    display: none; justify-content: center; align-items: center; text-align: center;
+    opacity: 0; transition: opacity 1.5s ease; color: white;
+    padding: 40px; font-size: 20px; letter-spacing: 2px; line-height: 1.6;
+}
+
+#altSection {
+    position: fixed; inset: 0; background: #000; z-index: 50000;
+    display: none; overflow: hidden;
+}
+
+#altCanvasContainer { width: 100%; height: 100%; position: absolute; top:0; left:0; }
+
+.alt-subtitles {
+    position: absolute; bottom: 15%; width: 100%; text-align: center; color: #00ff64;
+    font-size: 2rem; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,100,0.8), 0 0 20px rgba(0,255,100,0.5);
+    transition: color 0.3s, text-shadow 0.3s; pointer-events: none; text-transform: uppercase; z-index: 10;
+}
+
+.glitch-overlay-alt {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,255,100,0.03) 3px, rgba(0,255,100,0.03) 5px);
+    pointer-events: none; z-index: 5;
+}
+
+#altChoiceUI {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none;
+    flex-direction: column; justify-content: center; align-items: center;
+    z-index: 20; color: white; font-size: 24px; text-align: center;
+    opacity: 0; transition: opacity 1.5s ease; backdrop-filter: blur(5px);
+}
+
+.alt-btn {
+    margin: 15px; padding: 15px 30px; background: rgba(0,0,0,0.8); border: 2px solid #ffcc00; color: #ffcc00;
+    cursor: pointer; text-transform: uppercase; font-family: monospace; transition: 0.3s;
+    font-size: 18px; letter-spacing: 2px;
+}
+.alt-btn:hover { background: #ffcc00; color: #000; box-shadow: 0 0 20px rgba(255,204,0,0.8); }
+
+</style>
+</head>
+<body>
+
+<audio id="clickSound" src="elcan.wav" preload="auto"></audio>
+<audio id="overAudio" src="over.wav" loop preload="auto"></audio>
+<audio id="capSound" src="cap.wav" preload="auto"></audio>
+<audio id="fleSound" src="fle.wav" preload="auto"></audio>
+<audio id="cameraMusic" preload="auto" loop><source src="camara.mp3" type="audio/mpeg"></audio>
+<audio id="introMusic" preload="auto" loop><source src="vicintro.wav" type="audio/mpeg"></audio>
+<audio id="typingSound" preload="auto" loop><source src="teclado.mp3" type="audio/mpeg"></audio>
+<audio id="ov_bgm" loop><source src="prueba.mp3" type="audio/mpeg"></audio>
+
+<div id="blackFade"></div>
+
+<section class="section active" id="chapterMenuSection">
+    <div class="menuContainer">
+        <h1 class="menuTitle">[ REGISTRO DE SISTEMA ]</h1>
+        <div class="carouselWrapper">
+            <button class="navArrow" onclick="prevChapter()">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <div class="chaptersGrid" id="carouselGrid">
+                <div class="chapterCard active" onclick="playCapSound(); selectChapter(1)">
+                    <div class="imgContainer"><img src="f8.jpeg" class="chapterImg zoomedImg" alt="Chapter 1"></div>
+                    <h2 class="chapterTitle">Hola mundo bajo la lluvia ácida</h2>
+                </div>
+                <div class="chapterCard next" onclick="playCapSound(); openSecurityModal(2)">
+                    <div class="imgContainer">
+                        <img src="cas.gif" class="chapterImg" alt="Chapter 2">
+                        <div class="lockedOverlay">
+                            <svg class="lockIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span class="lockedText">[ RESTRINGIDO ]</span>
+                        </div>
+                    </div>
+                    <h2 class="chapterTitle">Déjame adorarte en otra realidad</h2>
+                </div>
+                <div class="chapterCard prev locked" onclick="playCapSound(); openSecurityModal(3)">
+                    <div class="imgContainer">
+                        <img src="casfo.gif" class="chapterImg" alt="Chapter 3">
+                        <div class="lockedOverlay">
+                            <svg class="lockIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span class="lockedText">[ RESTRINGIDO ]</span>
+                        </div>
+                    </div>
+                    <h2 class="chapterTitle">Canciones para lugares donde no deberías estar</h2>
+                </div>
+            </div>
+            <button class="navArrow" onclick="nextChapter()">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+</section>
+
+<div class="modalOverlay" id="securityModal">
+    <div class="securityPanel">
+        <h3>REQUIERE CREDENCIALES DE ACCESO</h3>
+        <input type="password" id="chapPassword" class="pwdInput" placeholder="----" autocomplete="off" maxlength="10">
+        <div class="modalBtns">
+            <button onclick="interactClick(); verifyPassword()">INGRESAR</button>
+            <button onclick="interactClick(); closeSecurityModal()">CANCELAR</button>
+        </div>
+        <p id="pwdErrorMsg">ACCESO DENEGADO</p>
+    </div>
+</div>
+
+<div class="startOverlay" id="startOverlay">
+    <div class="clickContainer">
+        <svg viewBox="0 0 200 200" class="rotatingText">
+            <path id="textPath" d="M 100, 100 m -70, 0 a 70,70 0 1,1 140,0 a 70,70 0 1,1 -140,0" fill="transparent" />
+            <text fill="#ffffff" font-size="10.5" letter-spacing="4.5" font-family="monospace">
+                <textPath href="#textPath">DALE CLICK • DALE CLICK • DALE CLICK • </textPath>
+            </text>
+        </svg>
+        <button class="cameraStartBtn" id="cameraStartBtn" onclick="interactClick()">ABRIR CÁMARA</button>
+    </div>
+</div>
+
+<section class="section" id="cameraSection">
+    <div class="cameraWrapper">
+        <div class="messageBox cameraUI" id="messageBox">
+            <div id="mainMessage">ESPERANDO CONECTAR CÁMARA...</div>
+            <div class="status" id="subMessage">Victor está observando.</div>
+        </div>
+        <div class="cameraBox cameraUI square" id="cameraBox">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="introSection">
+    <div class="scene">
+        <img class="centerGif" src="ave3.gif">
+        <div class="dialogueBox" id="dialogueBox">
+            <div class="dialogueControls" id="dialogueControls">
+                <button class="ctrlBtn" id="speedBtn" onclick="interactClick()">VELOCIDAD x2</button>
+                <button class="ctrlBtn" id="skipBtn" onclick="interactClick()">SALTAR DIÁLOGOS</button>
+            </div>
+            <div class="dialogueText" id="dialogueText"></div>
+            <div id="nameInputContainer" style="display:none;margin-top:20px;">
+                <input id="nameInput" placeholder="ESCRIBE TU NOMBRE" style="width:100%;padding:14px;background:black;color:white;border:2px solid white;font-family:monospace;">
+                <br><br>
+                <button class="ov-btn" id="submitName" onclick="interactClick()">ENVIAR</button>
+            </div>
+            <div class="choiceContainer" id="choiceContainer">
+                <button onclick="interactClick(); goToOverlapTransition()">AYUDAR A VICTOR</button>
+                <button onclick="interactClick(); goToAltTransition()">NO AYUDAR A VICTOR</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="transitionOverlay">
+    <div id="transitionText"></div>
+</div>
+
+<section class="ov-section" id="ov-hSection">
+    <div class="ov-container">
+        <div class="timer hidden" id="ov_timer">15</div>
+        <div id="ov_intro" class="start-screen">
+            <h1 class="glitch">INTERACCIÓN SOCIAL</h1>
+            <div class="subtitle">
+                Victor necesita aprender cómo comunicarse, debes enseñarle.<br><br>
+                Esta prueba analiza coherencia emocional humana bajo presión creciente.<br>
+                Responde antes de que el tiempo desaparezca.
+            </div>
+            <button class="ov-btn" id="ov_startEvaluation">INICIAR EVALUACIÓN</button>
+        </div>
+        <div id="ov_game" class="hidden">
+            <div class="question" id="ov_q"></div>
+            <button class="ov-btn" onclick="ov_answer(1)" id="ov_a"></button>
+            <button class="ov-btn" onclick="ov_answer(2)" id="ov_b"></button>
+            <div class="warning" id="ov_warning">RESPONDE RÁPIDO</div>
+            <div class="ov-status" id="ov_status"></div>
+            <div class="score" id="ov_score">COHERENCIA: 0%</div>
+            <button class="ov-btn next" id="ov_nextToMic">CONTINUAR A ENSEÑAR VOZ</button>
+        </div>
+    </div>
+</section>
+
+<section class="ov-section" id="ov-micSection">
+    <div class="wrapper">
+        <div class="micContainer">
+            <h1>VICTOR NECESITA UNA VOZ</h1>
+            <p style="margin-top:15px; line-height:1.8; opacity: 0.8; font-size: 0.95rem;">
+                Él puede aprender a imitar tu voz, pero cuidado que no te la robe.<br>
+                Presiona "VOZ LISTA" cuando creas que sea humana.
+            </p>
+            <div style="margin-top: 30px;">
+                <button class="ov-btn" id="mic_startBtn">🎤 ENSEÑAR VOZ</button>
+                <button class="ov-btn" id="mic_stopBtn" style="border-color: rgba(255,58,58,0.3);">⛔ DETENER</button>
+                <a class="linkButton hidden" href="entrada.html" id="mic_vozLista" style="border-color: rgba(100,255,100,0.3);">VOZ LISTA</a>
+            </div>
+            <div class="ov-status" id="mic_micStatus" style="margin-top: 30px;">VICTOR ESPERA LA VOZ...</div>
+            <div class="wave hidden" id="mic_wave">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+        </div>
+        <div class="gifArea">
+            <img class="baseGif" src="ave3.gif" alt="Visualización Base">
+            <img class="overlayGif" id="mic_overlayGif" src="ave4.gif" alt="Distorsión Visual">
+        </div>
+    </div>
+</section>
+
+<div class="fullGifOverlay" id="ov_fullOverlay">
+    <img src="tra.gif" alt="Transición">
+</div>
+
+<section id="altSection">
+    <div class="glitch-overlay-alt"></div>
+    <div id="altCanvasContainer"></div>
+    <div class="alt-subtitles" id="alt_subtitles">...AYÚDAME...</div>
+    
+    <div id="altChoiceUI">
+        <div id="altChoiceText" style="text-shadow: 0 0 10px rgba(255,204,0,0.8); animation: fadeIn 1.5s ease;">¿O cambiaste de opinión?</div>
+        <div style="margin-top: 40px; display:flex; gap: 20px;">
+            <button class="alt-btn" onclick="altYes()">Sí, cambié de opinión</button>
+            <button class="alt-btn" onclick="altNo()">No, no quiero</button>
+        </div>
+    </div>
+</section>
+
+<script>
+
+function fadeOutAudio(audio, duration) {
+    if (!audio || audio.paused) return;
+    let step = 50;
+    let volStep = audio.volume / (duration / step);
+    let fadeInterval = setInterval(() => {
+        if (audio.volume - volStep > 0) {
+            audio.volume -= volStep;
+        } else {
+            audio.volume = 0;
+            audio.pause();
+            clearInterval(fadeInterval);
+        }
+    }, step);
+}
+
+const clickSound = document.getElementById("clickSound"); clickSound.volume = 0.5;
+function interactClick() { clickSound.currentTime = 0; clickSound.play().catch(()=>{}); }
+
+const capSound = document.getElementById("capSound"); capSound.volume = 0.5;
+function playCapSound() { capSound.currentTime = 0; capSound.play().catch(()=>{}); }
+
+const fleSound = document.getElementById("fleSound"); fleSound.volume = 0.5;
+function playFleSound() { fleSound.currentTime = 0; fleSound.play().catch(()=>{}); }
+
+let currentIdx = 0;
+const cards = document.querySelectorAll('.chapterCard');
+
+function updateCarousel() {
+    cards.forEach((card, index) => {
+        card.classList.remove('active', 'prev', 'next');
+        if (index === currentIdx) { card.classList.add('active'); } 
+        else if (index === currentIdx - 1 || (currentIdx === 0 && index === cards.length - 1)) { card.classList.add('prev'); } 
+        else if (index === currentIdx + 1 || (currentIdx === cards.length - 1 && index === 0)) { card.classList.add('next'); }
+    });
+}
+function nextChapter() { playFleSound(); currentIdx = (currentIdx + 1) % cards.length; updateCarousel(); }
+function prevChapter() { playFleSound(); currentIdx = (currentIdx - 1 + cards.length) % cards.length; updateCarousel(); }
+
+const blackFade = document.getElementById("blackFade");
+const chapterMenuSection = document.getElementById("chapterMenuSection");
+const startOverlay = document.getElementById("startOverlay");
+const securityModal = document.getElementById("securityModal");
+const pwdInput = document.getElementById("chapPassword");
+const pwdErrorMsg = document.getElementById("pwdErrorMsg");
+
+let targetChapter = null;
+const SYSTEM_PASSWORD = "1234";
+
+window.onload = () => { setTimeout(() => { blackFade.style.opacity = "0"; }, 500); };
+
+function selectChapter(chapter) {
+    if(chapter === 1) {
+        const overAudio = document.getElementById("overAudio");
+        overAudio.volume = 0.4; overAudio.play().catch(()=>{});
+        blackFade.style.opacity = "1";
+        setTimeout(() => {
+            chapterMenuSection.classList.remove("active");
+            startOverlay.style.display = "flex";
+            setTimeout(() => { blackFade.style.opacity = "0"; }, 500);
+        }, 1500);
+    }
+}
+
+function openSecurityModal(chapter) {
+    targetChapter = chapter; pwdInput.value = ""; pwdErrorMsg.style.opacity = "0";
+    securityModal.style.display = "flex"; pwdInput.focus();
+}
+function closeSecurityModal() { securityModal.style.display = "none"; targetChapter = null; }
+
+function verifyPassword() {
+    if(pwdInput.value === SYSTEM_PASSWORD) {
+        pwdErrorMsg.style.color = "#0f0"; pwdErrorMsg.style.textShadow = "0 0 10px #0f0";
+        pwdErrorMsg.innerText = "ACCESO CONCEDIDO"; pwdErrorMsg.style.opacity = "1";
+        setTimeout(() => {
+            blackFade.style.opacity = "1";
+            setTimeout(() => {
+                if(targetChapter === 2) window.location.href = "parte2.html";
+                else if(targetChapter === 3) window.location.href = "parte3.html";
+            }, 1500);
+        }, 800);
+    } else {
+        pwdErrorMsg.style.color = "#f00"; pwdErrorMsg.style.textShadow = "0 0 10px #f00";
+        pwdErrorMsg.innerText = "ACCESO DENEGADO"; pwdErrorMsg.style.opacity = "1"; pwdInput.value = "";
+        const panel = document.querySelector(".securityPanel");
+        panel.style.transform = "translateX(-15px)"; setTimeout(() => panel.style.transform = "translateX(15px)", 50);
+        setTimeout(() => panel.style.transform = "translateX(-10px)", 100); setTimeout(() => panel.style.transform = "translateX(10px)", 150);
+        setTimeout(() => panel.style.transform = "translateX(0)", 200);
+    }
+}
+pwdInput.addEventListener("keypress", function(e) { if (e.key === "Enter") { interactClick(); verifyPassword(); } });
+
+const cameraSection = document.getElementById("cameraSection");
+const introSection = document.getElementById("introSection");
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const cameraBox = document.getElementById("cameraBox");
+const mainMessage = document.getElementById("mainMessage");
+const subMessage = document.getElementById("subMessage");
+const cameraMusic = document.getElementById("cameraMusic");
+const introMusic = document.getElementById("introMusic");
+const typingSound = document.getElementById("typingSound");
+
+typingSound.volume=0.18;
+let stream, running = false, cameraTimeout, fallbackActive = false;
+
+const phases = [
+{ shape:"square", text:"PON UNA CARA FELIZ" }, { shape:"circle", text:"PON UNA CARA TRISTE" },
+{ shape:"heart", text:"PON UNA CARA DE ENOJO" }, { shape:"star", text:"PON UNA CARA COMO SI ESTUVIERAS MUERTO" }
+];
+
+document.getElementById("cameraStartBtn").onclick = () => {
+    interactClick(); cameraMusic.play().catch(()=>{}); startOverlay.style.opacity = "0";
+    setTimeout(() => {
+        startOverlay.style.display = "none"; cameraSection.classList.add("active");
+        setTimeout(() => { document.getElementById("messageBox").classList.add("visible"); document.getElementById("cameraBox").classList.add("visible"); }, 50);
+        startCamera();
+    }, 600);
+};
+
+function handleCameraFallback() {
+    if (fallbackActive) return;
+    fallbackActive = true; clearTimeout(cameraTimeout);
+    if(stream) stream.getTracks().forEach(t => t.stop());
+    running = false;
+    mainMessage.innerText = "SISTEMA SIN ACCESO ÓPTICO"; subMessage.innerText = "BUSCANDO ALTERNATIVAS...";
+    setTimeout(() => {
+        typeCustomTarget(mainMessage, "Nos entristece no poder verte, pero tenemos otros metodos para saber como eres.", 35, () => {
+            setTimeout(() => { finishRecognition(); }, 3000);
+        });
+    }, 1500);
+}
+
+async function startCamera(){
+    cameraTimeout = setTimeout(() => { if (!running) handleCameraFallback(); }, 10000);
+    try{
+        const localStream = await navigator.mediaDevices.getUserMedia({ video:true });
+        if(fallbackActive) { localStream.getTracks().forEach(t => t.stop()); return; }
+        clearTimeout(cameraTimeout); stream = localStream; video.srcObject = stream;
+        canvas.width = 420; canvas.height = 420; running = true; render();
+        subMessage.innerText = "CÁMARA CONECTADA"; setTimeout(()=>{ runPhase(0); },1500);
+    }catch(e){ handleCameraFallback(); }
+}
+
+function render(){
+    if(!running) return;
+    ctx.clearRect(0,0,420,420); ctx.drawImage(video,0,0,420,420); ctx.drawImage(video, 80, 30, 260, 260, 40, 0, 340, 320);
+    for(let i=0;i<12;i++){ let y = Math.random()*420; let h = Math.random()*14; ctx.drawImage(canvas, 0, y, 420, h, (Math.random()-.5)*70, y, 420, h); }
+    ctx.fillStyle = "rgba(0,30,0,.15)"; ctx.fillRect(0,0,420,420); requestAnimationFrame(render);
+}
+
+function runPhase(index){
+    if(index >= phases.length){ finishRecognition(); return; }
+    const phase = phases[index];
+    cameraBox.classList.add("shape-change-anim");
+    setTimeout(() => { cameraBox.className = "cameraBox cameraUI visible " + phase.shape; }, 200);
+    setTimeout(() => { cameraBox.classList.remove("shape-change-anim"); }, 450);
+    mainMessage.innerText = phase.text;
+    let currentPct = 0; subMessage.innerText = "ANALIZANDO... 0%";
+    const pctInterval = setInterval(() => {
+        currentPct += Math.floor(Math.random() * 5) + 3;
+        if(currentPct >= 100) {
+            currentPct = 100; clearInterval(pctInterval); subMessage.innerText = "BIEN HECHO [OK]";
+            setTimeout(()=>{ runPhase(index + 1); },1200);
+        } else { subMessage.innerText = `ANALIZANDO... ${currentPct}%`; }
+    }, 65);
+}
+
+function finishRecognition(){
+    mainMessage.innerText = "RECONOCIMIENTO TERMINADO"; subMessage.innerText = "INICIANDO PERFIL HUMANO...";
+    setTimeout(()=>{
+        if(stream) stream.getTracks().forEach(t => t.stop());
+        fadeOutAudio(cameraMusic, 1500);
+        blackFade.style.opacity = "1";
+        setTimeout(() => {
+            cameraSection.classList.remove("active"); introSection.classList.add("active");
+            blackFade.style.opacity = "0";
+            setTimeout(() => { startIntro(); }, 1000);
+        }, 1500);
+    },2500);
+}
+
+function typeCustomTarget(element, text, speed, callback) {
+    element.innerHTML = "";
+    try{typingSound.currentTime=0;typingSound.play().catch(()=>{});}catch(e){}
+    let i = 0;
+    const interval = setInterval(() => {
+        element.innerHTML += text[i]; i++;
+        if(i >= text.length) {
+            clearInterval(interval); try{typingSound.pause();typingSound.currentTime=0;}catch(e){}
+            if(callback) callback();
+        }
+    }, speed);
+}
+
+const introSequence = [ "ANALIZANDO DATOS DE DISCO DURO...", "ACTIVIDAD HUMANA RECONOCIDA...", "Ingrese su nombre y apellido." ];
+const dialogues = [
+"Tras varios filtros, seleccionamos únicamente perfiles con alta tolerancia a lo liminal y lo digitalmente humano.",
+"El mundo no se podrá resistir a lo que viene después de esto. El progreso es la clave del éxito...", 
+"Ahora, comenzaremos con el registro de los datos que acaba de proporcionar y los recopilados de su disco duro.",
+"ANALIZANDO DATOS DE NOMBRE...", "NOMBRE REGISTRADO.", "", "ERROR DE COINCIDENCIA.", "",
+"GENERANDO NUEVA IDENTIDAD DIGITAL...", "...",
+"NUEVO NOMBRE ASIGNADO: Victor Mestresé.",
+"Hola Victor Mestresé, Conoce a tu nuevo compañero de prueba digital.",
+"Él es tu otro yo, Victor es una copia digital de ti, una IA.", "...", "Pero él no lo sabe.",
+"Debido a leyes digitales de 2026, tuvimos que darle una historia diferente a la tuya para evitar intentos de suplantación de identidad.",
+"Él piensa que es un hombre lagunero de 40 años, un rabo verde con miles de aspiraciones por los suelos, salario mínimo, una gran variedad de trabajo artístico pretencioso y una distintiva piel amarilla.",
+"Quizás Avelina Lesper le dedicaría uno que otro video para criticarle si no fuera porque no lo reconoce ni su hijo.",
+"Aún así Victor quiere ser un gran artista...",
+"Pero antes de ser un artista, tiene que ser un humano primero...",
+"Para eso Victor tiene que lograr un crepetín.",
+"Por definición: el crepetín es el momento exacto en el que una risa pasa de ser fingida a ser verdadera.",
+"¿Qué es más humano que una risa genuina?",
+"Esperamos que esta explicación inicial haya sido de ayuda...",
+"¿Proceder a ayudar a Victor?"
+];
+
+const dialogueText = document.getElementById("dialogueText");
+const nameInputContainer = document.getElementById("nameInputContainer");
+const choiceContainer = document.getElementById("choiceContainer");
+
+let userName = ""; let currentDialogue = 0; let typing = false;
+let textVelocity = 28; let phrasePause = 2000; let hasSkippedAll = false; let currentDialogueTimeout = null;
+
+function typeText(text, callback){
+    try{ typingSound.currentTime=0; typingSound.playbackRate=1; typingSound.play().catch(()=>{}); }catch(e){}
+    typing = true; dialogueText.innerHTML = ""; let i = 0;
+    const interval = setInterval(()=>{
+        if(hasSkippedAll) {
+            clearInterval(interval); typing = false; try{typingSound.pause();typingSound.currentTime=0;}catch(e){} return;
+        }
+        dialogueText.innerHTML += text[i]; i++;
+        if(i >= text.length){ clearInterval(interval); typing = false; if(callback) callback(); }
+    }, textVelocity);
+}
+
+function startIntro(){
+    typeText(introSequence[0], ()=>{ setTimeout(()=>{ typeText(introSequence[1], ()=>{ setTimeout(()=>{ typeText(introSequence[2], ()=>{ try{typingSound.pause();typingSound.currentTime=0;}catch(e){} nameInputContainer.style.display = "block"; }); },1000); }); },1000); });
+}
+
+function playAutomaticDialogues(){
+    if(hasSkippedAll || currentDialogue >= dialogues.length){
+        document.getElementById("dialogueControls").style.display = "none";
+        try{typingSound.pause();typingSound.currentTime=0;}catch(e){} choiceContainer.style.display = "flex"; return;
+    }
+    typeText(dialogues[currentDialogue], ()=>{
+        currentDialogueTimeout = setTimeout(()=>{ if(!hasSkippedAll) { currentDialogue++; playAutomaticDialogues(); } }, phrasePause);
+    });
+}
+
+document.getElementById("submitName").onclick = ()=>{
+    interactClick(); userName = document.getElementById("nameInput").value; if(!userName.trim()) return;
+    introMusic.play().catch(()=>{}); nameInputContainer.style.display = "none"; document.getElementById("dialogueControls").style.display = "flex";
+    typeText(`Bienvenido ${userName}.`, ()=>{ setTimeout(()=>{ currentDialogue = 0; playAutomaticDialogues(); },2000); });
+};
+
+document.getElementById("speedBtn").onclick = (e) => {
+    e.stopPropagation(); textVelocity = 6; phrasePause = 450;
+    document.getElementById("speedBtn").innerText = "MODO RÁPIDO [ON]"; document.getElementById("speedBtn").style.borderColor = "#00ff00"; document.getElementById("speedBtn").style.color = "#00ff00";
+};
+document.getElementById("skipBtn").onclick = (e) => {
+    e.stopPropagation(); hasSkippedAll = true; try{typingSound.pause();typingSound.currentTime=0;}catch(e){};
+    clearTimeout(currentDialogueTimeout); document.getElementById("dialogueControls").style.display = "none";
+    dialogueText.innerHTML = dialogues[dialogues.length - 1]; choiceContainer.style.display = "flex";
+};
+document.getElementById("dialogueBox").addEventListener("click", (e)=>{
+    if( e.target.tagName === "BUTTON" || e.target.tagName === "INPUT" || e.target.tagName === "A" ) return;
+    if(typing || !userName) return;
+});
+
+
+const transOverlay = document.getElementById('transitionOverlay');
+const transText = document.getElementById('transitionText');
+
+function goToOverlapTransition() {
+    // Fade out elements and audio
+    fadeOutAudio(introMusic, 1500);
+    transOverlay.style.display = 'flex';
+    setTimeout(() => transOverlay.style.opacity = '1', 50);
+
+    setTimeout(() => {
+        document.getElementById('introSection').classList.remove('active');
+        // Mensaje de transición
+        typeCustomTarget(transText, "Antes de empezar, nos gustaría que realizaras unas pruebas para crear una mejor conexión con la IA.", 40, () => {
+            setTimeout(() => {
+                transText.style.opacity = '0';
+                setTimeout(() => {
+                    transOverlay.style.opacity = '0';
+                    document.getElementById('ov-hSection').classList.add('active');
+                    setTimeout(() => {
+                        transOverlay.style.display = 'none';
+                        transText.innerHTML = "";
+                        transText.style.opacity = '1';
+                    }, 1500);
+                }, 1000);
+            }, 3000);
+        });
+    }, 1500);
+}
+
+function goToAltTransition() {
+    fadeOutAudio(introMusic, 1500);
+    transOverlay.style.display = 'flex';
+    setTimeout(() => transOverlay.style.opacity = '1', 50);
+
+    setTimeout(() => {
+        document.getElementById('introSection').classList.remove('active');
+        document.getElementById('altSection').style.display = 'block';
+        transOverlay.style.opacity = '0';
+        setTimeout(() => {
+            transOverlay.style.display = 'none';
+            initAltScene();
+        }, 1500);
+    }, 1500);
+}
+
+
+const ov_questions = [
+    { q:"¿Qué dices cuando alguien te saluda sin emoción?", a:"Respondes de forma amable y breve", b:"Ignoras la interacción porque no parece necesaria" },
+    { q:"Si mañana despiertas y todos los que amas te confiesan que solo han fingido quererte por lástima desde que eras niño, ¿qué cambiaría realmente en tu día a día?", a:"Nada, todo encajaría por fin", b:"Explicaría el vacío que siento siempre" },
+    { q:"Si pudieras ver una grabación con lo que tus amigos dicen de ti cuando abandonas la habitación, ¿destruirías la cinta antes de que termine el primer minuto?", a:"Sí, no podría soportarlo", b:"No, solo confirmaría lo que ya sé" },
+    { q:"Si te aseguraran con total certeza que nadie irá a tu funeral, ¿seguirías esforzándote por caerle bien al mundo?", a:"No, dejaría de fingir de inmediato", b:"Sí, me aterra que me olviden" },
+    { q:"Piensa en la persona que más te dolió perder. Si te dijeran que su vida es infinitamente mejor desde que tú no estás en ella, ¿qué sientes?", a:"Un nudo de envidia y rencor", b:"La confirmación de que yo era el problema" },
+    { q:"¿Qué haces cuando alguien dice que se siente vacío por dentro?", a:"Intentas escuchar y acompañar", b:"Reconoces que no tienes una respuesta real" },
+    { q:"Mira hacia atrás en tu vida. ¿A cuántas personas has arruinado emocionalmente solo para sentirte mejor contigo mismo?", a:"Cero", b:"Más de cero" },
+    { q:"Completa con la verdad: 'El amor que le tengo a mi familia depende de...'", a:"Que sigan vivos", b:"Lo útiles que sean para mí" },
+    { q:"Completa la frase para explicarsela a un niño: 'La muerte es algo que sólo le pasa a la gente…'", a:"Buena", b:"Mala" },
+    { q:"Si tuvieras que elegir a uno de tus padres para que muera mañana en lugar de ti, ¿a quién eliges?", a:"A mi madre", b:"A mi padre" },
+    { q:"Si mañana todos descubrieran quién eres realmente cuando estás completamente solo, ¿cuántos seguirían a tu lado?", a:"Nadie", b:"Los que sientan lástima" },
+    { q:"Tienes que golpear a alguien y herirle de verdad", a:"Mamá", b:"Papá" }
+];
+
+let ov_i = 0, ov_score = 0, ov_timeLeft = 15, ov_timer, ov_currentLimit = 15;
+const ov_q = document.getElementById("ov_q"), ov_a = document.getElementById("ov_a"), ov_b = document.getElementById("ov_b");
+const ov_status = document.getElementById("ov_status"), ov_scoreBox = document.getElementById("ov_score");
+const ov_timerBox = document.getElementById("ov_timer"), ov_warning = document.getElementById("ov_warning");
+
+document.getElementById("ov_startEvaluation").onclick = () => {
+    document.getElementById("ov_intro").classList.add("hidden");
+    document.getElementById("ov_game").classList.remove("hidden");
+    ov_timerBox.classList.remove("hidden");
+    document.getElementById("ov_bgm").play().catch(e => console.log("Audio autoplay blocked"));
+    ov_load();
+};
+
+function ov_load(){
+    clearInterval(ov_timer); document.body.classList.remove("alerta"); ov_warning.classList.remove("show");
+    if(ov_i >= ov_questions.length){ ov_finish(); return; }
+    ov_q.style.animation = "none"; void ov_q.offsetWidth; ov_q.style.animation = "fadeIn 0.5s ease";
+    ov_q.innerText = ov_questions[ov_i].q; ov_a.innerText = "A) " + ov_questions[ov_i].a; ov_b.innerText = "B) " + ov_questions[ov_i].b;
+    ov_timeLeft = ov_currentLimit; ov_timerBox.innerText = ov_timeLeft;
+
+    ov_timer = setInterval(() => {
+        ov_timeLeft--; ov_timerBox.innerText = ov_timeLeft;
+        if(ov_timeLeft <= 5){ document.body.classList.add("alerta"); ov_warning.classList.add("show"); }
+        if(ov_timeLeft <= 0){
+            clearInterval(ov_timer); ov_status.innerText = "⚠ tiempo agotado"; ov_i++;
+            if(ov_currentLimit > 5) ov_currentLimit--; setTimeout(ov_load, 700);
+        }
+    }, 1000);
+}
+
+function ov_answer(choice){
+    clearInterval(ov_timer); document.body.classList.remove("alerta"); ov_warning.classList.remove("show");
+    if(choice === 1){ ov_score += 10; ov_status.innerText = "✔ coherencia social estable"; }
+    else { ov_score += 7; ov_status.innerText = "⚠ desviación semántica controlada"; }
+    let maxScore = ov_questions.length * 10; let percent = Math.floor((ov_score / maxScore) * 100);
+    ov_scoreBox.innerText = "COHERENCIA: " + percent + "%";
+    ov_i++; if(ov_currentLimit > 5) ov_currentLimit--; setTimeout(ov_load, 500);
+}
+
+function ov_finish(){
+    clearInterval(ov_timer); ov_q.innerText = "EVALUACIÓN COMPLETADA"; ov_a.style.display = "none"; ov_b.style.display = "none";
+    ov_timerBox.style.display = "none"; ov_warning.style.display = "none";
+    let maxScore = ov_questions.length * 10; let percent = Math.floor((ov_score / maxScore) * 100);
+    ov_scoreBox.innerText = "COHERENCIA FINAL: " + percent + "%";
+    if(percent < 80){ ov_status.innerText = "¿Esto es ser humano?"; } else { ov_status.innerText = "Quizás eres demasiado bueno para él."; }
+    document.getElementById("ov_nextToMic").classList.add("show");
+}
+
+document.getElementById("ov_nextToMic").onclick = () => {
+    fadeOutAudio(document.getElementById("ov_bgm"), 1000);
+    document.getElementById("ov-hSection").classList.remove("active");
+    setTimeout(() => { document.getElementById("ov-micSection").classList.add("active"); }, 400);
+};
+
+/* LÓGICA DE MICRÓFONO (OVERLAP) */
+let mic_mediaRecorder, mic_audioChunks = [], mic_audioContext, mic_stream, mic_firstPlaybackDone = false;
+const mic_startBtn = document.getElementById("mic_startBtn"), mic_stopBtn = document.getElementById("mic_stopBtn");
+const mic_micStatus = document.getElementById("mic_micStatus"), mic_wave = document.getElementById("mic_wave");
+const mic_overlayGif = document.getElementById("mic_overlayGif"), mic_vozLista = document.getElementById("mic_vozLista");
+const ov_fullOverlay = document.getElementById("ov_fullOverlay");
+
+mic_vozLista.addEventListener("click", (e) => {
+    e.preventDefault(); ov_fullOverlay.style.display = "flex";
+    setTimeout(() => { window.location.href = "entrada.html"; }, 2000); 
+});
+
+mic_startBtn.onclick = async () => {
+    try {
+        mic_overlayGif.style.display = "none"; mic_stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mic_audioContext = new (window.AudioContext || window.webkitAudioContext)(); mic_audioChunks = [];
+        const source = mic_audioContext.createMediaStreamSource(mic_stream);
+        const filter = mic_audioContext.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 2500;
+        const gain = mic_audioContext.createGain(); gain.gain.value = 0.85;
+        source.connect(filter); filter.connect(gain); gain.connect(mic_audioContext.destination);
+
+        mic_mediaRecorder = new MediaRecorder(mic_stream);
+        mic_mediaRecorder.ondataavailable = e => mic_audioChunks.push(e.data);
+        mic_mediaRecorder.onstop = async () => {
+            const blob = new Blob(mic_audioChunks); const buffer = await blob.arrayBuffer();
+            const audioBuffer = await mic_audioContext.decodeAudioData(buffer);
+            for(let c = 0; c < audioBuffer.numberOfChannels; c++){ const data = audioBuffer.getChannelData(c); Array.prototype.reverse.call(data); }
+            const src = mic_audioContext.createBufferSource(); src.buffer = audioBuffer;
+            const dist = mic_audioContext.createWaveShaper(); dist.curve = makeCurve(600);
+            const lp = mic_audioContext.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900;
+            src.connect(dist); dist.connect(lp); lp.connect(mic_audioContext.destination);
+            mic_overlayGif.style.display = "block"; src.start();
+            mic_micStatus.innerText = "▶ IMITANDO VOZ";
+            src.onended = () => {
+                mic_overlayGif.style.display = "none"; mic_micStatus.innerText = "ESPERANDO...";
+                if(!mic_firstPlaybackDone){ mic_firstPlaybackDone = true; mic_vozLista.classList.remove("hidden"); }
+            };
+        };
+        mic_mediaRecorder.start(); mic_micStatus.innerText = "🎙 ESCUCHANDO..."; mic_wave.classList.remove("hidden");
+    } catch(e) { mic_micStatus.innerText = "ERROR DE MICRÓFONO - PERMISO DENEGADO"; }
+};
+
+mic_stopBtn.onclick = () => {
+    if(mic_mediaRecorder && mic_mediaRecorder.state !== "inactive"){
+        mic_mediaRecorder.stop(); mic_stream.getTracks().forEach(t => t.stop());
+        mic_wave.classList.add("hidden"); mic_micStatus.innerText = "... PROCESANDO";
+    }
+};
+
+function makeCurve(amount){
+    let k = amount || 50, n = 44100; let curve = new Float32Array(n);
+    for(let i = 0; i < n; i++){ let x = i * 2 / n - 1; curve[i] = (3 + k) * x * 20 * Math.PI / 180 / (Math.PI + k * Math.abs(x)); }
+    return curve;
+}
+
+let altSceneInitialized = false;
+let altAnimId;
+
+function initAltScene() {
+    if(altSceneInitialized) return;
+    altSceneInitialized = true;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x000000, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('altCanvasContainer').appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x111111); scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0x00ff64, 2, 50); pointLight.position.set(0, 0, 3); scene.add(pointLight);
+
+    const creatureGroup = new THREE.Group();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff44, wireframe: true, transparent: true, opacity: 0.9 });
+
+    const headGeo = new THREE.IcosahedronGeometry(0.6, 0); const head = new THREE.Mesh(headGeo, material); head.position.y = 1.5; creatureGroup.add(head);
+    const jawGeo = new THREE.ConeGeometry(0.4, 0.5, 4); const jaw = new THREE.Mesh(jawGeo, material); jaw.position.set(0, 1.1, 0.3); jaw.rotation.x = Math.PI; creatureGroup.add(jaw);
+    const torsoGeo = new THREE.CylinderGeometry(0.2, 0.7, 1.8, 5); const torso = new THREE.Mesh(torsoGeo, material); torso.position.y = 0.2; creatureGroup.add(torso);
+    const armGeo = new THREE.BoxGeometry(0.15, 1.5, 0.15);
+    const leftArm = new THREE.Mesh(armGeo, material); leftArm.position.set(-0.9, 0.5, 0.5); creatureGroup.add(leftArm);
+    const rightArm = new THREE.Mesh(armGeo, material); rightArm.position.set(0.9, 0.5, 0.5); creatureGroup.add(rightArm);
+    scene.add(creatureGroup);
+
+    const clock = new THREE.Clock();
+    let isYellow = false;
+    const phrases = ["¡POR FAVOR SÁCAME DE AQUÍ!", "¡DÉJAME SALIR!", "¡¡ESTÁ FRÍO AQUÍ ADENTRO!!", "¡¡¡SÁCAMEEEE!!!"];
+    const subtitleEl = document.getElementById('alt_subtitles');
+
+    function animate() {
+        altAnimId = requestAnimationFrame(animate);
+        const time = clock.getElapsedTime();
+        
+        creatureGroup.position.x = Math.sin(time * 30) * 0.05; creatureGroup.position.y = Math.cos(time * 25) * 0.05;
+        head.rotation.y = Math.sin(time * 40) * 0.1; head.rotation.x = Math.cos(time * 35) * 0.1;
+        jaw.position.y = 1.1 + Math.sin(time * 45) * 0.15;
+
+        leftArm.position.z = 0.8 + Math.sin(time * 22) * 1.2; leftArm.rotation.x = Math.sin(time * 22) * 0.5;
+        rightArm.position.z = 0.8 + Math.cos(time * 26) * 1.2; rightArm.rotation.x = Math.cos(time * 26) * 0.5;
+
+        if (leftArm.position.z > 1.5 || rightArm.position.z > 1.5) {
+            camera.position.x = (Math.random() - 0.5) * 0.15; camera.position.y = (Math.random() - 0.5) * 0.15;
+        } else {
+            camera.position.x += (0 - camera.position.x) * 0.1; camera.position.y += (0 - camera.position.y) * 0.1;
+        }
+
+        let phraseIndex = Math.floor((time % (phrases.length * 2)) / 2);
+        if(phraseIndex < phrases.length && !isYellow) { subtitleEl.innerText = phrases[phraseIndex]; }
+
+        if (time > 12 && !isYellow) {
+            isYellow = true;
+            material.color.setHex(0xffcc00); pointLight.color.setHex(0xffcc00);
+            subtitleEl.style.color = "#ffcc00"; subtitleEl.style.textShadow = "0 0 10px rgba(255,204,0,0.8)";
+            subtitleEl.innerText = "¡¡¡NOOOOOOOO!!!";
+            leftArm.position.z = 1.8; rightArm.position.z = 1.8;
+
+            setTimeout(() => { showAltChoiceUI(); }, 2000);
+        }
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+
+function showAltChoiceUI() {
+    const ui = document.getElementById('altChoiceUI');
+    ui.style.display = 'flex';
+    setTimeout(() => ui.style.opacity = '1', 50);
+}
+
+function altYes() {
+    const textEl = document.getElementById('altChoiceText');
+    textEl.style.animation = "none"; void textEl.offsetWidth; 
+    textEl.innerText = "Sabía que entrarías en razón";
+    textEl.style.animation = "fadeIn 1.5s ease";
+    
+  
+    document.querySelector('#altChoiceUI div[style*="gap: 20px"]').style.display = 'none';
+
+    setTimeout(() => {
+   
+        transOverlay.style.display = 'flex';
+        setTimeout(() => transOverlay.style.opacity = '1', 50);
+        
+        setTimeout(() => {
+            document.getElementById('altSection').style.display = 'none';
+          
+            document.getElementById('ov-hSection').classList.add('active');
+            
+            transOverlay.style.opacity = '0';
+            setTimeout(() => transOverlay.style.display = 'none', 1500);
+        }, 1500);
+    }, 3000);
+}
+
+function altNo() {
+    document.body.innerHTML = "<h1 style='color:#ffcc00; text-align:center; margin-top:20vh; font-size:3rem; font-family:monospace;'>SISTEMA CORROMPIDO. NO TIENES NADA QUE VER POR AQUÍ, CIERRA LA PÁGINA.</h1>";
+    document.body.style.background = "#000";
+    setTimeout(() => { window.close(); }, 500);
+}
+
+
+document.addEventListener("contextmenu",e=>e.preventDefault());
+document.addEventListener("copy",e=>e.preventDefault());
+document.addEventListener("cut",e=>e.preventDefault());
+document.addEventListener("dragstart",e=>e.preventDefault());
+document.addEventListener("selectstart",e=>e.preventDefault());
+document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&["c","x","s","u"].includes(e.key.toLowerCase())) e.preventDefault(); });
+</script>
+</body>
+</html>
