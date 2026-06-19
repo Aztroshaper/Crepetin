@@ -12,10 +12,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 150px; /* Tamaño del GIF ajustado a 150px */
+            width: 150px;
             height: auto;
-            z-index: 20; /* Superior al UI */
-            pointer-events: none; /* Para que no bloquee clics si los hubiera */
+            z-index: 20; 
+            pointer-events: none; 
         }
 
         #ui { position: absolute; bottom: 10%; left: 10%; width: 80%; color: #fff; font-family: 'Courier New', monospace; z-index: 10; pointer-events: none; }
@@ -70,13 +70,13 @@
     scene.add(calf);
     camera.position.z = 5;
 
-    // Pasto
+  
     const grass = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshPhongMaterial({color: 0x0a1a0a}));
     grass.rotation.x = -Math.PI / 2;
     grass.position.y = -1;
     scene.add(grass);
 
-    // Lluvia
+ 
     const rainGeo = new THREE.BufferGeometry();
     const rainCount = 5000;
     const pos = new Float32Array(rainCount * 3);
@@ -101,7 +101,7 @@
     window.decidir = (matar) => {
         if (matar) {
             calf.scale.set(0.1, 0.1, 0.1);
-            setTimeout(() => window.location.href = 'ere.html', 1000);
+            setTimeout(() => window.location.href = 'shoter.html', 1000);
         } else {
             alert("La inacción es también una decisión.");
         }
