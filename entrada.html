@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mente en Ruinas - VHS Edition</title>
+    <title>.../title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; user-select: none; }
         
@@ -81,7 +81,7 @@
 </head>
 <body>
 <audio id="walkAudio" src="pasito.ogg" preload="auto" loop></audio>
-<audio id="bgAudio" src="entrada.ogg" preload="auto" loop></audio>
+<audio id="bgAudio" src="entrada1.ogg" preload="auto" loop></audio>
 
     <div id="intro-fade"></div>
     <div id="fade-overlay"></div>
@@ -125,8 +125,7 @@
         let ambientLight, flashLight; 
         let blackoutTimer = 0;
         let isBlackout = false;
-        
-        // Físicas y Estado del Jugador
+  
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         let isRunning = false, isCrouching = false, canJump = true, isFading = false;
         
