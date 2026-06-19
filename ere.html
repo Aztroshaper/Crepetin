@@ -12,6 +12,19 @@
             user-select: none;
         }
         
+        #fade-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            z-index: 9999;
+            opacity: 1;
+            pointer-events: none;
+            transition: opacity 1s ease;
+        }
+        
         #ui-container {
             position: absolute;
             top: 0;
@@ -28,12 +41,12 @@
         #btn-entrar {
             padding: 20px 40px;
             font-size: 28px;
-            color: #ff0055;
+            color: #ffea00;
             background-color: transparent;
-            border: 2px solid #ff0055;
+            border: 2px solid #ffea00;
             cursor: pointer;
             text-transform: uppercase;
-            box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
+            box-shadow: 0 0 15px rgba(255, 234, 0, 0.5);
             transition: all 0.1s;
             font-family: inherit;
             letter-spacing: 2px;
@@ -41,9 +54,9 @@
         }
         
         #btn-entrar:hover {
-            background-color: #ff0055;
-            color: white;
-            box-shadow: 0 0 50px #ff0055, inset 0 0 20px #00ffff;
+            background-color: #ffea00;
+            color: black;
+            box-shadow: 0 0 50px #ffea00, inset 0 0 20px #00ffff;
             transform: scale(1.1) rotate(-1deg);
         }
 
@@ -57,7 +70,7 @@
             letter-spacing: 3px;
             opacity: 0; 
             z-index: 5;
-            text-shadow: 2px -2px 0px #ff0055;
+            text-shadow: 2px -2px 0px #ffea00;
             animation: parpadeo 0.5s infinite alternate;
         }
 
@@ -67,7 +80,6 @@
             100% { opacity: 0.5; transform: translate(0, 0); }
         }
 
-        /* EFECTO GLITCH EN LA PANTALLA (CSS) */
         .glitch-overlay {
             position: fixed;
             top: 0; 
@@ -77,7 +89,7 @@
             pointer-events: none;
             z-index: 20;
             opacity: 0.2;
-            background: linear-gradient(rgba(255, 0, 85, 0.2) 50%, rgba(0, 255, 255, 0.2) 50%);
+            background: linear-gradient(rgba(255, 234, 0, 0.2) 50%, rgba(0, 255, 255, 0.2) 50%);
             background-size: 100% 4px;
             mix-blend-mode: overlay;
             animation: glitchAnim 0.1s infinite;
@@ -95,6 +107,7 @@
 </head>
 <body>
 
+    <div id="fade-overlay"></div>
     <div class="glitch-overlay"></div>
 
     <div id="ui-container">
@@ -103,8 +116,7 @@
 
     <div id="texto-instruccion">Encuentra la salida...</div>
 
-    <!-- NUEVO AUDIO: caos.mp3 -->
-    <audio id="musicaFondo" loop>
+    <audio id="musicaFondo" loop preload="auto">
         <source src="caos.mp3" type="audio/mpeg">
     </audio>
 
@@ -112,7 +124,10 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     
     <script>
-        // 1. ESCENA WACKY Y NIEBLA TÓXICA
+        window.addEventListener('load', () => {
+            document.getElementById('fade-overlay').style.opacity = '0';
+        });
+
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a002a); 
         scene.fog = new THREE.FogExp2(0x3a004a, 0.04); 
@@ -122,7 +137,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // 2. SUELO (Concreto oscuro)
         const sueloGeo = new THREE.PlaneGeometry(100, 180);
         const sueloMat = new THREE.MeshPhongMaterial({ 
             color: 0x111111, 
@@ -134,12 +148,10 @@
         suelo.position.y = -3;
         scene.add(suelo);
 
-        // 3. EDIFICIOS DESTRUIDOS (Generación procedural)
         const matEdificio = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
         const matEdificio2 = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 1 });
 
         for (let z = 30; z > -90; z -= 8) {
-            // Edificios izquierda
             if(Math.random() > 0.2) {
                 const altura = 10 + Math.random() * 20;
                 const edificio = new THREE.Mesh(new THREE.BoxGeometry(6, altura, 6), Math.random() > 0.5 ? matEdificio : matEdificio2);
@@ -148,7 +160,6 @@
                 edificio.rotation.y = (Math.random() - 0.5) * 0.5;
                 scene.add(edificio);
             }
-            // Edificios derecha
             if(Math.random() > 0.2) {
                 const altura = 10 + Math.random() * 20;
                 const edificio = new THREE.Mesh(new THREE.BoxGeometry(6, altura, 6), Math.random() > 0.5 ? matEdificio : matEdificio2);
@@ -159,11 +170,9 @@
             }
         }
 
-        // 4. COCHES CHOCADOS CON DETALLES
         function crearCoche(colorCarroceria) {
             const grupoCoche = new THREE.Group();
 
-            // Chasis
             const chasis = new THREE.Mesh(
                 new THREE.BoxGeometry(2.2, 0.8, 4.5), 
                 new THREE.MeshStandardMaterial({ color: colorCarroceria, metalness: 0.7, roughness: 0.3 })
@@ -171,7 +180,6 @@
             chasis.position.y = 0.6;
             grupoCoche.add(chasis);
 
-            // Cabina
             const cabina = new THREE.Mesh(
                 new THREE.BoxGeometry(1.8, 0.7, 2.5), 
                 new THREE.MeshStandardMaterial({ color: 0x050505, transparent: true, opacity: 0.8, roughness: 0.1, metalness: 1 })
@@ -179,7 +187,6 @@
             cabina.position.set(0, 1.35, -0.3);
             grupoCoche.add(cabina);
 
-            // Llantas
             const geoLlanta = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
             geoLlanta.rotateZ(Math.PI / 2);
             const matLlanta = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
@@ -212,7 +219,6 @@
             scene.add(coche);
         }
 
-        // 5. RASTROS DE LÍQUIDO ROJO
         const matLiquido = new THREE.MeshStandardMaterial({ 
             color: 0x990000, 
             metalness: 0.5, 
@@ -230,7 +236,6 @@
             scene.add(rastro);
         }
 
-        // 6. ESFERAS DE LUZ FLOTANTES Y ERRÁTICAS
         const esferas = [];
         for(let i = 0; i < 15; i++) {
             const colorLuz = new THREE.Color().setHSL(Math.random(), 1, 0.6); 
@@ -251,23 +256,19 @@
             });
         }
 
-        // 7. LA PUERTA FINAL (Conexión a h4.html)
         const puertaGeo = new THREE.BoxGeometry(8, 14, 1);
-        const puertaMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Puerta brillante y estática
+        const puertaMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const puerta = new THREE.Mesh(puertaGeo, puertaMat);
-        puerta.position.set(0, 4, -80); // Se sitúa al fondo
+        puerta.position.set(0, 4, -80);
         scene.add(puerta);
 
-        // Luz intensa para que la puerta llame la atención del jugador
         const luzPuerta = new THREE.PointLight(0xffffff, 3, 30);
         luzPuerta.position.set(0, 4, -77);
         scene.add(luzPuerta);
 
-        // 8. LUCES GENERALES
         const luzAmbiente = new THREE.AmbientLight(0x221133, 1);
         scene.add(luzAmbiente);
 
-        // 9. CONTROLES Y CÁMARA
         const controls = new THREE.PointerLockControls(camera, document.body);
         scene.add(controls.getObject());
         controls.getObject().position.set(0, -1, 28); 
@@ -275,6 +276,7 @@
         let moviendose = false;
         const velocidad = 0.12; 
         let tiempo = 0;
+        let tocandoPuerta = false;
 
         const btnEntrar = document.getElementById('btn-entrar');
         const uiContainer = document.getElementById('ui-container');
@@ -307,12 +309,10 @@
             camera.updateProjectionMatrix();
         });
 
-        // 10. BUCLE DE ANIMACIÓN Y GLITCH
         function animar() {
             requestAnimationFrame(animar);
             tiempo += 0.05;
 
-            // Animar esferas erráticas
             esferas.forEach(obj => {
                 obj.mesh.position.x += Math.sin(tiempo * obj.velocidad * 10 + obj.offset) * 0.2;
                 obj.mesh.position.y += Math.cos(tiempo * obj.velocidad * 8 + obj.offset) * 0.2;
@@ -321,24 +321,25 @@
                 if(obj.mesh.position.y < -2) obj.mesh.position.y = -2;
             });
 
-            // Movimiento del jugador
-            if (controls.isLocked === true && moviendose) {
+            if (controls.isLocked === true && moviendose && !tocandoPuerta) {
                 controls.getObject().position.z -= velocidad;
                 
                 const caminarY = Math.abs(Math.sin(tiempo * 3)) * 0.15;
                 controls.getObject().position.y = -1 + caminarY;
             }
 
-            // REDIRECCIÓN A H4.HTML AL TOCAR LA PUERTA (z = -78 para colisión)
-            if (controls.getObject().position.z <= -78) {
-                window.location.href = 'h4.html';
+            if (controls.getObject().position.z <= -78 && !tocandoPuerta) {
+                tocandoPuerta = true;
+                document.getElementById('fade-overlay').style.opacity = '1';
+                setTimeout(() => {
+                    window.location.href = 'h4.html';
+                }, 1000);
             }
 
-            // Efecto Glitch de cámara
             if (Math.random() > 0.95) { 
                 camera.position.x += (Math.random() - 0.5) * 0.2;
                 camera.rotation.z = (Math.random() - 0.5) * 0.05;
-                scene.fog.color.setHex(Math.random() > 0.5 ? 0xff0055 : 0x00ffff); 
+                scene.fog.color.setHex(Math.random() > 0.5 ? 0xffea00 : 0x00ffff); 
             } else {
                 camera.rotation.z = 0; 
                 scene.fog.color.setHex(0x3a004a); 
