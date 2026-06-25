@@ -439,7 +439,7 @@ body{
     100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Scrollbars */
+
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.6); border-radius: 8px; }
 ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #ffcc00, #b8860b); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); }
@@ -817,7 +817,7 @@ body{
 .y2k-nav-btn { width: 45px; height: 22px; background: linear-gradient(180deg, #444, #111); border-radius: 12px; border: 2px solid #000; box-shadow: 0 5px 0 #050505, inset 0 2px 5px rgba(255,204,0,0.2); cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
 .y2k-nav-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #050505, inset 0 2px 5px rgba(255,204,0,0.2); }
 .y2k-btn-end {
-    background: linear-gradient(to bottom, #ff3333, #aa0000); /* Rojo de colgar clasico Nokia */
+    background: linear-gradient(to bottom, #ff3333, #aa0000);
     color: #fff; border: 2px solid #550000; border-radius: 25px;
     padding: 14px 45px; font-weight: bold; cursor: pointer;
     box-shadow: 0 6px 0 #440000, 0 10px 25px rgba(0,0,0,0.9), inset 0 2px 8px rgba(255,255,255,0.4);
@@ -825,7 +825,7 @@ body{
 }
 .y2k-btn-end:active { transform: translateY(6px); box-shadow: 0 0 0 #440000, 0 4px 10px rgba(0,0,0,0.9), inset 0 2px 5px rgba(255,255,255,0.2); filter: brightness(0.8); }
 
-/* --- Gallery Redesign --- */
+
 #galleryGrid {
     display: flex;
     flex-direction: row;
@@ -1561,20 +1561,20 @@ const starText = document.getElementById("starText");
 const lightningFlash = document.getElementById("lightningFlash");
 
 const liminalTexts = [
-"Creo que hay alguien aquí conmigo.",
+"Creo que hay alguien aquí conmigo, ojalá no sea chespirito.",
 "Siento que me están viendo sin ojos.",
-"No estoy solo, solo no lo veo.",
-"La casa suena cuando no me muevo.",
-"Algo me sigue cuando giro la cabeza.",
+"No Towngameplay, ¡no!.",
+"La casa suena a Yeri Mua.",
+"Algo me sigue cuando giro la cabeza, es el Xocas.",
 "La lluvia no para, ¿es normal?",
 "Escuché mi nombre, pero nadie lo dijo.",
 "El pasillo es más largo cuando lo miro.",
-"Hay presencia, pero no forma.",
+"Que hot.",
 "No reconozco esta esquina de mi propia casa.",
 "El aire cambia cuando me quedo quieto.",
 "Siento pasos que no encajan con los míos.",
-"¿Quién está detrás de la ventana si no hay nadie?",
-"El techo no se siente fijo.",
+"¿Quién es Aimep3?",
+"El techo es el chapulín colorado.",
 "Algo me observa desde arriba, sin bajar la mirada.",
 "No recuerdo haber cerrado esa puerta.",
 "Cada vez que parpadeo, algo se mueve.",
@@ -2415,7 +2415,7 @@ document.querySelector('.photoNo').onclick = () => {
 document.querySelector('.photoYes').onclick = () => {
     if (!currentSpot) return;
     
-    // Sonido al Tomar Foto
+   
     const sndFoto = document.getElementById("sndFoto");
     if(sndFoto){ sndFoto.volume = globalSfxVolume; sndFoto.play().catch(()=>{}); }
     
